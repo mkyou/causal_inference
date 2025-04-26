@@ -1,0 +1,6 @@
+analyze_ate_cate(results_dm)
+analyze_ate_cate(results_lmm)
+analyze_ate_cate(results_lmi)
+analyze_ate_cate(results_oracle_ipw)
+analyze_ate_cate(results_naive_ipw)
+analyze_ate_cate(results_model_ipw)
