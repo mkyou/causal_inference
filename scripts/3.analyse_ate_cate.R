@@ -8,15 +8,19 @@ analyze_ate_cate = function(results) {
     id_scenario = unique(sim_result$id_scenario)
     
     # Cálculo do ATE: Média e Viés
-    ate_estimate_mean = mean(sim_result$estimate)
-    ate_true_mean = mean(sim_result$true_effect)
+    ate_estimate_mean = mean(sim_result$estimate, na.rm = TRUE)
+    ate_true_mean = mean(sim_result$true_effect, na.rm = TRUE)
     
     mse_ate = (ate_estimate_mean - ate_true_mean)^2
     bias_ate = ate_estimate_mean - ate_true_mean
     
     # Cálculo do CATE: MSE e Viés
-    mse_cate = mean((sim_result$estimate - sim_result$true_effect)^2)
-    bias_cate = mean(sim_result$estimate - sim_result$true_effect)
+    mse_cate = mean(
+      (sim_result$estimate - sim_result$true_effect)^2, 
+      na.rm = TRUE
+    )
+    
+    bias_cate = mean(sim_result$estimate - sim_result$true_effect, na.rm = TRUE)
     
     # Retornando os resultados para a simulação
     list(

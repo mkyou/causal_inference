@@ -1,3 +1,6 @@
+library(AIPW)
+
+
 # Parameters for generating data
 data_params = list(
   n = 1000,
@@ -39,16 +42,38 @@ results_naive_ipw = simulate_pipeline(
   id_scenario = "naive_propensity_scenario"
 )
 
-results_model_ipw = simulate_pipeline(
-  n_sim = 1000,
-  estimator = model_ipw,
-  data_params = data_params,
-  id_scenario = "model_propensity_scenario"
-)
-
 results_oracle_ipw = simulate_pipeline(
   n_sim = 1000,
   estimator = oracle_ipw,
+  data_params = data_params,
+  id_scenario = "true_propensity_scenario"
+)
+
+results_aipw_double_naive = simulate_pipeline(
+  n_sim = 1000,
+  estimator = aipw_double_naive,
+  data_params = data_params,
+  id_scenario = 'true_propensity_scenario'
+)
+
+results_aipw_outcome_naive = simulate_pipeline(
+  n_sim = 1000,
+  estimator = aipw_outcome_naive,
+  data_params = data_params,
+  id_scenario = 'naive_propensity_scenario'
+)
+
+
+results_aipw_propensity_naive = simulate_pipeline(
+  n_sim = 1000,
+  estimator = aipw_propensity_naive,
+  data_params = data_params,
+  id_scenario = "true_propensity_scenario"
+)
+
+results_aipw_double_robust = simulate_pipeline(
+  n_sim = 1000,
+  estimator = aipw_double_robust,
   data_params = data_params,
   id_scenario = "true_propensity_scenario"
 )

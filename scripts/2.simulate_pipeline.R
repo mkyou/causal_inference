@@ -1,19 +1,16 @@
 #' Simulate Pipeline
 #'
-#' @description A function to run a simulation pipeline for causal effect 
-#' estimation, including optional estimation of propensity scores. Generates 
-#' multiple datasets based on fixed parameters and applies an estimator to each 
-#' dataset in parallel. Returns structured results with key components for 
-#' validation.
+#' @description Runs a simulation pipeline for causal effect estimation, 
+#' generating multiple datasets based on fixed parameters and applying an 
+#' estimator to each dataset in parallel. 
+#' Tracks execution progress with a real-time progress bar.
 #'
 #' @param n_sim Integer. The number of simulations to run.
 #' @param estimator A list containing the estimator's metadata:
-#'  - `name`: Character. The name of the estimator (e.g., 
-#'    "difference_in_means").
-#'  - `estimates_heterogeneous_effects`: Logical. Whether the estimator supports 
-#'    heterogeneous effects.
-#'  - `estimator`: Function. The function for applying the estimator to a 
-#'    dataset.
+#' - `name`: Character. The name of the estimator (e.g., "difference_in_means").
+#' - `estimates_heterogeneous_effects`: Logical. Whether the estimator supports
+#'  heterogeneous effects.
+#' - `estimator`: Function. Function for applying the estimator to a dataset.
 #' @param data_params A list of fixed parameters passed to `generate_data`. 
 #' Should include all the required arguments for the `generate_data` function.
 #' @param id_scenario Character. A string identifier for the scenario being 
@@ -22,22 +19,27 @@
 #' @return A list of `data.table` objects, where each `data.table` contains:
 #'  - `id_scenario`: The scenario identifier (repeated for all rows).
 #'  - `sim_id`: The simulation ID (unique for each simulation).
-#'  - `effect_formula`: The formula representing the true causal effect 
+#'  - `effect_formula`: The formula representing the true causal effect
 #'    (repeated for all rows).
 #'  - `estimate`: The estimated causal effect (average or heterogeneous).
 #'  - `true_effect`: The true causal effect for each observation.
-#'  - `true_propensity_score`: The true propensity score for each observation.
-#'  - `estimated_propensity_score`: The estimated propensity score, if the 
-#'    estimator computes it, or the proportion of treated individuals otherwise.
+#'  - `true_propensity_score`: The true propensity score for each observation 
+#'    (included for reference).
 #'  - `relevant_covariates`: Covariates affecting the causal effect or 
-#'    propensity score.
+#'  propensity score.
+#'
+#' @details 
+#' - Uses parallel execution (`future.apply::future_lapply`) to speed up 
+#'  simulations.
+#' - Implements real-time progress tracking using the `progressr` package.
+#' - Applies user-defined estimators, which compute propensity scores 
+#' internally as needed.
 #'
 #' @examples
 #' # Define the difference in means estimator
 #' difference_in_means = list(
 #'   name = "difference_in_means",
 #'   estimates_heterogeneous_effects = FALSE,
-#'   estimates_propensity_scores = FALSE,
 #'   estimator = function(data) {
 #'     treated_mean = mean(data[data$treatment == 1, Y])
 #'     control_mean = mean(data[data$treatment == 0, Y])
@@ -55,7 +57,7 @@
 #'   noise_level = 1
 #' )
 #'
-#' # Run the simulation pipeline
+#' # Run the simulation pipeline with progress tracking
 #' results = simulate_pipeline(
 #'   n_sim = 10, # Run 10 simulations
 #'   estimator = difference_in_means,
@@ -68,52 +70,58 @@
 #'
 #' # Example analysis: Compare estimates to true effects
 #' head(results[[1]])
+#' 
 
 simulate_pipeline = function(n_sim, estimator, data_params, id_scenario) {
   library(future.apply)
   library(dplyr)
   library(data.table)
+  library(progressr)
   
-  # Verificações preliminares
+  # Initialize progress tracking
+  progressr::handlers(global = TRUE)  
+  p = progressr::progressor(along = seq_len(n_sim))  
+  
+  # Verifications
   if (is.null(estimator$name) || is.null(estimator$estimator) || 
       is.null(estimator$estimates_heterogeneous_effects)) {
-    stop("Estimator must be a list containing 'name', 'estimator', and 'estimates_heterogeneous_effects'.")
+    stop("Estimator must be a list containing 'name', 'estimator', 
+         and 'estimates_heterogeneous_effects'.")
   }
   
   if (missing(id_scenario) || !is.character(id_scenario)) {
-    stop("The parameter 'id_scenario' must be a valid string identifying the scenario.")
+    stop("The parameter 'id_scenario' must be a valid string 
+         identifying the scenario.")
   }
   
-  # Planejamento de paralelização
-  future::plan(future::multisession) # Multithreading compatível com Windows e Unix
+  # Enable parallelization
+  future::plan(future::multisession)
   
-  # Simulações paralelas
+  # Run simulations in parallel with progress tracking
   results = future_lapply(seq_len(n_sim), function(sim_id) {
-    # Gerar dataset
+    p()  
+    
+    # Generate dataset
     data = do.call(generate_data, data_params)
     
-    # Aplicar estimador para estimar efeitos causais
+    # Apply estimator
     estimator_result = estimator$estimator(data)
     
-    # Extração das estimativas
-    estimates = if (is.list(estimator_result) && "estimates" %in% names(estimator_result)) {
+    # Extract estimates
+    estimates = if (
+      is.list(estimator_result) && 
+      "estimates" %in% names(estimator_result)
+      ) {
       estimator_result$estimates
     } else {
       estimator_result
     }
     
-    # Escore de propensão estimado
-    estimated_propensity_score = if (is.list(estimator_result) && "propensity_scores" %in% names(estimator_result)) {
-      estimator_result$propensity_scores
-    } else {
-      rep(sum(data$treatment) / nrow(data), nrow(data)) # Proporção de tratados como fallback
-    }
-    
-    # Valores verdadeiros
+    # Extract true values
     true_effects = data$true_effect
-    true_propensity_scores = data$propensity_score
+    true_propensity_scores = data$propensity_score  # useful for reference
     
-    # Variáveis relevantes
+    # Identify relevant covariates
     relevant_vars = unique(c(
       all.vars(parse(text = data_params$effect_formula)),
       all.vars(parse(text = data_params$propensity_score_formula)),
@@ -123,10 +131,10 @@ simulate_pipeline = function(n_sim, estimator, data_params, id_scenario) {
     relevant_covariates = if (length(relevant_vars) > 0) {
       data[, ..relevant_vars]
     } else {
-      data.table() # Retorna vazio se não houver variáveis relevantes
+      data.table()  
     }
     
-    # Estruturar resultado como data.table
+    # Structure result as a data.table
     result_dt = as.data.table(cbind(
       id_scenario = rep(id_scenario, nrow(data)),
       sim_id = rep(sim_id, nrow(data)),
@@ -139,22 +147,13 @@ simulate_pipeline = function(n_sim, estimator, data_params, id_scenario) {
       },
       true_effect = true_effects,
       true_propensity_score = true_propensity_scores,
-      estimated_propensity_score = estimated_propensity_score,
       relevant_covariates
     ))
     
-    # Retorna o resultado estruturado
     return(result_dt)
-  }, future.seed = TRUE) # Assegura geração correta de números aleatórios em paralelo
+  }, future.seed = TRUE)  # Ensures proper random number generation in parallel
   
-  # Resetar plano de paralelização para evitar interferências futuras
-  future::plan(future::sequential)
-  
-  # Retorna os resultados como uma lista de data.tables
+  future::plan(future::sequential)  
   return(results)
 }
-
-
-
-
 
