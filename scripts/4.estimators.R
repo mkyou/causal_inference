@@ -59,8 +59,8 @@ linear_regression_interactions = list(
   }
 )
 
-naive_ipw = list(
-  name = "propensity_ipw_estimator",
+ipw_naive = list(
+  name = "ipw_naive",
   estimates_heterogeneous_effects = TRUE,
   estimator = function(data) {
     propensities = rep(sum(data$treatment) / nrow(data), nrow(data))
@@ -76,8 +76,8 @@ naive_ipw = list(
   }
 )
 
-oracle_ipw = list(
-  name = "propensity_ipw_estimator",
+ipw_oracle = list(
+  name = "ipw_oracle",
   estimates_heterogeneous_effects = TRUE,
   estimator = function(data) {
     propensities = data$propensity_score
@@ -99,30 +99,50 @@ aipw_double_naive = list(
   name = "aipw_double_naive_estimator",
   estimates_heterogeneous_effects = TRUE,
   estimator = function(data) {
-    library(SuperLearner)
     propensities = rep(sum(data$treatment) / nrow(data), nrow(data))
     
     covariates = setdiff(
-      names(data), 
-      c("treatment", "Y", "true_effect", "propensity_score")
+      names(data), c("treatment", "Y", "true_effect", "propensity_score")
     )
+    X = data[, ..covariates]
     
-    aipw_model = AIPW::AIPW$new(
-      Y = data$Y,
-      A = data$treatment,
-      W = data[, ..covariates],
-      Q.SL.library = "SL.glm",
-      g.SL.library = "SL.glm",
-      k_split = 5,
-      verbose = FALSE
+    n = nrow(data)
+    fold_idx = sample(rep(1:5, length.out = n))
+    
+    mu_1 = numeric(n)
+    mu_0 = numeric(n)
+    
+    for (fold in 1:5) {
+      train_idx = which(fold_idx != fold)  
+      test_idx = which(fold_idx == fold)
+      
+      treated_data = data[train_idx][data$treatment[train_idx] == 1]
+      treated_model = lm(
+        Y ~ ., 
+        data = treated_data[, c("Y", covariates), with = FALSE]
+      )
+      mu_1[test_idx] = predict(
+        treated_model, 
+        newdata = data[test_idx, ..covariates]
+      )
+      
+      control_data = data[train_idx][data$treatment[train_idx] == 0]
+      control_model = lm(
+        Y ~ ., 
+        data = control_data[, c("Y", covariates), with = FALSE]
+      )
+      
+      mu_0[test_idx] = predict(
+        control_model, 
+        newdata = data[test_idx, ..covariates]
+      )
+    }
+    
+    aipw_estimates = (
+      mu_1 - mu_0 +
+        data$treatment * (data$Y - mu_1) / propensities -
+        (1 - data$treatment) * (data$Y - mu_0) / (1 - propensities)
     )
-    
-    aipw_model$obs_est$p_score = propensities  
-    
-    aipw_model$fit()
-    
-    aipw_estimates_raw = aipw_model$summary()$estimates
-    aipw_estimates = mean(unlist(aipw_estimates_raw), na.rm = TRUE)
     
     list(estimates = aipw_estimates, propensity_scores = propensities)
   }
@@ -132,42 +152,43 @@ aipw_outcome_naive = list(
   name = "aipw_outcome_naive_estimator",
   estimates_heterogeneous_effects = TRUE,
   estimator = function(data) {
-    library(SuperLearner)
-    propensities = data$propensity_score
     
+    propensities = data$propensity_score
     covariates = setdiff(
       names(data), c("treatment", "Y", "true_effect", "propensity_score")
-    )
-    
+      )
     X = data[, ..covariates]
     
     n = nrow(data)
-    fold_idx = sample(rep(1:5, length.out = n)) 
+    fold_idx = sample(rep(1:5, length.out = n))
     
-    mu_1 = numeric(n)  
-    mu_0 = numeric(n)  
+    mu_1 = numeric(n)
+    mu_0 = numeric(n)
     
     for (fold in 1:5) {
-      train_idx = which(fold_idx != fold)
+      train_idx = which(fold_idx != fold)  
       test_idx = which(fold_idx == fold)
       
-      # Modelo de desfecho para tratados
-      outcome_model_treated = lm(
-        y ~ ., data = select(data, covariates)[train_idx, ]
+      treated_data = data[train_idx][data$treatment[train_idx] == 1]
+      treated_model = lm(
+        Y ~ ., 
+        data = treated_data[, c("Y", covariates), with = FALSE]
+      )
+      mu_1[test_idx] = predict(
+        treated_model, 
+        newdata = data[test_idx, ..covariates]
       )
       
-      mu_1[test_idx] = predict(
-        outcome_model_treated, X[test_idx, ]
-      )$predictions
-      
-      # Modelo de desfecho para controles
-      outcome_model_control = lm(
-        y ~ ., data = select(data, covariates)[train_idx, ]
+      control_data = data[train_idx][data$treatment[train_idx] == 0]
+      control_model = lm(
+        Y ~ ., 
+        data = control_data[, c("Y", covariates), with = FALSE]
       )
       
       mu_0[test_idx] = predict(
-        outcome_model_control, X[test_idx, ]
-      )$predictions
+        control_model, 
+        newdata = data[test_idx, ..covariates]
+      )
     }
     
     aipw_estimates = (
@@ -185,7 +206,11 @@ aipw_propensity_naive = list(
   estimates_heterogeneous_effects = TRUE,
   estimator = function(data) {
     library(grf)
+    
+    # Definir escores de propensão como a proporção de tratados
     propensities = rep(sum(data$treatment) / nrow(data), nrow(data))
+    
+    # Selecionar as covariáveis relevantes
     covariates = setdiff(
       names(data), c("treatment", "Y", "true_effect", "propensity_score")
     )
@@ -193,80 +218,27 @@ aipw_propensity_naive = list(
     X = data[, ..covariates]
     
     n = nrow(data)
-    fold_idx = sample(rep(1:5, length.out = n)) 
+    fold_idx = sample(rep(1:5, length.out = n))
     
-    mu_1 = numeric(n)  
-    mu_0 = numeric(n)  
-    
-    for (fold in 1:5) {
-      train_idx = which(fold_idx != fold)
-      test_idx = which(fold_idx == fold)
-      
-      # Modelo de desfecho para tratados
-      outcome_model_treated = regression_forest(
-        X[train_idx, ], data$Y[train_idx]
-      )
-      
-      mu_1[test_idx] = predict(
-        outcome_model_treated, X[test_idx, ]
-      )$predictions
-      
-      # Modelo de desfecho para controles
-      outcome_model_control = regression_forest(
-        X[train_idx, ], data$Y[train_idx]
-      )
-      
-      mu_0[test_idx] = predict(
-        outcome_model_control, X[test_idx, ]
-      )$predictions
-    }
-    
-    aipw_estimates = mean(
-      mu_1 - mu_0 +
-        data$treatment * (data$Y - mu_1) / propensities -
-        (1 - data$treatment) * (data$Y - mu_0) / (1 - propensities)
-    )
-    
-    list(estimates = aipw_estimates, propensity_scores = propensities)
-  }
-)
-
-aipw_double_robust = list(
-  name = "aipw_double_robust",
-  estimates_heterogeneous_effects = TRUE,
-  estimator = function(data) {
-    library(grf)
-    propensities = data$propensity_score
-    covariates = setdiff(
-      names(data), c("treatment", "Y", "true_effect", "propensity_score")
-    )
-    
-    X = data[, ..covariates]
-    
-    n = nrow(data)
-    fold_idx = sample(rep(1:5, length.out = n)) 
-    
-    mu_1 = numeric(n)  
-    mu_0 = numeric(n)  
+    mu_1 = numeric(n)
+    mu_0 = numeric(n)
     
     for (fold in 1:5) {
       train_idx = which(fold_idx != fold)
       test_idx = which(fold_idx == fold)
       
-      # Modelo de desfecho para tratados
+      treated_idx = train_idx[data$treatment[train_idx] == 1]
       outcome_model_treated = regression_forest(
-        X[train_idx, ], data$Y[train_idx]
+        X[treated_idx, ], data$Y[treated_idx]
       )
-      
       mu_1[test_idx] = predict(
         outcome_model_treated, X[test_idx, ]
       )$predictions
       
-      # Modelo de desfecho para controles
+      control_idx = train_idx[data$treatment[train_idx] == 0]
       outcome_model_control = regression_forest(
-        X[train_idx, ], data$Y[train_idx]
+        X[control_idx, ], data$Y[control_idx]
       )
-      
       mu_0[test_idx] = predict(
         outcome_model_control, X[test_idx, ]
       )$predictions
@@ -281,3 +253,55 @@ aipw_double_robust = list(
     list(estimates = aipw_estimates, propensity_scores = propensities)
   }
 )
+
+
+aipw_double_robust = list(
+  name = "aipw_double_robust",
+  estimates_heterogeneous_effects = TRUE,
+  estimator = function(data) {
+    library(grf)
+    propensities = data$propensity_score
+    # Selecionar as covariáveis relevantes
+    covariates = setdiff(
+      names(data), c("treatment", "Y", "true_effect", "propensity_score")
+    )
+    
+    X = data[, ..covariates]
+    
+    n = nrow(data)
+    fold_idx = sample(rep(1:5, length.out = n))
+    
+    mu_1 = numeric(n)
+    mu_0 = numeric(n)
+    
+    for (fold in 1:5) {
+      train_idx = which(fold_idx != fold)
+      test_idx = which(fold_idx == fold)
+      
+      treated_idx = train_idx[data$treatment[train_idx] == 1]
+      outcome_model_treated = regression_forest(
+        X[treated_idx, ], data$Y[treated_idx]
+      )
+      mu_1[test_idx] = predict(
+        outcome_model_treated, X[test_idx, ]
+      )$predictions
+      
+      control_idx = train_idx[data$treatment[train_idx] == 0]
+      outcome_model_control = regression_forest(
+        X[control_idx, ], data$Y[control_idx]
+      )
+      mu_0[test_idx] = predict(
+        outcome_model_control, X[test_idx, ]
+      )$predictions
+    }
+    
+    aipw_estimates = (
+      mu_1 - mu_0 +
+        data$treatment * (data$Y - mu_1) / propensities -
+        (1 - data$treatment) * (data$Y - mu_0) / (1 - propensities)
+    )
+    
+    list(estimates = aipw_estimates, propensity_scores = propensities)
+  }
+)
+

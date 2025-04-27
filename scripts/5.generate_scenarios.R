@@ -19,8 +19,6 @@ results_dm = simulate_pipeline(
   id_scenario = "linear_outcome_scenario_means_diff"
 )
 
-results_dm[[1]]
-
 results_lmm = simulate_pipeline(
   n_sim = 1000, 
   estimator = linear_regression_main_effects,
@@ -35,16 +33,16 @@ results_lmi = simulate_pipeline(
   id_scenario = "linear_outcome_scenario_lm_int"
 )
 
-results_naive_ipw = simulate_pipeline(
+results_ipw_naive = simulate_pipeline(
   n_sim = 1000,
-  estimator = naive_ipw,
+  estimator = ipw_naive,
   data_params = data_params,
   id_scenario = "naive_propensity_scenario"
 )
 
-results_oracle_ipw = simulate_pipeline(
+results_ipw_oracle = simulate_pipeline(
   n_sim = 1000,
-  estimator = oracle_ipw,
+  estimator = ipw_oracle,
   data_params = data_params,
   id_scenario = "true_propensity_scenario"
 )
@@ -62,7 +60,6 @@ results_aipw_outcome_naive = simulate_pipeline(
   data_params = data_params,
   id_scenario = 'naive_propensity_scenario'
 )
-
 
 results_aipw_propensity_naive = simulate_pipeline(
   n_sim = 1000,

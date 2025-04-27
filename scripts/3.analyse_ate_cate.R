@@ -20,7 +20,9 @@ analyze_ate_cate = function(results) {
       na.rm = TRUE
     )
     
-    bias_cate = mean(sim_result$estimate - sim_result$true_effect, na.rm = TRUE)
+    bias_cate = mean(
+      sim_result$estimate - sim_result$true_effect, na.rm = TRUE
+    )
     
     # Retornando os resultados para a simulação
     list(
