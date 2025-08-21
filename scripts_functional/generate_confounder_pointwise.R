@@ -75,54 +75,76 @@ generate_confounder_pointwise = function(
     }
   }
   
-  # Processo dinâmico (t>=2)
-  for (t_index in 2:total_times){
+  # Processo dinâmico (t>=2) - VERSÃO VETORIZADA
+  for (t_index in 2:total_times) {
     current_time = time_grid[t_index]
-    if (current_time %in% 1:total_treatment_times){
+    
+    # --- Atribuição de Tratamento ---
+    if (current_time %in% 1:total_treatment_times) {
       s_index = as.integer(current_time)
-      prop_func = if(!is.null(propensity_function_list))
-        propensity_function_list[[s_index]] else NULL
-      A[,t_index] = if(!is.null(prop_func))
-        rbinom(n,1,prop_func(X_list,t_index)) else rbinom(n,1,p_treat)
-      A_a[,t_index] = rep(a_seq[s_index],n)
-      A_another[,t_index] = rep(another_a_seq[s_index],n)
-    }
-    for (k in 1:num_covariates){
-      effects_mat = effects_mat_list[[k]]
-      treated_cols_nat = which(
-        1:total_times < t_index & 
-          time_grid %in% 1:total_treatment_times
-      )
-      treated_cols_nat = head(treated_cols_nat,nrow(effects_mat))
-      for (i in 1:n){
-        base_val = baseline_function_list[[k]][[i]](current_time)
-        
-        effects_obs_nat = if(length(treated_cols_nat)>0)
-          sum(
-            A[i,treated_cols_nat] *
-              effects_mat[seq_along(treated_cols_nat), t_index]
-          ) else 0
-        
-        X_list[[k]][i,t_index] = base_val + effects_obs_nat + 
-          Z_list[[k]][i,t_index]
-        
-        effects_a = if(length(treated_cols_nat)>0)
-          sum(
-            A_a[i,treated_cols_nat] *
-              effects_mat[seq_along(treated_cols_nat),t_index]
-          ) else 0
-        
-        a_X_list[[k]][i,t_index] = base_val + effects_a + 
-          Z_list[[k]][i,t_index]
-        effects_another = if(length(treated_cols_nat)>0)
-          sum(
-            A_another[i,treated_cols_nat] * 
-              effects_mat[seq_along(treated_cols_nat), t_index]
-          ) else 0
-        
-        another_a_X_list[[k]][i,t_index] = base_val + effects_another + 
-          Z_list[[k]][i,t_index]
+      prop_func = if (!is.null(propensity_function_list)) {
+        propensity_function_list[[s_index]] 
+      } else {
+        NULL
       }
+      
+      A[, t_index] = if (!is.null(prop_func)) {
+        rbinom(n, 1, prop_func(X_list, t_index))
+      } else {
+        rbinom(n, 1, p_treat)
+      }
+      
+      A_a[, t_index] = rep(a_seq[s_index], n)
+      A_another[, t_index] = rep(another_a_seq[s_index], n)
+    }
+    
+    # --- Evolução das Covariáveis (agora vetorizado) ---
+    
+    # Identifica colunas de tratamentos passados
+    treated_cols_nat = which(
+      time_grid < current_time & time_grid %in% 1:total_treatment_times
+    )
+    
+    # Garante que não peguemos mais tempos de tratamento do que o esperado
+    treated_cols_nat = head(treated_cols_nat, total_treatment_times)
+    
+    for (k in 1:num_covariates) {
+      
+      # Calcula os valores base para TODOS os n indivíduos no tempo atual
+      base_vals_t = sapply(
+        baseline_function_list[[k]], 
+        function(f) f(current_time)
+      )
+      
+      # Efeitos cumulativos do tratamento (se houver tratamentos passados)
+      if (length(treated_cols_nat) > 0) {
+        effects_mat = effects_mat_list[[k]]
+        
+        # Vetor de efeitos de tratamentos passados no tempo atual
+        effects_vec_t = effects_mat[seq_along(treated_cols_nat), t_index]
+        
+        # Calcula o efeito para TODOS os indivíduos de uma vez via matrizes
+        effects_obs_nat = A[, treated_cols_nat, drop = FALSE] %*% 
+          effects_vec_t
+        effects_a = A_a[, treated_cols_nat, drop = FALSE] %*% 
+          effects_vec_t
+        effects_another = A_another[, treated_cols_nat, drop = FALSE] %*% 
+          effects_vec_t
+        
+      } else {
+        # Se não há tratamentos passados, o efeito é zero para todos
+        effects_obs_nat = effects_a = effects_another = rep(0, n)
+      }
+      
+      # Atualiza a coluna inteira da matriz X para o tempo atual de uma só vez
+      X_list[[k]][, t_index] = base_vals_t + effects_obs_nat + 
+        Z_list[[k]][, t_index]
+      
+      a_X_list[[k]][, t_index] = base_vals_t + effects_a + 
+        Z_list[[k]][, t_index]
+      
+      another_a_X_list[[k]][, t_index] = base_vals_t + effects_another + 
+        Z_list[[k]][, t_index]
     }
   }
   
