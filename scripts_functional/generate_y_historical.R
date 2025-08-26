@@ -4,7 +4,8 @@ generate_y_historical = function(
     effects_function_list,
     covariates_historical_effect_list,
     noise_sd = 1,
-    return_format = c("long", "wide", "both")
+    return_format = c("long", "wide", "both"),
+    treatment_times = NULL
 ) {
   requireNamespace("data.table")
   return_format = match.arg(return_format)
@@ -34,7 +35,16 @@ generate_y_historical = function(
   
   # Tempos de tratamento
   S = length(effects_function_list)
-  treatment_times = seq_len(S)
+  
+  if (is.null(treatment_times)) {
+    treatment_times = 1:S
+  }
+  
+  if (length(treatment_times) != S) {
+    stop("O comprimento de 'treatment_times' deve ser igual ao número de 
+         funções de efeito.")
+  }
+  
   treatment_col_indices = sapply(
     treatment_times, function(s) which.min(abs(times - s))
   )

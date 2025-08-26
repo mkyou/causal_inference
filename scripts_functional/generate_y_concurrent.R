@@ -4,7 +4,8 @@ generate_y_concurrent = function(
     effects_function_list,
     covariates_concurrent_effect_list, 
     noise_sd = 1, 
-    return_format = c("long", "wide", "both")
+    return_format = c("long", "wide", "both"),
+    treatment_times = NULL
 ) {
   requireNamespace("data.table")
   return_format = match.arg(return_format)
@@ -34,7 +35,16 @@ generate_y_concurrent = function(
   
   # tempos de tratamento assumidos: s = 1,2,...,S
   S = length(effects_function_list)
-  treatment_times = seq_len(S)   # 1:S
+  
+  # Se os tempos não forem fornecidos, assume o comportamento antigo 1, 2, ...
+  if (is.null(treatment_times)) {
+    treatment_times = 1:S
+  }
+  
+  if (length(treatment_times) != S) {
+    stop("O comprimento de 'treatment_times' deve ser igual ao número de 
+         funções de efeito.")
+  }
   
   # mapa: para cada s encontre o índice da coluna de 'times' mais próxima de s
   treatment_col_indices = sapply(
@@ -91,7 +101,8 @@ generate_y_concurrent = function(
   # pré-computar beta_mat (S x T) com zeros para t < s
   beta_mat = matrix(0, nrow = S, ncol = n_t)
   for (s_idx in seq_len(S)) {
-    s_val = treatment_times[s_idx]
+    # Usa o valor real do tempo de tratamento, não o índice
+    s_val = treatment_times[s_idx] 
     for (t_idx in seq_len(n_t)) {
       t_val = times[t_idx]
       if (t_val >= s_val) {
