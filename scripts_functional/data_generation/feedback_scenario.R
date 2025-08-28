@@ -157,7 +157,8 @@ FEEDBACK_A2_A3_MED_S3 = list(
 scenario_configs_fb = list(
   # --- Testes com 1 tratamento (S=1) ---
   `C2.1_S1_NoFB` = list(
-    n = 1000, treatment_times = 1, 
+    n = 1000, treatment_times = 1, a_seq = 1,
+    another_a_seq = 0,
     propensity_function_list = PROP_NONE_S1, 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_NONE_S1, 
@@ -165,7 +166,8 @@ scenario_configs_fb = list(
     treatment_effect = EFFECTS_A_ON_Y_S1
   ),
   `C2.2_S1_MedFB` = list(
-    n = 1000, treatment_times = 1,
+    n = 1000, treatment_times = 1, a_seq = 1,
+    another_a_seq = 0,
     propensity_function_list = PROP_NONE_S1, 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_MEDIUM_S1, 
@@ -173,7 +175,8 @@ scenario_configs_fb = list(
     treatment_effect = EFFECTS_A_ON_Y_S1
   ),
   `C2.3_S1_HighFB` = list(
-    n = 1000, treatment_times = 1, 
+    n = 1000, treatment_times = 1, a_seq = 1,
+    another_a_seq = 0,
     propensity_function_list = PROP_NONE_S1, 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_HIGH_S1, 
@@ -238,59 +241,50 @@ validation_output = run_validation_suite(
 print(validation_output$summary_table)
 validation_output$plots
 
-all_results_fb = list()
 
-# LOOP CORRIGIDO para usar os dados de feedback (fb_scenarios)
-for (scenario_name in names(fb_scenarios)) {
-  
-  cat(paste("\n>>> Analisando o cenário:", scenario_name, "<<<\n"))
-  
-  current_data = fb_scenarios[[scenario_name]]
-  current_config = scenario_configs_fb[[scenario_name]]
-  
-  # Lógica de decisão: tratamento único ou sequencial?
-  if (length(current_config$treatment_times) > 1) {
-    all_results_fb[[scenario_name]] = run_sequential_eckerluna_suite(
-      scenario_data = current_data,
-      scenario_config = current_config,
-      regime_a = current_config$a_seq,
-      regime_b = current_config$another_a_seq
-    )
-  } else {
-    all_results_fb[[scenario_name]] = run_eckerluna_gam_suite(
-      scenario_data = current_data
+# --- ESTIMAÇÃO PARA MODELO DE ECKER E LUNA ---
+all_results_fb_ecker_luna = lapply(
+  names(fb_scenarios),
+  function(name) {
+    cat(paste("\n>>> Analisando o cenário:", name, "<<<\n"))
+    run_sequential_eckerluna_suite(
+      scenario_data = fb_scenarios[[name]],
+      scenario_config = scenario_configs_fb[[name]],
+      regime_a = scenario_configs_fb[[name]]$a_seq,
+      regime_b = scenario_configs_fb[[name]]$another_a_seq
     )
   }
-}
+)
+names(all_results_fb_ecker_luna) = names(fb_scenarios)
 
 # --- 4. Verificando os Resultados ---
-print(all_results_fb$C2.1_S1_NoFB$metrics)
-print(all_results_fb$C2.1_S1_NoFB$plot)
+print(all_results_fb_ecker_luna$C2.1_S1_NoFB$metrics)
+print(all_results_fb_ecker_luna$C2.1_S1_NoFB$plot)
 
-print(all_results_fb$C2.2_S1_MedFB$metrics)
-print(all_results_fb$C2.2_S1_MedFB$plot)
+print(all_results_fb_ecker_luna$C2.2_S1_MedFB$metrics)
+print(all_results_fb_ecker_luna$C2.2_S1_MedFB$plot)
 
-print(all_results_fb$C2.3_S1_HighFB$metrics)
-print(all_results_fb$C2.3_S1_HighFB$plot)
+print(all_results_fb_ecker_luna$C2.3_S1_HighFB$metrics)
+print(all_results_fb_ecker_luna$C2.3_S1_HighFB$plot)
 
-print(all_results_fb$C2.4_S3_NoFB$metrics)
-print(all_results_fb$C2.4_S3_NoFB$plot)
+print(all_results_fb_ecker_luna$C2.4_S3_NoFB$metrics)
+print(all_results_fb_ecker_luna$C2.4_S3_NoFB$plot)
 
-print(all_results_fb$C2.5_S3_FB_A1$metrics)
-print(all_results_fb$C2.5_S3_FB_A1$plot)
+print(all_results_fb_ecker_luna$C2.5_S3_FB_A1$metrics)
+print(all_results_fb_ecker_luna$C2.5_S3_FB_A1$plot)
 
-print(all_results_fb$C2.6_S3_FB_A2$metrics)
-print(all_results_fb$C2.6_S3_FB_A2$plot)
+print(all_results_fb_ecker_luna$C2.6_S3_FB_A2$metrics)
+print(all_results_fb_ecker_luna$C2.6_S3_FB_A2$plot)
 
-print(all_results_fb$C2.7_S3_FB_A2$metrics)
-print(all_results_fb$C2.7_S3_FB_A2$plot)
+print(all_results_fb_ecker_luna$C2.7_S3_FB_A2$metrics)
+print(all_results_fb_ecker_luna$C2.7_S3_FB_A2$plot)
 
-print(all_results_fb$C2.8_S3_FB_A2$metrics)
-print(all_results_fb$C2.8_S3_FB_A2$plot)
+print(all_results_fb_ecker_luna$C2.8_S3_FB_A2$metrics)
+print(all_results_fb_ecker_luna$C2.8_S3_FB_A2$plot)
 
 
 rm(
-  all_results_fb, current_config, current_data, 
+  all_results_fb_ecker_luna, current_config, current_data, 
   EFFECTS_A_ON_Y_S1, EFFECTS_A_ON_Y_S3, EFFECTS_X_ON_Y,
   fb_scenarios, FEEDBACK_A1_MED_S3, FEEDBACK_A2_A3_MED_S3,
   FEEDBACK_A2_MED_S3, FEEDBACK_A3_MED_S3, FEEDBACK_HIGH_S1,

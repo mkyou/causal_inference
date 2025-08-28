@@ -8,13 +8,13 @@ source("scripts_functional/generate_confounder_pointwise.R")
 source("scripts_functional/utils/generate_simulation_scenarios.R")
 source("scripts_functional/utils/create_heterogeneous_baselines_advanced.R")
 
-
 source("scripts_functional/utils/run_validation_suite.R")
 source("scripts_functional/utils/plot_scenario_effects.R")
 source("scripts_functional/utils/check_causal_structure.R")
 source("scripts_functional/utils/plot_scenario_trajectories.R")
 
 source("scripts_functional/models/ecker_luna_model.R")
+source("scripts_functional/models/g_formula_model.R")
 
 library(data.table)
 library(mgcv)
@@ -39,9 +39,9 @@ MEAN_FUNCS = list(
 
 # Efeitos (médios) de X em Y
 EFFECTS_X_ON_Y = list(
-  X1 = function(t) 1.5, 
-  X2 = function(t) 1.0, 
-  X3 = function(t) -0.8
+  X1 = function(t) 3.5, 
+  X2 = function(t) 2.0, 
+  X3 = function(t) -1.8
 )
 
 # Efeitos (pequenos) de A em Y
@@ -79,7 +79,7 @@ FEEDBACK_NONE_S3 = list(
 scenario_configs_conf = list(
   # --- Testes com 1 tratamento (S=1) ---
   `C1.1_S1_NoConf` = list(
-    n = 1000, treatment_times = 1,
+    n = 1000, treatment_times = 1, a_seq = 1, another_a_seq = 0,
     propensity_function_list = NULL,
     mean_baseline_covariates = MEAN_FUNCS,
     effects_covariates_from_A = FEEDBACK_NONE_S1,
@@ -87,7 +87,7 @@ scenario_configs_conf = list(
     treatment_effect = EFFECTS_A_ON_Y_S1
   ),
   `C1.2_S1_LowConf` = list(
-    n = 1000, treatment_times = 1, 
+    n = 1000, treatment_times = 1, a_seq = 1, another_a_seq = 0,
     propensity_function_list = list(PROP_LOW), 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_NONE_S1, 
@@ -95,7 +95,7 @@ scenario_configs_conf = list(
     treatment_effect = EFFECTS_A_ON_Y_S1
   ),
   `C1.3_S1_MedConf` = list(
-    n = 1000, treatment_times = 1, 
+    n = 1000, treatment_times = 1, a_seq = 1, another_a_seq = 0,
     propensity_function_list = list(PROP_MEDIUM), 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_NONE_S1, 
@@ -103,7 +103,7 @@ scenario_configs_conf = list(
     treatment_effect = EFFECTS_A_ON_Y_S1
   ),
   `C1.4_S1_HighConf` = list(
-    n = 1000, treatment_times = 1, 
+    n = 1000, treatment_times = 1, a_seq = 1, another_a_seq = 0,
     propensity_function_list = list(PROP_HIGH), 
     mean_baseline_covariates = MEAN_FUNCS, 
     effects_covariates_from_A = FEEDBACK_NONE_S1, 
@@ -170,73 +170,102 @@ validation_output = run_validation_suite(
   scenario_configs_conf
 )
 
+validation_output$summary_table
 validation_output$plots
 
-all_results = list()
-
-for (scenario_name in names(confouding_scenarios)) {
-  
-  cat(paste("\n>>> Analisando o cenário:", scenario_name, "<<<\n"))
-  
-  current_data = confouding_scenarios[[scenario_name]]
-  current_config = scenario_configs_conf[[scenario_name]]
-  
-  # Lógica de decisão: tratamento único ou sequencial?
-  if (length(current_config$treatment_times) > 1) {
-    
-    # --- Cenários Sequenciais (S=3) ---
-    all_results[[scenario_name]] = run_sequential_eckerluna_suite(
-      scenario_data = current_data,
-      scenario_config = current_config,
-      regime_a = current_config$a_seq,
-      regime_b = current_config$another_a_seq
+# --- ESTIMAÇÃO PARA MODELO DE ECKER E LUNA ---
+all_results_conf_ecker_luna = lapply(
+  names(confouding_scenarios),
+  function(name) {
+    cat(paste("\n>>> Analisando o cenário:", name, "<<<\n"))
+    run_sequential_eckerluna_suite(
+      scenario_data = confouding_scenarios[[name]],
+      scenario_config = scenario_configs_conf[[name]],
+      regime_a = scenario_configs_conf[[name]]$a_seq,
+      regime_b = scenario_configs_conf[[name]]$another_a_seq
     )
-    
-  } else {
-    
-    # --- Cenários de Tratamento Único (S=1) ---
-    all_results[[scenario_name]] = run_eckerluna_gam_suite(
-      scenario_data = current_data
-    )
-    
   }
-}
+)
+names(all_results_conf_ecker_luna) = names(confouding_scenarios)
 
-# --- 4. Verificando os Resultados (agora deve funcionar!) ---
-print(all_results$C1.1_S1_NoConf$metrics)
-print(all_results$C1.1_S1_NoConf$plot)
+# --- ESTIMAÇÃO PARA G-FORMULA
+all_results_conf_g_formula = lapply(
+  names(confouding_scenarios),
+  function(name) {
+    cat(paste("\n>>> Analisando o cenário com G-formula:", name, "<<<\n"))
+    run_gformula_suite(
+      scenario_data = confouding_scenarios[[name]],
+      scenario_config = scenario_configs_conf[[name]]
+    )
+  }
+)
+names(all_results_conf_g_formula) = names(confouding_scenarios)
 
-print(all_results$C1.2_S1_LowConf$metrics)
-print(all_results$C1.2_S1_LowConf$plot)
+# ---------  Verificando os Resultados ECKER E LUNA ---------
+print(all_results_conf_ecker_luna$C1.1_S1_NoConf$metrics)
+print(all_results_conf_ecker_luna$C1.1_S1_NoConf$plot)
 
-print(all_results$C1.3_S1_MedConf$metrics)
-print(all_results$C1.3_S1_MedConf$plot)
+print(all_results_conf_ecker_luna$C1.2_S1_LowConf$metrics)
+print(all_results_conf_ecker_luna$C1.2_S1_LowConf$plot)
 
-print(all_results$C1.4_S1_HighConf$metrics)
-print(all_results$C1.4_S1_HighConf$plot)
+print(all_results_conf_ecker_luna$C1.3_S1_MedConf$metrics)
+print(all_results_conf_ecker_luna$C1.3_S1_MedConf$plot)
 
-print(all_results$C1.5_S3_NoConf$metrics)
-print(all_results$C1.5_S3_NoConf$plot)
+print(all_results_conf_ecker_luna$C1.4_S1_HighConf$metrics)
+print(all_results_conf_ecker_luna$C1.4_S1_HighConf$plot)
 
-print(all_results$C1.6_S3_Conf_A1$metrics)
-print(all_results$C1.6_S3_Conf_A1$plot)
+print(all_results_conf_ecker_luna$C1.5_S3_NoConf$metrics)
+print(all_results_conf_ecker_luna$C1.5_S3_NoConf$plot)
 
-print(all_results$C1.7_S3_Conf_A2$metrics)
-print(all_results$C1.7_S3_Conf_A2$plot)
+print(all_results_conf_ecker_luna$C1.6_S3_Conf_A1$metrics)
+print(all_results_conf_ecker_luna$C1.6_S3_Conf_A1$plot)
 
-print(all_results$C1.8_S3_Conf_A3$metrics)
-print(all_results$C1.8_S3_Conf_A3$plot)
+print(all_results_conf_ecker_luna$C1.7_S3_Conf_A2$metrics)
+print(all_results_conf_ecker_luna$C1.7_S3_Conf_A2$plot)
 
-print(all_results$C1.9_S3_Conf_A2_A3$metrics)
-print(all_results$C1.9_S3_Conf_A2_A3$plot)
+print(all_results_conf_ecker_luna$C1.8_S3_Conf_A3$metrics)
+print(all_results_conf_ecker_luna$C1.8_S3_Conf_A3$plot)
+
+print(all_results_conf_ecker_luna$C1.9_S3_Conf_A2_A3$metrics)
+print(all_results_conf_ecker_luna$C1.9_S3_Conf_A2_A3$plot)
+
+# ---------  Verificando os Resultados G-FORMULA ---------
+print(all_results_conf_g_formula$C1.1_S1_NoConf$metrics)
+print(all_results_conf_g_formula$C1.1_S1_NoConf$plot)
+
+print(all_results_conf_g_formula$C1.2_S1_LowConf$metrics)
+print(all_results_conf_g_formula$C1.2_S1_LowConf$plot)
+
+print(all_results_conf_g_formula$C1.3_S1_MedConf$metrics)
+print(all_results_conf_g_formula$C1.3_S1_MedConf$plot)
+
+print(all_results_conf_g_formula$C1.4_S1_HighConf$metrics)
+print(all_results_conf_g_formula$C1.4_S1_HighConf$plot)
+
+print(all_results_conf_g_formula$C1.5_S3_NoConf$metrics)
+print(all_results_conf_g_formula$C1.5_S3_NoConf$plot)
+
+print(all_results_conf_g_formula$C1.6_S3_Conf_A1$metrics)
+print(all_results_conf_g_formula$C1.6_S3_Conf_A1$plot)
+
+print(all_results_conf_g_formula$C1.7_S3_Conf_A2$metrics)
+print(all_results_conf_g_formula$C1.7_S3_Conf_A2$plot)
+
+print(all_results_conf_g_formula$C1.8_S3_Conf_A3$metrics)
+print(all_results_conf_g_formula$C1.8_S3_Conf_A3$plot)
+
+print(all_results_conf_g_formula$C1.9_S3_Conf_A2_A3$metrics)
+print(all_results_conf_g_formula$C1.9_S3_Conf_A2_A3$plot)
+
 
 
 rm(
-  all_results, all_scenarios_data, cfg1, cfg2, cfg3, cfg4, cfg5,
-  concurrent_effects_on_Y, confouding_scenarios, current_config,
-  current_data, EFFECTS_A_ON_Y_S1, EFFECTS_A_ON_Y_S3,
-  EFFECTS_X_ON_Y, FEEDBACK_NONE_S1, FEEDBACK_NONE_S3,
-  global_params, GLOBAL_PARAMS, MEAN_FUNCS, mean_funcs_dynamic,
+  all_results_conf_ecker_luna, all_results_conf_g_formula,
+  cfg1, cfg2, cfg3, cfg4, cfg5, concurrent_effects_on_Y, 
+  confouding_scenarios, current_config, current_data, 
+  EFFECTS_A_ON_Y_S1, EFFECTS_A_ON_Y_S3, EFFECTS_X_ON_Y, 
+  FEEDBACK_NONE_S1, FEEDBACK_NONE_S3, global_params, 
+  GLOBAL_PARAMS, MEAN_FUNCS, mean_funcs_dynamic, 
   mean_funcs_static, scenario_configs, scenario_configs_conf,
   validation_output, scenario_name, TIME_GRID,
   PROP_HIGH, PROP_LOW, PROP_MEDIUM
