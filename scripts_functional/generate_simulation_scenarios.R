@@ -1,10 +1,18 @@
-generate_simulation_scenarios = function(scenario_configs, global_params = list()) {
+generate_simulation_scenarios = function(
+    scenario_configs, 
+    global_params = list()
+  ) {
   # Validação
-  if (missing(scenario_configs) || !is.list(scenario_configs) || length(scenario_configs) == 0) {
+  if (
+    missing(scenario_configs) || 
+    !is.list(scenario_configs) || 
+    length(scenario_configs) == 0
+    ) {
     stop("scenario_configs deve ser uma lista não vazia de configurações.")
   }
   
-  labels = if (!is.null(names(scenario_configs))) names(scenario_configs) else paste0("Cenário ", seq_along(scenario_configs))
+  labels = if (!is.null(names(scenario_configs))) 
+    names(scenario_configs) else paste0("Cenário ", seq_along(scenario_configs))
   
   scenarios = vector("list", length(scenario_configs))
   
@@ -15,12 +23,10 @@ generate_simulation_scenarios = function(scenario_configs, global_params = list(
     params = utils::modifyList(global_params, cfg_specific)
     
     # --- Geração das Curvas Individuais ---
-    baseline_list_heterogeneous = create_heterogeneous_baselines_advanced(
+    baseline_list_heterogeneous = create_intercept_heterogeneity(
       n = params$n,
       mean_funcs = params$mean_baseline_covariates,
-      intercept_sd = params$intercept_sd %||% 0.2,
-      scale_sd = params$scale_sd %||% 0.1,
-      slope_sd = params$slope_sd %||% 0.05
+      intercept_sd = params$intercept_sd %||% 0.2
     )
     
     # 1) Geração de X e tratamentos

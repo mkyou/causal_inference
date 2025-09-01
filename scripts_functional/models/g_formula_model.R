@@ -1,64 +1,62 @@
-#' @title (VERSÃO DEFINITIVA E CORRIGIDA) Ajusta Modelos para a G-Formula Funcional
-#' @description Prepara os dados (lags, variáveis de tratamento) e ajusta os
-#' modelos estruturais (GAMM para X, GAM para Y) com especificação correta.
+#' @title (VERSÃO FINAL) Ajusta Modelos para a G-Formula Funcional
+#' @description Ajusta os modelos estruturais (GAMM para X, GAM para Y) usando
+#' um modelo de intercepto e inclinação aleatórios para as covariáveis.
+#' @param observed_data A data.table com os dados observados de um cenário.
+#' @param scenario_config A configuração do cenário para obter os tempos de tratamento.
+#' @return Uma lista nomeada com todos os modelos ajustados.
+
+#' @title (VERSÃO FINAL E CORRETA) Ajusta Modelos para a G-Formula Funcional
+#' @description Usa uma especificação de GAM de coeficientes variantes (s(t, by=...))
+#' para estimar os efeitos funcionais dos tratamentos.
 
 fit_gformula_models = function(observed_data, scenario_config) {
   require(mgcv)
   
-  # --- 1. Preparar dados ---
-  model_data = copy(observed_data)
+  model_data = as.data.table(observed_data)
   cov_names = grep("^X[0-9]+$", names(model_data), value = TRUE)
   treatment_times = scenario_config$treatment_times
   
-  # Cria colunas explícitas para o status de tratamento A_1, A_2, ...
+  # Prepara as colunas A_s, representando a história de tratamento
   if (!is.null(treatment_times)) {
     for (s in treatment_times) {
-      treatment_status_s = model_data[t == s, .(id, A_s = A)]
-      setnames(treatment_status_s, "A_s", paste0("A_", s))
-      model_data = merge(model_data, treatment_status_s, by = "id", all.x = TRUE)
+      status = model_data[t == s, .(id, A_s = A)]
+      setnames(status, "A_s", paste0("A_", s))
+      model_data = merge(model_data, status, by = "id", all.x = TRUE)
       model_data[is.na(get(paste0("A_", s))), (paste0("A_", s)) := 0]
     }
   }
   
-  # --- CORREÇÃO FUNDAMENTAL: Criação dos Lags ---
-  # Precisamos dos lags tanto para os X quanto para o A (para o modelo de X)
-  lag_vars = c(cov_names, "A")
-  model_data[, paste0(lag_vars, "_lag1") := lapply(.SD, shift, n=1, type="lag"), .SDcols = lag_vars, by = id]
-  
-  # Remove a primeira observação de cada id (que agora tem NAs nos lags)
-  model_data = na.omit(model_data)
-  
-  treatment_terms = if (!is.null(treatment_times)) paste0("A_", treatment_times) else "1"
-  
-  # --- 2. Ajustar um modelo GAMM para cada covariável ---
+  # --- 1. Ajustar um modelo GAM para cada covariável ---
   confounder_models = list()
+  
+  # Termos de efeito funcional do tratamento (feedback), REGULARIZADOS com k=6
+  treatment_effect_terms = if (!is.null(treatment_times)) {
+    paste0("s(t, by = A_", treatment_times, ", k = 6)")
+  } else { "1" }
+  
   for (cov in cov_names) {
     cat(paste("Ajustando modelo para", cov, "\n"))
-    
-    # --- FÓRMULA CORRIGIDA ---
-    # Incluindo os lags das covariáveis como preditores suaves
-    lag_cov_smooth_terms = paste0("s(", cov_names, "_lag1)")
-    formula_text = paste(
-      cov, "~ s(t) + s(id, bs='re') +", 
-      paste(lag_cov_smooth_terms, collapse=" + "), "+", 
-      paste(treatment_terms, collapse=" + ")
+    # Omitimos s(id) e lags de X em favor de um modelo puramente funcional e robusto
+    formula_x = as.formula(
+      paste(cov, "~ s(t) +", paste(treatment_effect_terms, collapse=" + "))
     )
-    
-    confounder_models[[cov]] = bam(as.formula(formula_text), data = model_data, discrete = TRUE)
+    confounder_models[[cov]] = bam(formula_x, data = model_data,
+                                   discrete = TRUE, select = TRUE)
   }
   
-  # --- 3. Ajustar um modelo GAM para o desfecho Y ---
+  # --- 2. Ajustar um modelo GAM para o desfecho Y ---
   cat("Ajustando modelo para o desfecho Y\n")
   
-  # O modelo de Y usa os valores CONCORRENTES, então sua fórmula estava correta.
-  # Apenas garantindo que a variável A correta seja usada (não o lag).
-  cov_smooth_terms = paste0("s(", cov_names, ")")
-  # Para o modelo de Y, usamos A (concorrente), não A_lag1
-  formula_y = as.formula(paste("y ~ s(t) +", paste(cov_smooth_terms, collapse=" + "), "+ A"))
+  # SUA SUGESTÃO: Usando produtos tensores para modelar beta(t)X(t)
+  cov_effect_terms = paste0("te(t, ", cov_names, ", k = 10)")
   
-  outcome_model = bam(formula_y, data = model_data, discrete = TRUE)
+  formula_y = as.formula(
+    paste("y ~ s(t) +",
+          paste(cov_effect_terms, collapse = " + "), "+",
+          paste(treatment_effect_terms, collapse = " + "))
+  )
+  outcome_model = bam(formula_y, data = model_data, discrete = TRUE, select = TRUE)
   
-  # ... (resto da função, retornando a lista de modelos)
   return(list(
     confounder_models = confounder_models,
     outcome_model = outcome_model,
@@ -69,82 +67,56 @@ fit_gformula_models = function(observed_data, scenario_config) {
   ))
 }
 
-# NOTA: A função simulate_gformula_intervention também precisa de um pequeno ajuste
-# para usar A, e não A_lag1, ao prever Y. E precisa dos lags de X.
-# A implementação completa e correta das duas está nos arquivos que você já tem.
 
-
-
-
-#' @title (Corrigida) Simula uma Intervenção Contrafactual usando Modelos G-Formula
-#' @description Itera ao longo do tempo, usando os modelos ajustados para
-#' simular as trajetórias completas das covariáveis e do desfecho sob um
-#' regime de tratamento fixo.
-
-simulate_gformula_intervention = function(gformula_models, observed_data, scenario_config, intervention_regime) {
-  
-  # --- 1. Setup da Simulação ---
+#' @title (VERSÃO FINAL E DEFINITIVA) Simula Intervenção Contrafactual
+simulate_gformula_intervention = function(gformula_models, observed_data,
+                                          scenario_config, intervention_regime) {
   all_times = sort(unique(observed_data$t))
   ids = unique(observed_data$id)
   n_ids = length(ids)
   cov_names = names(gformula_models$confounder_models)
   treatment_times = scenario_config$treatment_times
   
-  # --- LÓGICA CORRIGIDA DE INICIALIZAÇÃO ---
-  # Inicializa a simulação com os valores do baseline, mas selecionando
-  # APENAS as colunas que serão de fato simuladas, descartando as extras.
-  sim_cols = c("id", "t", "A", cov_names, "y")
-  sim_data = observed_data[t == min(all_times), .SD, .SDcols = sim_cols]
-  # --- FIM DA CORREÇÃO ---
+  sim_data = observed_data[t == min(all_times),
+                           .SD, .SDcols = c("id", "t", "A", cov_names, "y")]
   
-  # Cria tabela para guardar a história de tratamento da simulação
-  treatment_history_sim = data.table(id = ids)
+  # Guarda a história de tratamento COMPLETA do regime
+  treatment_history = data.table(id = ids)
+  if (!is.null(treatment_times)) {
+    for (i in seq_along(treatment_times)) {
+      s = treatment_times[i]
+      treatment_history[, (paste0("A_", s)) := intervention_regime[i]]
+    }
+  }
   
-  # --- 2. Loop de Simulação Sequencial (sem alterações) ---
   for (t_idx in 2:length(all_times)) {
     current_t = all_times[t_idx]
-    
-    # --- 2a. Preparar o `newdata` para a predição em `current_t` ---
     newdata = data.table(id = ids, t = current_t)
     
-    if (ncol(treatment_history_sim) > 1) {
-      newdata = merge(newdata, treatment_history_sim, by = "id")
+    # Junta a história de tratamento COMPLETA, garantindo que A_1, A_2, etc. existam
+    if (ncol(treatment_history) > 1) {
+      newdata = merge(newdata, treatment_history, by = "id")
     }
     
-    s_index = which(treatment_times == current_t)
-    if (length(s_index) > 0) {
-      current_A = intervention_regime[s_index]
-      treatment_history_sim[, (paste0("A_", current_t)) := current_A]
-    } else {
-      current_A = 0
+    # Simula X(t)
+    for(cov in cov_names) {
+      pred = predict(gformula_models$confounder_models[[cov]],
+                     newdata = newdata)
+      newdata[, (cov) := pred + rnorm(n_ids, 0,
+                                      gformula_models$noise_sds$X[cov])]
     }
+    
+    # Intervém em A(t) CONCORRENTE
+    s_index = which(treatment_times == current_t)
+    current_A = if (length(s_index) > 0) intervention_regime[s_index] else 0
     newdata[, A := current_A]
     
-    if(!is.null(treatment_times)){
-      for(s in treatment_times) {
-        col_name = paste0("A_", s)
-        if(col_name %in% names(treatment_history_sim)) {
-          newdata[, (col_name) := treatment_history_sim[[col_name]]]
-        } else {
-          newdata[, (col_name) := 0]
-        }
-      }
-    }
-    
-    # --- 2b. Simular as Covariáveis X(t) ---
-    for(cov in cov_names) {
-      pred = predict(gformula_models$confounder_models[[cov]], newdata = newdata)
-      newdata[, (cov) := pred + rnorm(n_ids, 0, gformula_models$noise_sds$X[cov])]
-    }
-    
-    # --- 2c. Simular o Desfecho Y(t) ---
+    # Simula Y(t)
     pred_y = predict(gformula_models$outcome_model, newdata = newdata)
     newdata[, y := pred_y + rnorm(n_ids, 0, gformula_models$noise_sds$y)]
     
-    # Guarda os resultados simulados do tempo atual. Agora as colunas baterão.
     sim_data = rbind(sim_data, newdata[, .SD, .SDcols = names(sim_data)])
   }
-  
   return(sim_data)
 }
 
