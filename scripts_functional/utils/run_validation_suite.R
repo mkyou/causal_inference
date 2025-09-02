@@ -1,4 +1,4 @@
-#' @title (VERSÃO ATUALIZADA) Executa a Suíte Completa de Validação
+#' @title Executa a Suíte Completa de Validação
 #' @description Itera sobre todos os cenários, produzindo gráficos e
 #' uma tabela de resumo das validações estatisticamente robustas.
 #' @param all_scenarios_data A lista completa gerada por `generate_simulation_scenarios`.

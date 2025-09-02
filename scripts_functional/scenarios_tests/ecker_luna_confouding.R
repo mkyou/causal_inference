@@ -1,8 +1,6 @@
 source("scripts_functional/data_generation/confouding_scenario.R")
 source("scripts_functional/models/ecker_luna_model.R")
 
-validation_output$summary_table
-
 # --- ESTIMAÇÃO PARA MODELO DE ECKER E LUNA ---
 all_results_conf_ecker_luna = lapply(
   names(confouding_scenarios),

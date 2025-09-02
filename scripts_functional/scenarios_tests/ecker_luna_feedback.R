@@ -5,18 +5,18 @@ validation_output_fb$summary_table
 
 # --- ESTIMAÇÃO PARA MODELO DE ECKER E LUNA ---
 all_results_fb_ecker_luna = lapply(
-  names(fb_scenarios),
+  names(feedback_scenarios),
   function(name) {
     cat(paste("\n>>> Analisando o cenário:", name, "<<<\n"))
     run_sequential_eckerluna_suite(
-      scenario_data = fb_scenarios[[name]],
+      scenario_data = feedback_scenarios[[name]],
       scenario_config = scenario_configs_fb[[name]],
       regime_a = scenario_configs_fb[[name]]$a_seq,
       regime_b = scenario_configs_fb[[name]]$another_a_seq
     )
   }
 )
-names(all_results_fb_ecker_luna) = names(fb_scenarios)
+names(all_results_fb_ecker_luna) = names(feedback_scenarios)
 
 
 # --- Verificação com Estilo Tidyverse (purrr::iwalk) ---

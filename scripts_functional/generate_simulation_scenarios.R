@@ -26,7 +26,8 @@ generate_simulation_scenarios = function(
     baseline_list_heterogeneous = create_intercept_heterogeneity(
       n = params$n,
       mean_funcs = params$mean_baseline_covariates,
-      intercept_sd = params$intercept_sd %||% 0.2
+      intercept_sd = params$intercept_sd %||% 0.2,
+      slope_sd = params$slope_sd %||% 0.2
     )
     
     # 1) Geração de X e tratamentos
