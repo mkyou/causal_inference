@@ -54,11 +54,10 @@ MEAN_FUNCS_STATIC = list(
 )
 
 MEAN_FUNCS_DYNAMIC = list(
-  X1 = function(t) 1.0 + 0.5 * t,
-  X2 = function(t) 4.0 - 0.5 * t,
-  X3 = function(t) 1.0
+  X1 = function(t) 3.2 * t, 
+  X2 = function(t) 0.3 * sin(t), 
+  X3 = function(t) 1.5 * log(1 + 0.8*t)
 )
-
 TIME_GRID = seq(0, 10, by = 0.1)
 GLOBAL_PARAMS = list(
   time_grid = TIME_GRID, 
@@ -68,34 +67,33 @@ GLOBAL_PARAMS = list(
 )
 
 EFFECTS_A_ON_Y_S3 = list(
-  function(t, s) ifelse(t >= s, 2.0, 0),
-  function(t, s) ifelse(t >= s, 2.0, 0),
-  function(t, s) 0
+  function(t, s) ifelse(t >= s, 0.65 * (t - s) * exp(-1.2 * (t - s)), 0),
+  function(t, s) ifelse(t >= s, 0.55 * (t - s) * exp(-1.5 * (t - s)), 0),
+  function(t, s) ifelse(t >= s, -0.2 * (1 - exp(-1.0 * (t - s))), 0)
 )
 
 # -- Efeitos de X em Y (Versão "Killer") --
 EFFECTS_X_ON_Y = list(
-  X1 = function(t) 1.0,
-  X2 = function(t) -1.0, # X2 alto está associado a Y baixo
-  X3 = function(t) 0
+  X1 = function(t) 1.5 + 0.5 * t,
+  X2 = function(t) 2.0,
+  X3 = function(t) -1.0
 )
 
 # -- Funções de Propensão --
 PROP_MEDIUM = create_normalized_propensity_fun(
-  intercept = -1.0, coeffs_x = c(0.1, 1.5, 0.1)
+  intercept = -1.0, coeffs_x = c(1.5, 1.2, -1.0)
 )
 
 # -- Funções de Feedback --
 FEEDBACK_A1_MED_S3 = list(
   X1 = list(
-    function(t, s) 0, 
+    function(t, s) log(t + 0.001), 
     function(t, s) 0, 
     function(t, s) 0
   ),
   X2 = list(
-    # A1 diminui massivamente X2
+    function(t, s) ifelse(t > s, sqrt(t - s + 0.001)/4, 0),
     function(t, s) 0,
-    function(t, s) ifelse(t > s, 5, 0),
     function(t, s) 0
   ),
   X3 = list(function(t, s) 0, function(t, s) 0, function(t, s) 0)
@@ -108,8 +106,8 @@ FEEDBACK_A2_MED_S3 = list(
     function(t, s) 0
   ),
   X2 = list(
-    function(t, s) ifelse(t > s, 1.75, 0), # Efeito enorme e positivo
     function(t, s) 0,
+    function(t, s) ifelse(t > s, sqrt(t - s + 0.001), 0),
     function(t, s) 0
   ),
   X3 = list(
@@ -121,14 +119,14 @@ FEEDBACK_A2_MED_S3 = list(
 
 FEEDBACK_ALL_MED_S3 = list(
   X1 = list(
-    function(t, s) ifelse(t > s, 3.5, 0), # A1 -> X1: efeito forte e constante
+    function(t, s) ifelse(t > s, -3.5, 0), # A1 -> X1: efeito forte e constante
     function(t,s) ifelse(t>s, 1.5, 0), # A2 -> X1: efeito forte e constante
     function(t,s) 0
   ),
   X2 = list(
-    function(t, s) ifelse(t > s, -3.5, 0),# A1 -> X2
-    function(t,s) 0,
-    function(t,s) ifelse(t>s, 1.0, 0) # A3 -> X2
+    function(t, s) ifelse(t > s, 3.5, 0),# A1 -> X2
+    function(t,s) ifelse(t>s, 1.0, 0), # A2 -> X2,
+    function(t,s) 0
   ),
   X3 = list(
     function(t, s) 0, 

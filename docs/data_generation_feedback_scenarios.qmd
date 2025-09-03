@@ -1,0 +1,74 @@
+---
+title: "Descrição dos Cenários de Simulação: Teste de Robustez ao Feedback"
+author: "Moisés Augusto"
+format: pdf
+editor: visual
+---
+
+# Descrição dos Cenários de Simulação: Teste de Robustez ao Feedback (A → X)
+
+Este documento detalha a estrutura de um conjunto de cenários de simulação projetados para investigar o impacto do **feedback causal**. O feedback ocorre quando um tratamento em um ponto no tempo, $A(s)$, influencia a trajetória futura de uma ou mais covariáveis, $X(t)$ para $t > s$.
+
+O objetivo principal destes cenários é isolar este mecanismo (`A → X`), garantindo que **não haja confundimento** (ou seja, a trajetória das covariáveis não influencia a decisão de tratamento: `X → A` não acontece).
+
+------------------------------------------------------------------------
+
+## Componentes Comuns do PGD
+
+Todos os cenários descritos abaixo são construídos a partir de um conjunto comum de componentes funcionais.
+
+### 1. Efeito das Covariáveis no Desfecho (`X → Y`)
+
+A relação entre as covariáveis e o desfecho é funcional, dada por `EFFECTS_X_ON_Y`:
+
+-   $X_1$: Possui um efeito crescente e côncavo sobre $Y$, modelado por uma função logarítmica: $3 \cdot \log(1 + (t/5)\pi)$.
+
+-   $X_2$: Exerce um efeito positivo e decrescente (em sua taxa de crescimento) sobre $Y$, modelado por: $1.5 + 0.3\sqrt{t}$.
+
+-   $X_3$: Tem um efeito oscilatório sobre $Y$, modelado por uma função cosseno: $2.5 \cdot \cos(0.8t)$.
+
+### 2. Efeito Direto do Tratamento no Desfecho (`A → Y`)
+
+O efeito direto dos tratamentos sobre o desfecho é projetado para ser complexo, com tratamentos subsequentes tendo efeitos qualitativamente diferentes:
+
+-    **`EFFECTS_A_ON_Y_S1`**: Um único tratamento causa um efeito positivo em forma de "corcova" que decai com o tempo.
+
+-    **`EFFECTS_A_ON_Y_S3`**: $A(1)$ e $A(2)$ causam efeitos positivos em forma de "corcova" com diferentes magnitudes e taxas de decaimento. $A(3)$ causa um efeito **negativo e sustentado**, que se aproxima de um platô. O efeito total do regime "sempre tratar" é, portanto, uma sobreposição complexa de picos positivos e uma tendência negativa posterior.
+
+### 3. Tipos de Trajetórias Base das Covariáveis
+
+Existem dois "mundos" base para a evolução das covariáveis:
+
+-   **`MEAN_FUNCS_STATIC`**: As trajetórias médias das covariáveis são constantes (planas). Qualquer variação observada em $X$ ao longo do tempo se deve unicamente aos efeitos aleatórios individuais ou ao feedback do tratamento.
+
+-   **`MEAN_FUNCS_DYNAMIC`**: As trajetórias médias das covariáveis evoluem naturalmente ao longo do tempo com formas funcionais distintas (linear, senoidal, logarítmica). O feedback do tratamento atua como um "choque" sobre esta evolução natural.
+
+------------------------------------------------------------------------
+
+## Descrição dos Cenários de Simulação
+
+Os cenários estão agrupados pela presença de tratamento único (`S=1`) ou múltiplos (`S=3`), e pelo tipo de trajetória base das covariáveis.
+
+### Grupo 1: Cenários com Tratamento Único (S=1)
+
+Nestes cenários, um único tratamento é aplicado em $t=1$. O foco é isolar o impacto de um único evento de feedback.
+
+-   **`C2.1_S1_NoFB_Static`**: Este é o cenário de referência mais simples. As covariáveis são estáticas por natureza e não há feedback. O único caminho causal é o efeito direto `A(1) → Y`.
+
+-   **`C2.2_S1_MedFB_Static` & `C2.3_S1_HighFB_Static`**: Nestes cenários, o feedback é ativado. O tratamento $A(1)$ agora causa uma mudança na trajetória futura das covariáveis $X_1$ (e $X_2$ no caso `High`). Isso abre um novo caminho causal **indireto**: $A(1) \rightarrow X(t) \rightarrow Y(t)$. A força desse caminho é variada entre "médio" e "alto".
+
+-   **`C2.7_S1_NoFB_Dyna` & `C2.8_S1_MedFB_Dyna`**: Estes cenários replicam a lógica acima, mas em um mundo onde as covariáveis já possuem uma evolução dinâmica natural. O feedback, quando presente (`C2.8`), age como um choque que altera temporariamente ou permanentemente essa trajetória natural.
+
+### Grupo 2: Cenários com Tratamentos Múltiplos (S=3)
+
+Nestes cenários, os tratamentos ocorrem em $t=1, 2, 3$. A complexidade causal aumenta, pois o feedback de um tratamento precoce pode alterar o estado do sistema para tratamentos futuros.
+
+-   **`C2.4_S3_NoFB_Static` & `C2.9_S3_NoFB_Dyna`**: Cenários de referência sem feedback. Os três tratamentos são eventos cujos efeitos em $Y$ são aditivos. O sistema não tem "memória" da história de tratamento através das covariáveis.
+
+-   **`C2.5_S3_FB_A1_Static` & `C2.10_S3_FB_A1_Dyna`**: O feedback é ativado apenas para o primeiro tratamento, $A(1)$.
+
+    -   **Problema Causal:** $A(1)$ agora tem consequências de longo prazo ao alterar a trajetória de $X_1$. Isso significa que o efeito do sistema no momento em que $A(2)$ e $A(3)$ são aplicados é diferente para aqueles que receberam $A(1)$ versus aqueles que não receberam. O efeito total não é mais simplesmente aditivo, pois os efeitos de $A(2)$ e $A(3)$ ocorrem em um "contexto" (definido por $X$) que foi modificado por $A(1)$.
+
+-   **`C2.6_S3_FB_A2_A3_Static`**: O feedback é ativado para os tratamentos posteriores, $A(2)$ e $A(3)$.
+
+    -   **Problema Causal:** A dinâmica do sistema é alterada no meio do processo. A história de tratamento até $t=2$ influencia a evolução futura das covariáveis, criando dependências temporais ainda mais complexas. O estado do sistema em $t=3$ agora depende da sequência de tratamentos $\{A(1), A(2)\}$.

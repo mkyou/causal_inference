@@ -24,7 +24,7 @@ create_intercept_heterogeneity = function(
   
   random_slope = replicate(
     num_covariates, 
-    rnorm(n, 0, intercept_sd), 
+    rnorm(n, 1, intercept_sd), 
     simplify = FALSE
   )
 
