@@ -1,3 +1,26 @@
+#' @title Gera Desfecho Funcional com Efeitos Históricos das Covariáveis
+#' @description A partir de um conjunto de dados simulado (geralmente de
+#'   \code{generate_confounder_pointwise}), calcula a trajetória do desfecho
+#'   Y(t). Este modelo assume que o efeito das covariáveis sobre o desfecho é
+#'   **histórico**, ou seja, Y(t) depende de toda a trajetória passada de
+#'   X(u) para u <= t.
+#'
+#' @param dt O data.table no formato "long" gerado por
+#'   \code{generate_confounder_pointwise}.
+#' @param base_function Uma função que define a trajetória de base do desfecho,
+#'   \eqn{\mu_Y(t)}.
+#' @param effects_function_list Lista de funções para o efeito direto do
+#'   tratamento A(s) em Y(t).
+#' @param covariates_historical_effect_list Lista de funções de dois argumentos
+#'   \eqn{\gamma_k(t, u)} que definem o efeito da covariável X_k(u) no
+#'   desfecho Y(t).
+#' @param noise_sd Desvio padrão do ruído branco adicionado ao desfecho.
+#' @param return_format Formato do output: "long", "wide", ou "both".
+#' @param treatment_times Vetor com os tempos exatos de tratamento.
+#'
+#' @return Um objeto com os dados de entrada e as colunas adicionais para os
+#'   desfechos observados (y) e contrafactuais (a_y, another_a_y).
+#'
 generate_y_historical = function(
     dt,
     base_function,

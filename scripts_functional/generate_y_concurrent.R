@@ -1,3 +1,25 @@
+#' @title Gera Desfecho Funcional com Efeitos Concorrentes das Covariáveis
+#' @description A partir de um conjunto de dados simulado (geralmente de
+#'   \code{generate_confounder_pointwise}), calcula a trajetória do desfecho
+#'   Y(t). Este modelo assume que o efeito das covariáveis X(t) sobre o
+#'   desfecho Y(t) é **concorrente**, ou seja, depende apenas do valor da
+#'   covariável no mesmo ponto do tempo t.
+#'
+#' @param dt O data.table no formato "long" gerado por
+#'   \code{generate_confounder_pointwise}.
+#' @param base_function Uma função que define a trajetória de base do desfecho,
+#'   \eqn{\mu_Y(t)}.
+#' @param effects_function_list Lista de funções para o efeito direto do
+#'   tratamento A(s) em Y(t).
+#' @param covariates_concurrent_effect_list Lista de funções que definem o
+#'   efeito concorrente \eqn{\delta_k(t)} de cada covariável X_k(t) em Y(t).
+#' @param noise_sd Desvio padrão do ruído branco adicionado ao desfecho.
+#' @param return_format Formato do output: "long", "wide", ou "both".
+#' @param treatment_times Vetor com os tempos exatos de tratamento.
+#'
+#' @return Um objeto com os dados de entrada e as colunas adicionais para os
+#'   desfechos observados (y) e contrafactuais (a_y, another_a_y).
+#'
 generate_y_concurrent = function(
     dt, 
     base_function,

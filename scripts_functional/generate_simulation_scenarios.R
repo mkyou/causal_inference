@@ -23,7 +23,7 @@ generate_simulation_scenarios = function(
     params = utils::modifyList(global_params, cfg_specific)
     
     # --- Geração das Curvas Individuais ---
-    baseline_list_heterogeneous = create_intercept_heterogeneity(
+    baseline_list_heterogeneous = create_baseline_heterogeneity(
       n = params$n,
       mean_funcs = params$mean_baseline_covariates,
       intercept_sd = params$intercept_sd %||% 0.2,

@@ -9,7 +9,7 @@ source("scripts_functional/generate_y_historical.R")
 source("scripts_functional/generate_y_concurrent.R")
 source("scripts_functional/generate_confounder_pointwise.R")
 source("scripts_functional/generate_simulation_scenarios.R")
-source("scripts_functional/create_intercept_heterogeneity.R")
+source("scripts_functional/create_baseline_heterogeneity.R")
 
 source("scripts_functional/utils/plot_scenario_effects.R")
 source("scripts_functional/utils/plot_scenario_trajectories.R")

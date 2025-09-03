@@ -9,7 +9,7 @@ source("scripts_functional/generate_y_historical.R")
 source("scripts_functional/generate_y_concurrent.R")
 source("scripts_functional/generate_confounder_pointwise.R")
 source("scripts_functional/generate_simulation_scenarios.R")
-source("scripts_functional/create_intercept_heterogeneity.R")
+source("scripts_functional/create_baseline_heterogeneity.R")
 
 source("scripts_functional/utils/plot_scenario_effects.R")
 source("scripts_functional/utils/plot_scenario_trajectories.R")
@@ -60,7 +60,7 @@ EFFECTS_A_ON_Y_S3 = list(
 EFFECTS_X_ON_Y = list(
   X1 = function(t) 3 * log(1 + (t / 5) * pi),
   X2 = function(t) 1.5 + 0.3 * sqrt(t),
-  X3 = function(t) 2.5 * cos(0.8 * t)
+  X3 = function(t) 2.5 - cos(0.8 * t)
 )
 
 # -- Funções de Feedback (A -> X), o foco deste script --

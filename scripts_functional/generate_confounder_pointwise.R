@@ -1,3 +1,32 @@
+#' @title Gera Covariáveis Longitudinais com Confundimento Variante no Tempo
+#' @description Simula as trajetórias de múltiplas covariáveis funcionais ao
+#'   longo do tempo para 'n' indivíduos. O processo permite a inclusão de
+#'   feedback do tratamento (tratamentos passados afetam covariáveis futuras) e
+#'   a atribuição de tratamento dependente da história das covariáveis,
+#'   induzindo o confundimento.
+#'
+#' @param n Número de indivíduos.
+#' @param effects_function_list Lista de listas de funções que definem o efeito
+#'   do tratamento A(s) nas covariáveis em tempos t > s.
+#' @param p_treat Probabilidade de tratamento em cada ponto de tempo, usada
+#'   quando \code{propensity_function_list} é NULL.
+#' @param noise_sd Desvio padrão do ruído branco adicionado à trajetória de
+#'   cada covariável em cada ponto de tempo.
+#' @param time_grid Vetor numérico definindo a grade de tempo para a simulação.
+#' @param baseline_function_list Lista de listas de funções de base individuais,
+#'   tipicamente gerada por \code{create_baseline_heterogeneity}.
+#' @param propensity_function_list Lista de funções que calculam a
+#'   probabilidade de tratamento com base na história das covariáveis.
+#' @param a_seq,another_a_seq Vetores definindo regimes de tratamento
+#'   contrafactuais a serem simulados.
+#' @param return_format Formato do output: "long", "wide", ou "both".
+#' @param treatment_times Vetor especificando os tempos exatos onde o
+#'   tratamento pode ser administrado.
+#'
+#' @return Um objeto contendo os dados simulados no formato especificado.
+#'   Inclui as trajetórias observadas e contrafactuais para tratamentos (A) e
+#'   covariáveis (X).
+#'
 generate_confounder_pointwise = function(
     n, 
     effects_function_list, 
