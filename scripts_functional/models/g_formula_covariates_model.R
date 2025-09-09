@@ -59,17 +59,27 @@ fit_covariate_models = function(
   
   for (cov_name in cov_to_model) {
     
+    # Em vez de um intercepto s(t) e um desvio s(t, by=I(A*...)),
+    # modelamos uma trajetória s(t) para o grupo não tratado (A_s=0)
+    # e uma trajetória s(t) separada para o grupo tratado (A_s=1).
+    # O mgcv faz isso automaticamente quando 'by' é um fator.
+    
     treatment_effects_formula = paste(
       sapply(treatment_times, function(s) {
-        paste0("s(t, by = I(A_s", s, " * (t >= ", s, ")))")
+        # Usamos a versão FATORIAL da variável de tratamento
+        A_var_factor = paste0("A_s", s, "_factor")
+        # Esta fórmula estima uma suave de referência (para A_s=0) e uma
+        # suave de diferença (para A_s=1), o que é mais estável.
+        paste0("s(t, by = ", A_var_factor, ")")
       }),
       collapse = " + "
     )
     
-    base_formula = "s(t, k = 15)"
-    
+    # O intercepto é incluído para garantir que a média seja zero para as suaves.
+    # O termo s(t) principal não é mais necessário, pois as suaves por fator
+    # já capturam a tendência temporal para cada grupo.
     model_formula_str = paste(
-      cov_name, "~", base_formula, "+", treatment_effects_formula
+      cov_name, "~", treatment_effects_formula
     )
     
     model_formula = as.formula(model_formula_str)

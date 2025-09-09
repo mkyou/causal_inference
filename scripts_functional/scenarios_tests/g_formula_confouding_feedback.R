@@ -18,24 +18,77 @@ all_results_comb_g_formula = lapply(
     run_full_gformula_suite(
       scenario_data = combined_scenarios[[name]],
       scenario_config = scenario_configs_comb[[name]],
-      covariate_model_type = "functional"
+      scenario_name = name
     )
   }
 )
 names(all_results_comb_g_formula) = names(combined_scenarios)
 
-
-# --- Verificação com Estilo Tidyverse (purrr::iwalk) ---
-iwalk(all_results_comb_g_formula, ~{
+# --- Verificação Robusta e Visualmente Aprimorada ---
+purrr::iwalk(all_results_comb_g_formula, ~{
   
-  cat("\n=====================================================\n")
-  cat(">>> Análise do Cenário:", .y, "\n")
-  cat("=====================================================\n\n")
+  # Cabeçalho principal para o cenário
+  cat("\n\n===========================================================\n")
+  cat(">>> ANÁLISE DO CENÁRIO:", .y, "\n")
+  cat("===========================================================\n")
   
-  print(.x$metrics)
-  print(.x$plot)
+  # 1. VALIDAÇÃO DAS COVARIÁVEIS (Iteração dinâmica)
+  # -----------------------------------------------------------
+  cat("\n\n--- 1. AVALIAÇÃO DAS COVARIÁVEIS ---\n")
   
-  readline(prompt = "Pressione [enter] para ver o próximo cenário...")
+  # Pega os nomes das covariáveis dinamicamente dos resultados
+  cov_names = names(.x$covariate_validation)
+  
+  if (length(cov_names) > 0) {
+    for (cov in cov_names) {
+      cat("\n---------------------------------------------------\n")
+      cat("--> Covariável:", cov, "\n")
+      cat("---------------------------------------------------\n")
+      
+      # Regime A ('sempre tratar')
+      cat("\n  - Regime 'Sempre Tratar' (a_seq):\n")
+      print(.x$covariate_validation[[cov]]$a_seq$metrics)
+      print(.x$covariate_validation[[cov]]$a_seq$plot)
+      
+      # Regime B ('nunca tratar')
+      cat("\n  - Regime 'Nunca Tratar' (another_a_seq):\n")
+      print(.x$covariate_validation[[cov]]$another_a_seq$metrics)
+      print(.x$covariate_validation[[cov]]$another_a_seq$plot)
+    }
+  } else {
+    cat("\nNenhuma validação de covariável encontrada.\n")
+  }
+  
+  # 2. VALIDAÇÃO DO DESFECHO (Y)
+  # -----------------------------------------------------------
+  cat("\n\n--- 2. AVALIAÇÃO DO DESFECHO (Y) ---\n")
+  
+  # Ajuste nos dados observados
+  cat("\n  - Ajuste vs. Observado:\n")
+  print(.x$outcome_validation$observed_fit$metrics)
+  print(.x$outcome_validation$observed_fit$plot)
+  
+  # Simulação vs. Verdadeiro (Regime A)
+  cat("\n  - Simulado vs. Verdadeiro (Regime 'Sempre Tratar'):\n")
+  print(.x$outcome_validation$a_seq$metrics)
+  print(.x$outcome_validation$a_seq$plot)
+  
+  # Simulação vs. Verdadeiro (Regime B)
+  cat("\n  - Simulado vs. Verdadeiro (Regime 'Nunca Tratar'):\n")
+  # Corrigido o erro de digitação de 'outcole_validation' para 'outcome_validation'
+  print(.x$outcome_validation$another_a_seq$metrics)
+  print(.x$outcome_validation$another_a_seq$plot)
+  
+  # 3. VALIDAÇÃO FINAL DO EFEITO CAUSAL
+  # -----------------------------------------------------------
+  cat("\n\n--- 3. AVALIAÇÃO FINAL: EFEITO CAUSAL ---\n\n")
+  
+  # Corrigido o caminho para as métricas e plot causal
+  print(.x$causal_validation$metrics)
+  print(.x$causal_validation$plot)
+  
+  # Pausa para o próximo cenário
+  readline(prompt = "\n\n>>> Pressione [enter] para ver o próximo cenário...")
 })
 
 
