@@ -37,13 +37,10 @@ prepare_gformula_data = function(dt_long, treatment_times) {
   return(dt_prepared)
 }
 
-#' @title Ajusta Modelos GAM para um Subconjunto de Covariáveis
-#' @description Ajusta o modelo GAM simplificado para cada covariável em uma
-#'   lista especificada.
-#' @param prepared_data O data.table da função `prepare_gformula_data`.
-#' @param treatment_times Vetor numérico com os tempos de tratamento.
-#' @param cov_to_model Vetor com os nomes das covariáveis a modelar.
-#' @return Uma lista nomeada contendo um modelo 'bam' para cada covariável.
+#' @title Ajusta Modelos GAM para Covariáveis (VERSÃO DEFINITIVA E ROBUSTA)
+#' @description Usa bases de suavização distintas para a tendência de base (bs="cr")
+#'   e os efeitos do tratamento (bs="tp"), garantindo estabilidade numérica e
+#'   um ajuste preciso para ambos os regimes contrafactuais.
 fit_covariate_models = function(
     prepared_data, 
     treatment_times, 
@@ -53,34 +50,33 @@ fit_covariate_models = function(
   fitted_models = list()
   
   cat(paste0(
-    "Ajustando modelos GAM (simplificado) para: ", 
+    "Ajustando modelos GAM (com bases distintas) para: ", 
     paste(cov_to_model, collapse=", "), "\n"
   ))
   
   for (cov_name in cov_to_model) {
     
-    # Em vez de um intercepto s(t) e um desvio s(t, by=I(A*...)),
-    # modelamos uma trajetória s(t) para o grupo não tratado (A_s=0)
-    # e uma trajetória s(t) separada para o grupo tratado (A_s=1).
-    # O mgcv faz isso automaticamente quando 'by' é um fator.
+    # --- INÍCIO DA MUDANÇA PRINCIPAL ---
     
+    # Define a fórmula da linha de base com uma base de spline cúbica,
+    # que é ótima para tendências gerais. Aumentamos 'k' para mais flexibilidade.
+    base_formula = 's(t, bs = "cr", k = 30)'
+    
+    # Define os efeitos do tratamento com uma base de thin plate spline,
+    # que é um bom padrão para desvios. 'k' pode ser menor aqui.
     treatment_effects_formula = paste(
       sapply(treatment_times, function(s) {
-        # Usamos a versão FATORIAL da variável de tratamento
-        A_var_factor = paste0("A_s", s, "_factor")
-        # Esta fórmula estima uma suave de referência (para A_s=0) e uma
-        # suave de diferença (para A_s=1), o que é mais estável.
-        paste0("s(t, by = ", A_var_factor, ")")
+        paste0('s(t, bs = "tp", k = 10, by = I(A_s', s, ' * (t >= ', s, ')))')
       }),
       collapse = " + "
     )
     
-    # O intercepto é incluído para garantir que a média seja zero para as suaves.
-    # O termo s(t) principal não é mais necessário, pois as suaves por fator
-    # já capturam a tendência temporal para cada grupo.
+    # A fórmula combina a linha de base estável com os desvios bem definidos.
     model_formula_str = paste(
-      cov_name, "~", treatment_effects_formula
+      cov_name, "~", base_formula, "+", treatment_effects_formula
     )
+    
+    # --- FIM DA MUDANÇA PRINCIPAL ---
     
     model_formula = as.formula(model_formula_str)
     
@@ -88,7 +84,9 @@ fit_covariate_models = function(
       model_formula,
       data = prepared_data,
       discrete = TRUE,
-      select = TRUE
+      # 'select = TRUE' continua sendo importante para regularizar os termos
+      select = TRUE,
+      method = "fREML"
     )
   }
   
@@ -97,7 +95,7 @@ fit_covariate_models = function(
 }
 
 
-#' @title Simula Trajetórias Contrafactuais de Covariáveis (G-Formula)
+#' @title Simula Trajetórias Contrafactuais (VERSÃO ATUALIZADA)
 simulate_counterfactual_trajectories = function(
     fitted_models, 
     original_data,
@@ -108,19 +106,30 @@ simulate_counterfactual_trajectories = function(
   original_ids = unique(original_data$id)
   pred_data = CJ(id = original_ids, t = unique(original_data$t))
   
-  pred_data[, id := factor(id, levels = original_ids)]
-  
+  # Adiciona as colunas do regime para construir a história
+  A_vars = paste0("A_s", treatment_times)
   for (i in seq_along(treatment_times)) {
-    s = treatment_times[i]
-    regime_val = regime[i]
-    A_var_name = paste0("A_s", s)
-    pred_data[, (A_var_name) := regime_val]
+    pred_data[, (A_vars[i]) := regime[i]]
   }
   
+  # --- CRIA A MESMA COLUNA 'history' NOS DADOS DE PREDIÇÃO ---
+  pred_data[, history := "H_Pre"]
+  sorted_times = sort(treatment_times)
+  for (i in seq_along(sorted_times)) {
+    s_current = sorted_times[i]
+    s_next = if (i < length(sorted_times)) sorted_times[i+1] else Inf
+    
+    history_values_for_regime = paste("H", paste(regime[1:i], collapse="_"), sep="_")
+    
+    pred_data[t >= s_current & t < s_next, history := history_values_for_regime]
+  }
+  
+  pred_data[, history := as.factor(history)]
+  
+  # Simulação
   simulated_dt = pred_data[, .(id, t)]
   
   for (cov_name in names(fitted_models)) {
-    
     predictions = predict(
       fitted_models[[cov_name]],
       newdata = pred_data
@@ -128,7 +137,6 @@ simulate_counterfactual_trajectories = function(
     simulated_dt[, (paste0(cov_name, "_sim")) := predictions]
   }
   
-  # CORRIGIDO: Converte 'id' de volta para numérico para evitar erros de merge
   simulated_dt[, id := as.numeric(as.character(id))]
   return(simulated_dt)
 }

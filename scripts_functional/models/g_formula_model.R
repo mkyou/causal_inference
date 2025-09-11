@@ -1,14 +1,18 @@
-
 library(mgcv)
 library(ggplot2)
 library(data.table)
 
-# Carrega as funções de modelagem das covariáveis
+# Carrega as funções de modelagem das covariáveis.
+# Certifique-se de que este script contém a versão final de fit_covariate_models
+# (com bs="cr" e bs="tp") e as outras funções auxiliares.
 source("scripts_functional/models/g_formula_covariates_model.R")
+
+# ===================================================================
+# FUNÇÕES AUXILIARES (VERSÕES FINAIS E CORRIGIDAS)
+# ===================================================================
 
 #' @title Ajusta o Modelo GAM para o Desfecho Y
 fit_outcome_model = function(dt_long, treatment_times, return_prepared_data = FALSE) {
-  cat("Ajustando o modelo para o desfecho Y...\n")
   prepared_data = prepare_gformula_data(dt_long, treatment_times)
   cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
   
@@ -29,14 +33,10 @@ fit_outcome_model = function(dt_long, treatment_times, return_prepared_data = FA
     covariate_interaction_effects
   )
   
-  cat("Fórmula do modelo de desfecho:\n", model_formula_str, "\n")
-  
   outcome_model = bam(
     as.formula(model_formula_str), data = prepared_data,
     discrete = TRUE, select = TRUE, method = "fREML"
   )
-  
-  cat("Ajuste do modelo de desfecho concluído.\n")
   
   if (return_prepared_data) {
     return(list(model = outcome_model, data = prepared_data))
@@ -45,19 +45,17 @@ fit_outcome_model = function(dt_long, treatment_times, return_prepared_data = FA
   }
 }
 
-#' @title Prevê Desfechos Contrafactuais (VERSÃO CORRIGIDA E SIMPLIFICADA)
+#' @title Prevê Desfechos Contrafactuais (VERSÃO FINAL E SIMPLIFICADA)
 predict_potential_outcomes = function(outcome_model, simulated_covariates, treatment_times, regime) {
   pred_data = copy(simulated_covariates)
   
-  # Encontra todas as colunas de covariáveis simuladas (ex: 'a_X1_pred', 'another_a_X2_pred')
-  sim_cov_names = grep("^(a_|another_a_)X[0-9]+_pred$", names(pred_data), value = TRUE)
+  # A entrada é 'simulated_covariates' com colunas como 'X1_sim', 'X2_sim'.
+  # O modelo de desfecho espera 'X1', 'X2'. Esta é a única renomeação necessária.
+  sim_names = names(pred_data)[grep("_sim$", names(pred_data))]
   
-  # Se encontrou alguma, renomeia para o nome base que o modelo de desfecho espera (ex: 'X1', 'X2')
-  if (length(sim_cov_names) > 0) {
-    # Remove os prefixos ('a_', 'another_a_') e o sufixo ('_pred') de uma só vez
-    new_cov_names = gsub("^(a_|another_a_)|_pred$", "", sim_cov_names)
-    
-    data.table::setnames(pred_data, old = sim_cov_names, new = new_cov_names)
+  if (length(sim_names) > 0) {
+    new_names = gsub("_sim$", "", sim_names)
+    data.table::setnames(pred_data, old = sim_names, new = new_names)
   }
   
   # Adiciona as colunas do regime de tratamento
@@ -74,72 +72,119 @@ predict_potential_outcomes = function(outcome_model, simulated_covariates, treat
   return(data.table(id = pred_data$id, t = pred_data$t, y_pred = predictions))
 }
 
-#' @title Executa a Suíte Completa de Validação da G-Formula ("Super Validador")
-run_full_gformula_suite = function(scenario_data, scenario_config, scenario_name) {
+
+# ===================================================================
+# FUNÇÃO PRINCIPAL COM CROSS-FITTING (FLUXO LIMPO)
+# ===================================================================
+
+#' @title Executa a Suíte Completa da G-Formula com Cross-Fitting ("Super Validador v5.0")
+run_full_gformula_suite = function(
+    scenario_data, 
+    scenario_config, 
+    scenario_name,
+    k_folds = 5
+) {
   
-  # --- PASSO 1: G-FORMULA CORE (MODELAGEM E PREDIÇÃO) ---
-  cat(paste("\n--- Iniciando G-Formula para o cenário:", scenario_name, "---\n"))
+  cat(paste("\n--- Iniciando G-Formula com Cross-Fitting (K=", k_folds, ") para o cenário:", scenario_name, "---\n"))
   
-  cov_results = run_gformula_validation_suite(scenario_data, scenario_config)
+  all_ids = unique(scenario_data$outcome$long$id)
+  if (length(all_ids) < k_folds) stop("Número de indivíduos menor que k_folds.")
+  set.seed(123) 
+  id_folds = data.table(id = all_ids, fold = sample(1:k_folds, length(all_ids), replace = TRUE))
   
-  outcome_model_fit = fit_outcome_model(
-    scenario_data$outcome$long, 
-    scenario_config$treatment_times, 
-    return_prepared_data = TRUE
-  )
-  outcome_model = outcome_model_fit$model
+  all_fold_predictions = list()
   
-  y_pred_a = predict_potential_outcomes(
-    outcome_model, cov_results$simulations$a_seq,
-    scenario_config$treatment_times, scenario_config$a_seq
-  )
-  y_pred_another_a = predict_potential_outcomes(
-    outcome_model, cov_results$simulations$another_a_seq,
-    scenario_config$treatment_times, scenario_config$another_a_seq
-  )
+  # --- INÍCIO DO LOOP DE CROSS-FITTING ---
+  for (k in 1:k_folds) {
+    cat(paste("\n--- Processando Fold", k, "/", k_folds, "---\n"))
+    
+    train_ids = id_folds[fold != k, id]
+    predict_ids = id_folds[fold == k, id]
+    
+    train_data_conf = scenario_data$confounders[id %in% train_ids]
+    train_data_outcome = scenario_data$outcome$long[id %in% train_ids]
+    predict_data_conf = scenario_data$confounders[id %in% predict_ids]
+    
+    # --- PASSO 1: AJUSTAR MODELOS (SOMENTE NOS DADOS DE TREINO) ---
+    
+    # 1.1 Ajustar modelos de covariáveis
+    prepared_train_data = prepare_gformula_data(train_data_conf, scenario_config$treatment_times)
+    cov_names_to_model = grep("^X[0-9]+$", names(train_data_conf), value = TRUE)
+    
+    cov_models_train = fit_covariate_models(
+      prepared_train_data,
+      scenario_config$treatment_times,
+      cov_names_to_model
+    )
+    
+    # 1.2 Ajustar Modelo de Desfecho
+    outcome_model_train = fit_outcome_model(
+      train_data_outcome, 
+      scenario_config$treatment_times
+    )
+    
+    # --- PASSO 2: SIMULAR E PREVER (PARA DADOS DE PREDIÇÃO) ---
+    
+    # 2.1 Simular covariáveis
+    sim_a_pred = simulate_counterfactual_trajectories(
+      cov_models_train, predict_data_conf,
+      scenario_config$treatment_times, scenario_config$a_seq
+    )
+    sim_another_a_pred = simulate_counterfactual_trajectories(
+      cov_models_train, predict_data_conf,
+      scenario_config$treatment_times, scenario_config$another_a_seq
+    )
+    
+    # 2.2 Prever desfechos
+    y_pred_a = predict_potential_outcomes(
+      outcome_model_train, sim_a_pred,
+      scenario_config$treatment_times, scenario_config$a_seq
+    )
+    y_pred_another_a = predict_potential_outcomes(
+      outcome_model_train, sim_another_a_pred,
+      scenario_config$treatment_times, scenario_config$another_a_seq
+    )
+    
+    # --- PASSO 2.5: COLETAR PREDIÇÕES DO FOLD ---
+    predictions_k = merge(y_pred_a, y_pred_another_a, by = c("id", "t"))
+    setnames(predictions_k, c("y_pred.x", "y_pred.y"), c("y_pred_a", "y_pred_another_a"))
+    
+    cov_names = gsub("_sim", "", names(sim_a_pred)[-c(1,2)])
+    setnames(sim_a_pred, paste0(cov_names, "_sim"), paste0(cov_names, "_pred_a"))
+    setnames(sim_another_a_pred, paste0(cov_names, "_sim"), paste0(cov_names, "_pred_another_a"))
+    
+    predictions_k = merge(predictions_k, sim_a_pred, by = c("id", "t"))
+    predictions_k = merge(predictions_k, sim_another_a_pred, by = c("id", "t"))
+    
+    all_fold_predictions[[k]] = predictions_k
+  }
+  # --- FIM DO LOOP ---
   
-  # --- PASSO 2: CONSOLIDAR TODOS OS DADOS (VERDADEIROS E SIMULADOS) ---
-  cat("Consolidando todos os dados para validação...\n")
+  # --- PASSO 3: CONSOLIDAR PREDIÇÕES E VALIDAR ---
+  # Esta seção agora deve funcionar, pois lida com a saída consolidada do loop
   
-  # Começa com os dados observados e ajustados de Y
-  validation_master = outcome_model_fit$data[, .(id, t, y_observed = y)]
-  validation_master[, y_fitted := predict(outcome_model, newdata = outcome_model_fit$data)]
-  validation_master[, id := as.numeric(as.character(id))]
+  final_predictions = rbindlist(all_fold_predictions)
   
-  # Adicionar predições de Y
-  setnames(y_pred_a, "y_pred", "y_pred_a")
-  setnames(y_pred_another_a, "y_pred", "y_pred_another_a")
-  validation_master = merge(validation_master, y_pred_a, by = c("id", "t"), all = TRUE)
-  validation_master = merge(validation_master, y_pred_another_a, by = c("id", "t"), all = TRUE)
+  # A fonte de verdade (observada e contrafactual) vem de scenario_data$outcome$long
+  validation_master = merge(final_predictions, scenario_data$outcome$long, by = c("id", "t"))
   
-  # Adicionar verdades contrafactuais de Y (DIRETO DO DATA.TABLE LONGO)
-  true_y_long = scenario_data$outcome$long[, .(id, t, y_true_a = a_y, y_true_another_a = another_a_y)]
-  validation_master = merge(validation_master, true_y_long, by = c("id", "t"), all = TRUE)
-  
-  # Adicionar covariáveis (preditas e verdadeiras)
   cov_names = grep("^X[0-9]+$", names(scenario_data$confounders), value = TRUE)
+  setnames(validation_master, paste0("a_", cov_names), paste0(cov_names, "_true_a"), skip_absent = TRUE)
+  setnames(validation_master, paste0("another_a_", cov_names), paste0(cov_names, "_true_another_a"), skip_absent = TRUE)
+  setnames(validation_master, "y", "y_observed")
+  setnames(validation_master, "a_y", "y_true_a")
+  setnames(validation_master, "another_a_y", "y_true_another_a")
   
-  sim_a_renamed = copy(cov_results$simulations$a_seq)
-  setnames(sim_a_renamed, paste0("a_", cov_names, "_pred"), paste0(cov_names, "_pred_a"))
+  # Ajusta um modelo final no dataset completo apenas para o diagnóstico 'y_fitted'
+  final_outcome_model_fit = fit_outcome_model(scenario_data$outcome$long, scenario_config$treatment_times, return_prepared_data = TRUE)
+  final_outcome_model_fit$data[, id := as.numeric(as.character(id))]
+  validation_master = merge(validation_master, final_outcome_model_fit$data[, .(id, t, y_fitted=predict(final_outcome_model_fit$model, newdata=.SD))], by=c("id", "t"))
   
-  sim_another_a_renamed = copy(cov_results$simulations$another_a_seq)
-  setnames(sim_another_a_renamed, paste0("another_a_", cov_names, "_pred"), paste0(cov_names, "_pred_another_a"))
-  
-  validation_master = merge(validation_master, sim_a_renamed, by = c("id", "t"), all = TRUE)
-  validation_master = merge(validation_master, sim_another_a_renamed, by = c("id", "t"), all = TRUE)
-  
-  # Adicionar verdades contrafactuais de X (DIRETO DO DATA.TABLE LONGO)
-  true_covs_long = scenario_data$confounders[, .SD, .SDcols = c("id", "t", paste0("a_", cov_names), paste0("another_a_", cov_names))]
-  setnames(true_covs_long, paste0("a_", cov_names), paste0(cov_names, "_true_a"))
-  setnames(true_covs_long, paste0("another_a_", cov_names), paste0(cov_names, "_true_another_a"))
-  validation_master = merge(validation_master, true_covs_long, by = c("id", "t"), all = TRUE)
-  
-  # --- PASSO 3: GERAR MÉTRICAS E GRÁFICOS DE VALIDAÇÃO ---
+  # --- PASSO 4: GERAR MÉTRICAS E GRÁFICOS DE VALIDAÇÃO ---
   cat("Gerando suíte completa de validação...\n")
   
-  # Helper para criar gráficos e métricas
   create_validation_report = function(data, true_col, pred_col, group_col, title, subtitle) {
-    if (!all(c(true_col, pred_col) %in% names(data))) return(list(metrics=data.table(), plot=ggplot()))
+    if (!all(c(true_col, pred_col) %in% names(data))) return(list(metrics=data.table(RMSE=NA, Bias=NA), plot=ggplot() + labs(title="Dados de verdade fundamental ausentes")))
     
     metrics = data[, .(
       RMSE = sqrt(mean((get(true_col) - get(pred_col))^2, na.rm = TRUE)),
@@ -158,23 +203,27 @@ run_full_gformula_suite = function(scenario_data, scenario_config, scenario_name
     return(list(metrics = metrics, plot = plot))
   }
   
-  # 3.1 Validação das Covariáveis
   covariate_reports = list()
   for (cov in cov_names) {
+    renamed_pred_a = paste0(cov, "_pred_a")
+    renamed_pred_another_a = paste0(cov, "_pred_another_a")
+    if(!renamed_pred_a %in% names(validation_master)){
+      setnames(validation_master, paste0("a_", cov, "_pred"), renamed_pred_a, skip_absent = TRUE)
+      setnames(validation_master, paste0("another_a_", cov, "_pred"), renamed_pred_another_a, skip_absent = TRUE)
+    }
+    
     covariate_reports[[cov]] = list(
       a_seq = create_validation_report(validation_master, paste0(cov, "_true_a"), paste0(cov, "_pred_a"), "t", paste("Validação da Covariável:", cov), "Regime: Sempre Tratar"),
       another_a_seq = create_validation_report(validation_master, paste0(cov, "_true_another_a"), paste0(cov, "_pred_another_a"), "t", paste("Validação da Covariável:", cov), "Regime: Nunca Tratar")
     )
   }
   
-  # 3.2 Validação do Desfecho
   outcome_reports = list(
     observed_fit = create_validation_report(validation_master, "y_observed", "y_fitted", "t", "Validação do Desfecho: Ajuste vs. Observado", scenario_name),
     a_seq = create_validation_report(validation_master, "y_true_a", "y_pred_a", "t", "Validação do Desfecho: Simulado vs. Verdadeiro", "Regime: Sempre Tratar"),
     another_a_seq = create_validation_report(validation_master, "y_true_another_a", "y_pred_another_a", "t", "Validação do Desfecho: Simulado vs. Verdadeiro", "Regime: Nunca Tratar")
   )
   
-  # 3.3 Validação Causal
   causal_data = validation_master[, .(
     true_effect = mean(y_true_a - y_true_another_a, na.rm = TRUE),
     pred_effect = mean(y_pred_a - y_pred_another_a, na.rm = TRUE)
