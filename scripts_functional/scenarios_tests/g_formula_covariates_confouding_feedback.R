@@ -23,9 +23,6 @@ names(all_results_comb_g_formula_covariates) = names(combined_scenarios)
 
 purrr::iwalk(all_results_comb_g_formula_covariates, ~{
   
-  # .y é o nome do cenário (ex: "C1.1_S1_NoConf")
-  # .x é o conteúdo do cenário (a lista com $metrics e $plot)
-  
   cat("\n=====================================================\n")
   cat(">>> Análise do Cenário:", .y, "\n")
   cat("=====================================================\n\n")
