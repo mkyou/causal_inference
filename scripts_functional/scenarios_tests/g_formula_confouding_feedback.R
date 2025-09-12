@@ -9,6 +9,20 @@ source("scripts_functional/models/g_formula_model.R")
 # Carrega um dos arquivos de cenário para o teste
 source("scripts_functional/data_generation/confouding_feedback_scenario.R")
 
+
+teste = run_full_gformula_suite(
+  scenario_data = combined_scenarios$`C3.2_A1->X->A2_Dyna`,
+  scenario_config = scenario_configs_comb$`C3.2_A1->X->A2_Dyna`,
+  scenario_name = 'teste'
+)
+
+teste$covariate_validation$X1$another_a_seq$plot
+teste$covariate_validation$X1$a_seq$plot
+
+teste$outcome_validation$a_seq$plot
+teste$outcome_validation$another_a_seq$plot
+
+teste$causal_validation$plot
 # --- 2. EXECUTAR A G-FORMULA PARA UM CENÁRIO ESPECÍFICO ---
 
 all_results_comb_g_formula = lapply(
