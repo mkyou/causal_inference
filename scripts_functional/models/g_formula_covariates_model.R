@@ -12,101 +12,105 @@ library(mgcv)
 library(ggplot2)
 library(data.table)
 
-#' @title Prepara Dados para Modelagem da G-Formula (VERSÃO FINAL)
-#' @description Prepara os dados adicionando colunas para o tratamento (A_s)
-#'   e para o valor das covariáveis que antecedem cada tratamento (Xk_pre_s).
+#' @title Prepara Dados para Modelagem da G-Formula (VERSÃO 8.1)
+#' @description Corrige o bug de tipos incompatíveis no merge, garantindo
+#'  que a coluna 'id' seja do tipo 'factor' em ambas as tabelas
+#'  antes da junção.
 prepare_gformula_data = function(dt_long, treatment_times) {
   dt_prepared = copy(dt_long)
   dt_prepared[, id := as.factor(id)]
   
+  setkey(dt_prepared, id, t)
+  
   all_cov_names = grep("^X[0-9]+$", names(dt_prepared), value = TRUE)
-  time_grid = sort(unique(dt_prepared$t))
   
-  # Adiciona os valores das covariáveis pré-tratamento (confundidores)
-  for (s in treatment_times) {
-    s_idx = which.min(abs(time_grid - s))
-    if (s_idx > 1) {
-      confounder_time = time_grid[s_idx - 1]
-      confounders_at_s_minus_1 = dt_prepared[
-        t == confounder_time, .SD, .SDcols = c("id", all_cov_names)
-      ]
-      new_conf_names = paste0(all_cov_names, "_pre_s", s)
-      setnames(confounders_at_s_minus_1, all_cov_names, new_conf_names)
-      dt_prepared = merge(dt_prepared, confounders_at_s_minus_1, by = "id", all.x = TRUE)
-    }
-  }
+  lagged_cov_names = paste0(all_cov_names, "_lag1")
   
-  # Adiciona as colunas de tratamento A_s
+  dt_prepared[, (lagged_cov_names) := shift(.SD, n = 1, type = "lag"), by = id, .SDcols = all_cov_names]
+  
   for (s in treatment_times) {
     time_idx = which.min(abs(unique(dt_prepared$t) - s))
     actual_time = unique(dt_prepared$t)[time_idx]
-    treatment_at_s = dt_prepared[t == actual_time, .SD, .SDcols = c("id", "A")]
+    
+    # Cria a tabela de tratamento a partir do dt_long original
+    treatment_at_s = dt_long[t == actual_time, .SD, .SDcols = c("id", "A")]
+    
+    # --- INÍCIO DA CORREÇÃO ---
+    # Garante que o tipo da coluna de junção 'id' seja o mesmo (factor)
+    treatment_at_s[, id := as.factor(id)]
+    # --- FIM DA CORREÇÃO ---
+    
     setnames(treatment_at_s, "A", paste0("A_s", s))
     dt_prepared = merge(dt_prepared, treatment_at_s, by = "id", all.x = TRUE)
   }
   
+  # dt_prepared = na.omit(dt_prepared, cols = lagged_cov_names)
+  
   return(dt_prepared)
 }
 
-
-#' @title Ajusta Modelos GAM para Covariáveis (VERSÃO FINAL COM INTERAÇÃO)
-#' @description Usa interações com `(t >= s)` para garantir que os confundidores
-#'   só afetem a trajetória APÓS o momento em que são medidos.
+#' @title Ajusta Modelos GAM para Covariáveis (VERSÃO 10.0 - Modelo Misto)
+#' @description Aborda o confundimento por heterogeneidade individual.
+#'  O modelo agora é um GAM Misto (GAMM), que inclui um smooth aleatório
+#'  para cada indivíduo (s(t, id, bs="fs")). Isso modela explicitamente
+#'  os interceptos e slopes aleatórios (a_ik, b_ik) do PGD.
 fit_covariate_models = function(
-    prepared_data, 
-    treatment_times, 
+    prepared_data,
+    treatment_times,
     cov_to_model
 ) {
-  fitted_models = list()
-  time_grid = sort(unique(prepared_data$t))
-  
-  cat(paste0("Ajustando modelos GAM (com ajuste de confundidor específico) para: ", 
+    fitted_models = list()
+    all_cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
+    lagged_cov_names = paste0(all_cov_names, "_lag1")
+    
+    cat(paste0("Ajustando modelos GAM (V10.0 - GAMM com Efeitos Aleatórios) para: ",
              paste(cov_to_model, collapse=", "), "\n"))
-  
-  for (cov_name in cov_to_model) {
+
+    for (cov_name in cov_to_model) {
     
-    # --- INÍCIO DA MUDANÇA PRINCIPAL ---
-    
-    # 1. Termo de base para a tendência de tempo
-    base_formula = 's(t, bs = "cr", k = 20)'
-    
-    # 2. Termos de efeito do tratamento (feedback)
-    treatment_effects_formula = paste(
-      sapply(treatment_times, function(s) {
-        paste0('s(t, bs = "tp", k = 10, by = I(A_s', s, ' * (t >= ', s, ')))')
-      }), collapse = " + ")
-    
-    # 3. Termos de ajuste de confundimento (AGORA CONDICIONAIS NO TEMPO)
-    confounder_terms_list = sapply(treatment_times, function(s) {
-      s_idx = which.min(abs(time_grid - s))
-      if (s_idx > 1) {
-        # A fórmula agora só aplica o efeito do confundidor para t >= s
-        # Usamos o nome da própria covariável para o ajuste
-        conf_var = paste0(cov_name, "_pre_s", s)
-        paste0(conf_var, " * I(t >= ", s, ")")
-      } else { NULL }
-    })
-    confounder_terms = paste(unlist(confounder_terms_list), collapse = " + ")
-    
-    # --- FIM DA MUDANÇA PRINCIPAL ---
-    
-    model_formula_str = paste(cov_name, "~", base_formula, "+", treatment_effects_formula)
-    if (nchar(confounder_terms) > 0) {
-      model_formula_str = paste(cov_name, "~", confounder_terms, "+", base_formula, "+", treatment_effects_formula)
+        # 1. Termo de base para a MÉDIA da população (mu_k(t))
+        base_formula = 's(t, bs = "cr", k = 20)'
+        
+        treatment_effects_formula = paste(
+            sapply(treatment_times, function(s) {
+                paste0('s(t, bs = "tp", k = 10, by = I(A_s', s, ' * (t >= ', s, ')))')
+            }), collapse = " + ")
+
+        # 4. Termos de ajuste para o histórico lagado (sem alteração)
+        history_terms = paste(
+            sapply(lagged_cov_names, function(lag_name) {
+                paste0('s(', lag_name, ', bs = "cr", k = 8)')
+            }), collapse = " + ")
+
+        # 5. Montagem da fórmula final
+        model_formula_str = paste(
+            cov_name, "~",
+            base_formula, "+",
+            treatment_effects_formula, "+",
+            history_terms
+        )
+        
+        cat("\n--- Fórmula para a covariável:", cov_name, "---\n")
+        cat(model_formula_str, "\n")
+        cat("---------------------------------------------\n\n")
+
+        # É crucial que 'id' seja um fator para os efeitos aleatórios
+        prepared_data[, id := as.factor(id)]
+        
+        fitted_models[[cov_name]] = bam(
+            as.formula(model_formula_str), data = prepared_data, discrete = TRUE, select = TRUE, method = "fREML"
+        )
     }
-    
-    fitted_models[[cov_name]] = bam(
-      as.formula(model_formula_str), data = prepared_data, discrete = TRUE, select = TRUE, method = "fREML"
-    )
-  }
-  cat("Ajuste de modelos GAM concluído.\n")
-  return(fitted_models)
+    cat("Ajuste de modelos GAM concluído.\n")
+    return(fitted_models)
 }
 
 
-#' @title Simula Trajetórias Contrafactuais (VERSÃO NÃO-SEQUENCIAL FINAL)
-#' @description Versão final que corrige a extração de nomes de colunas
-#'   para a criação da tabela de predição.
+#' @title Simula Trajetórias Contrafactuais (VERSÃO 8.4 - CORREÇÃO DE BUG)
+#' @description Corrige o bug na inicialização dos dados. O 'update join'
+#'  agora é feito usando tanto 'id' quanto 't', garantindo que apenas o
+#'  primeiro ponto de tempo de cada indivíduo seja inicializado com os
+#'  valores observados.
 simulate_counterfactual_trajectories = function(
     fitted_models,
     original_data,
@@ -114,93 +118,120 @@ simulate_counterfactual_trajectories = function(
     regime,
     simple_covs_data = NULL
 ) {
+  # 1. PREPARAÇÃO (sem alterações)
+  covs_gam = names(fitted_models)
+  covs_simple = if (!is.null(simple_covs_data)) setdiff(names(simple_covs_data), "id") else character(0)
+  all_covs = c(covs_gam, covs_simple)
   
-  # 1. Cria a grade de predição completa
-  pred_data = CJ(id = unique(original_data$id), t = sort(unique(original_data$t)))
-  pred_data[, id := as.factor(id)]
+  ids = unique(original_data$id)
+  time_grid = sort(unique(original_data$t))
   
-  # 2. Adiciona as colunas do regime de tratamento
-  for (i in seq_along(treatment_times)) {
-    pred_data[, (paste0("A_s", treatment_times[i])) := regime[i]]
+  simulated_dt = CJ(id = ids, t = time_grid)
+  for (cov_name in all_covs) {
+    simulated_dt[, (paste0(cov_name, "_sim")) := NA_real_]
   }
   
-  # 3. Adiciona as colunas de confundidores
-  all_cov_names = names(fitted_models)
-  time_grid = sort(unique(pred_data$t))
+  # 2. PREENCHIMENTO DAS COVARIÁVEIS ESTÁTICAS (sem alterações)
+  if (length(covs_simple) > 0) {
+    simple_sim_names = paste0(covs_simple, "_sim")
+    setnames(simple_covs_data, covs_simple, simple_sim_names)
+    simulated_dt[simple_covs_data, on = .(id), (simple_sim_names) := mget(paste0("i.", simple_sim_names))]
+  }
   
-  for (s in treatment_times) {
-    s_idx = which.min(abs(time_grid - s))
-    if (s_idx > 1) {
-      confounder_time = time_grid[s_idx - 1]
+  # 3. SIMULAÇÃO DAS COVARIÁVEIS DINÂMICAS (SEQUENCIAL)
+  
+  # --- INÍCIO DA CORREÇÃO DO BUG ---
+  # 3.1. INICIALIZAÇÃO (t = t_1) para covariáveis GAM
+  if (length(covs_gam) > 0) {
+    sim_names_gam = paste0(covs_gam, "_sim")
+    
+    # Pega os dados do primeiro ponto do tempo
+    first_time_data = original_data[t == time_grid[1], .SD, .SDcols = c("id", covs_gam)]
+    
+    # Adiciona a coluna 't' para a junção correta
+    first_time_data[, t := time_grid[1]]
+    
+    # Renomeia as colunas de dados para corresponder aos nomes em simulated_dt
+    setnames(first_time_data, covs_gam, sim_names_gam)
+    
+    # Realiza o update join usando ID e T, atualizando apenas as linhas de t=0
+    simulated_dt[first_time_data, on = .(id, t), (sim_names_gam) := mget(paste0("i.", sim_names_gam))]
+  }
+  # --- FIM DA CORREÇÃO DO BUG ---
+  
+  # 3.2. LOOP DE SIMULAÇÃO (t = t_2, ..., t_T) para covariáveis GAM (sem alterações na lógica)
+  if (length(covs_gam) > 0) {
+    for (i in 2:length(time_grid)) {
+      current_t = time_grid[i]
+      previous_t = time_grid[i-1]
       
-      # --- INÍCIO DA CORREÇÃO ---
-      # Linha antiga (com bug):
-      # confounder_cols_to_get = gsub("_pre_s[0-9\\.]+$", "", names(fitted_models[[1]]$coefficients)[grep("_pre_s", names(fitted_models[[1]]$coefficients))]) |> unique()
+      history_sim_names = paste0(all_covs, "_sim")
+      lagged_names = paste0(all_covs, "_lag1")
+      history_data = simulated_dt[t == previous_t, .SD, .SDcols = c("id", history_sim_names)]
+      setnames(history_data, history_sim_names, lagged_names)
       
-      # Linha nova (corrigida e simples):
-      # Pega o nome de todas as covariáveis que estão sendo modeladas.
-      confounder_cols_to_get = names(fitted_models)
-      # --- FIM DA CORREÇÃO ---
+      pred_data_t = data.table(id = ids, t = current_t)
+      for (j in seq_along(treatment_times)) {
+        pred_data_t[, (paste0("A_s", treatment_times[j])) := regime[j]]
+      }
+      pred_data_t = merge(pred_data_t, history_data, by = "id")
       
-      confounder_data = original_data[
-        t == confounder_time, .SD, .SDcols = c("id", confounder_cols_to_get)
-      ]
-      
-      confounder_data[, id := as.factor(id)]
-      
-      new_conf_names = paste0(confounder_cols_to_get, "_pre_s", s)
-      setnames(confounder_data, confounder_cols_to_get, new_conf_names)
-      
-      pred_data = merge(pred_data, confounder_data, by = "id", all.x = TRUE)
+      for (cov_name in covs_gam) {
+        predictions = predict(fitted_models[[cov_name]], newdata = pred_data_t)
+        simulated_dt[t == current_t, (paste0(cov_name, "_sim")) := predictions]
+      }
     }
   }
   
-  # 4. Faz a predição em um único passo
-  simulated_dt = pred_data[, .(id, t)]
-  for (cov_name in names(fitted_models)) {
-    predictions = predict(fitted_models[[cov_name]], newdata = pred_data)
-    simulated_dt[, (paste0(cov_name, "_sim")) := predictions]
-  }
-  
+  # 4. FINALIZAÇÃO
   simulated_dt[, id := as.numeric(as.character(id))]
   return(simulated_dt)
 }
 
 
-#' @title Executa a Suíte de Validação da G-Formula (VERSÃO FINAL E ROBUSTA)
+#' @title Executa a Suíte de Validação da G-Formula (VERSÃO 8.2 - HÍBRIDA)
+#' @description Reintroduz a lógica híbrida para modelar covariáveis.
+#'  Covariáveis dinâmicas ou com feedback usam GAMs (V8.1), enquanto
+#'  covariáveis estáticas são modeladas pela média individual.
 run_gformula_validation_suite = function(
     scenario_data, 
-    scenario_config, 
-    static_model_type = "mean_trajectory"
+    scenario_config
 ) {
-  
   dt_conf = scenario_data$confounders
   treatment_times = scenario_config$treatment_times
   cov_names = grep("^X[0-9]+$", names(dt_conf), value = TRUE)
   
-  # --- Lógica de decisão híbrida (sem alterações) ---
+  # --- LÓGICA DE DECISÃO HÍBRIDA (RESTAURADA) ---
   model_strategies = list()
   for (i in seq_along(cov_names)) {
     cov_name = cov_names[i]
+    # Checa se a função de base da covariável é constante no tempo
     is_static = isTRUE(all.equal(
       scenario_config$mean_baseline_covariates[[i]](1),
       scenario_config$mean_baseline_covariates[[i]](10)
     ))
+    # Checa se há algum efeito de feedback do tratamento na covariável
     has_feedback = !all(sapply(
       scenario_config$effects_covariates_from_A[[i]],
       function(f) f(5, 1) == 0
     ))
+    
+    # Decide a estratégia
     if (!is_static || has_feedback) {
       model_strategies[[cov_name]] = "gam"
     } else {
-      model_strategies[[cov_name]] = static_model_type
+      model_strategies[[cov_name]] = "mean_trajectory"
     }
   }
+  cat("Estratégias de modelagem definidas:\n")
+  print(unlist(model_strategies))
   
-  # --- Ajuste dos modelos (sem alterações) ---
+  # --- AJUSTE DOS MODELOS GAM (APENAS PARA COVARIÁVEIS DINÂMICAS) ---
   covs_requiring_gam = names(model_strategies)[model_strategies == "gam"]
   if (length(covs_requiring_gam) > 0) {
+    # Prepara os dados com lags e colunas de tratamento
     prepared_data = prepare_gformula_data(dt_conf, treatment_times)
+    
     fitted_gam_models = fit_covariate_models(
       prepared_data, treatment_times, covs_requiring_gam
     )
@@ -208,24 +239,26 @@ run_gformula_validation_suite = function(
     fitted_gam_models = list()
   }
   
-  # --- Pré-cálculo para as covariáveis simples (sem alterações) ---
-  covs_requiring_mean = names(model_strategies)[model_strategies != "gam"]
+  # --- PRÉ-CÁLCULO PARA AS COVARIÁVEIS ESTÁTICAS ---
+  covs_requiring_mean = names(model_strategies)[model_strategies == "mean_trajectory"]
   mean_trajectories_data = NULL
   if (length(covs_requiring_mean) > 0) {
+    cat("\nCalculando trajetórias médias para covariáveis estáticas:", paste(covs_requiring_mean, collapse=", "), "\n")
+    # Calcula a média POR INDIVÍDUO para as covariáveis estáticas
     mean_trajectories_data = dt_conf[
       ,
       lapply(.SD, mean), by = id, .SDcols = covs_requiring_mean
     ]
   }
   
-  # --- SIMULAÇÃO (sem alterações) ---
+  # --- SIMULAÇÃO HÍBRIDA ---
   cat("\nSimulando para o regime 'a_seq'...\n")
   simulated_a = simulate_counterfactual_trajectories(
     fitted_models = fitted_gam_models,
     original_data = dt_conf,
     treatment_times = treatment_times,
     regime = scenario_config$a_seq,
-    simple_covs_data = mean_trajectories_data
+    simple_covs_data = mean_trajectories_data # Passando os dados das médias
   )
   
   cat("\nSimulando para o regime 'another_a_seq'...\n")
@@ -234,10 +267,11 @@ run_gformula_validation_suite = function(
     original_data = dt_conf,
     treatment_times = treatment_times,
     regime = scenario_config$another_a_seq,
-    simple_covs_data = mean_trajectories_data
+    simple_covs_data = mean_trajectories_data # Passando os dados das médias
   )
   
-  # --- INÍCIO DA CORREÇÃO NA SEÇÃO DE VALIDAÇÃO ---
+  
+  # --- SEÇÃO DE VALIDAÇÃO ---
   
   # 1. Renomeia as colunas de predição ANTES de qualquer merge
   # Para simulated_a: X1_sim -> a_X1_pred
