@@ -49,71 +49,134 @@ prepare_gformula_data = function(dt_long, treatment_times) {
   return(dt_prepared)
 }
 
-#' @title Ajusta Modelos GAM para Covariáveis (VERSÃO 10.0 - Modelo Misto)
-#' @description Aborda o confundimento por heterogeneidade individual.
-#'  O modelo agora é um GAM Misto (GAMM), que inclui um smooth aleatório
-#'  para cada indivíduo (s(t, id, bs="fs")). Isso modela explicitamente
-#'  os interceptos e slopes aleatórios (a_ik, b_ik) do PGD.
+library(lme4)
+
+#' @title Estima Efeitos Individuais de Trajetória (Estágio 1)
+#' @description Usa dados pré-tratamento para ajustar um modelo linear misto
+#'  e extrair estimativas para o intercepto (b_ik) e inclinação (a_ik)
+#'  aleatórios de cada indivíduo.
+#' @param dt_long O data.table com os dados longitudinais.
+#' @param all_cov_names Vetor com os nomes das covariáveis a modelar.
+#' @param pre_treatment_cutoff_time Ponto no tempo que define o período pré-tratamento.
+#' @return Um data.table com 'id' e as estimativas 'hat_b' e 'hat_a' para cada covariável.
+estimate_individual_effects = function(
+    dt_long, 
+    all_cov_names, 
+    pre_treatment_cutoff_time
+) {
+  cat("--- Estágio 1: Estimando proxies de heterogeneidade individual ---\n")
+  
+  # Filtra para dados estritamente pré-tratamento
+  dt_pre_treat = dt_long[t < pre_treatment_cutoff_time]
+  
+  # Garante que id seja um fator para o lmer
+  dt_pre_treat[, id := as.factor(id)]
+  
+  all_proxies = data.table(id = unique(dt_pre_treat$id))
+  for (cov_name in all_cov_names) {
+    cat("Ajustando LMER para:", cov_name, "\n")
+    lmer_formula = as.formula(paste(cov_name, "~ t + (t | id)"))
+    lmer_model = tryCatch({
+      lmer(lmer_formula, data = dt_pre_treat)
+    }, error = function(e) {
+      warning(
+        paste(
+          "LMER para", cov_name,
+          "falhou. Usando modelo mais simples (apenas intercepto aleatório). Erro:",
+          e$message
+        )
+      )
+      lmer(as.formula(paste(cov_name, "~ t + (1 | id)")), data = dt_pre_treat)
+    })
+    
+    # Extrai os efeitos aleatórios (BLUPs)
+    ranef_df = as.data.table(ranef(lmer_model)$id, keep.rownames = "id")
+    
+    # Se o modelo completo falhou, a coluna de inclinação 't' não existirá
+    if (!"t" %in% names(ranef_df)) {
+      ranef_df[, t := 0]
+    }
+    
+    # Renomeia para clareza: _hat_b para baseline (intercepto), _hat_a para amplitude (slope/inclinação)
+    setnames(
+      ranef_df, 
+      c("(Intercept)", "t"), 
+      c(paste0(cov_name, "_hat_b"), paste0(cov_name, "_hat_a"))
+    )
+    
+    all_proxies = merge(all_proxies, ranef_df, by = "id")
+  }
+  
+  cat("--- Estimação de proxies concluída ---\n\n")
+  all_proxies[, id := as.character(id)]
+  return(all_proxies)
+}
+
+#' @title Ajusta Modelos GAM para Covariáveis (VERSÃO 11.0 - Controle por Proxy)
+#' @description Inclui os proxies estimados (â_ik, b̂_ik) como termos de controle
+#'  no modelo GAM para capturar a heterogeneidade individual.
 fit_covariate_models = function(
     prepared_data,
     treatment_times,
     cov_to_model
 ) {
-    fitted_models = list()
-    all_cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
-    lagged_cov_names = paste0(all_cov_names, "_lag1")
-    
-    cat(paste0("Ajustando modelos GAM (V10.0 - GAMM com Efeitos Aleatórios) para: ",
+  fitted_models = list()
+  all_cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
+  lagged_cov_names = paste0(all_cov_names, "_lag1")
+  
+  cat(paste0("Ajustando modelos GAM (V11.0 - Controle por Proxy) para: ",
              paste(cov_to_model, collapse=", "), "\n"))
-
-    for (cov_name in cov_to_model) {
+  
+  for (cov_name in cov_to_model) {
     
-        # 1. Termo de base para a MÉDIA da população (mu_k(t))
-        base_formula = 's(t, bs = "cr", k = 20)'
-        
-        treatment_effects_formula = paste(
-            sapply(treatment_times, function(s) {
-                paste0('s(t, bs = "tp", k = 10, by = I(A_s', s, ' * (t >= ', s, ')))')
-            }), collapse = " + ")
-
-        # 4. Termos de ajuste para o histórico lagado (sem alteração)
-        history_terms = paste(
-            sapply(lagged_cov_names, function(lag_name) {
-                paste0('s(', lag_name, ', bs = "cr", k = 8)')
-            }), collapse = " + ")
-
-        # 5. Montagem da fórmula final
-        model_formula_str = paste(
-            cov_name, "~",
-            base_formula, "+",
-            treatment_effects_formula, "+",
-            history_terms
-        )
-        
-        cat("\n--- Fórmula para a covariável:", cov_name, "---\n")
-        cat(model_formula_str, "\n")
-        cat("---------------------------------------------\n\n")
-
-        # É crucial que 'id' seja um fator para os efeitos aleatórios
-        prepared_data[, id := as.factor(id)]
-        
-        fitted_models[[cov_name]] = bam(
-            as.formula(model_formula_str), data = prepared_data, discrete = TRUE, select = TRUE, method = "fREML"
-        )
-    }
-    cat("Ajuste de modelos GAM concluído.\n")
-    return(fitted_models)
+    base_formula = 's(t, bs = "cr", k = 20)'
+    treatment_effects_formula = paste(
+      sapply(treatment_times, function(s) {
+        paste0('s(t, bs = "tp", k = 10, by = I(A_s', s, ' * (t >= ', s, ')))')
+      }), collapse = " + ")
+    history_terms = paste(
+      sapply(lagged_cov_names, function(lag_name) {
+        paste0('s(', lag_name, ', bs = "cr", k = 8)')
+      }), collapse = " + ")
+    
+    # --- INÍCIO DA MUDANÇA (TERMOS PROXY) ---
+    # Adiciona os proxies como termos de controle.
+    # b_hat (intercepto) entra como um efeito linear simples.
+    # a_hat (inclinação) interage com o tempo, como no PGD.
+    proxy_b = paste0(cov_name, "_hat_b")
+    proxy_a = paste0(cov_name, "_hat_a")
+    
+    # O 'by' em s() precisa de uma variável numérica, então garantimos isso.
+    prepared_data[, (proxy_a) := as.numeric(get(proxy_a))]
+    
+    proxy_terms = paste(proxy_b, "+ s(t, by =", proxy_a, ")")
+    # --- FIM DA MUDANÇA ---
+    
+    model_formula_str = paste(
+      cov_name, "~",
+      base_formula, "+",
+      proxy_terms, "+", # Adiciona os novos termos de controle
+      treatment_effects_formula, "+",
+      history_terms
+    )
+    
+    cat("\n--- Fórmula para a covariável:", cov_name, "---\n")
+    cat(model_formula_str, "\n")
+    cat("---------------------------------------------\n\n")
+    
+    fitted_models[[cov_name]] = bam(
+      as.formula(model_formula_str), data = prepared_data, discrete = TRUE, select = TRUE, method = "fREML"
+    )
+  }
+  cat("Ajuste de modelos GAM concluído.\n")
+  return(fitted_models)
 }
 
 
-#' @title Simula Trajetórias Contrafactuais (VERSÃO 8.4 - CORREÇÃO DE BUG)
-#' @description Corrige o bug na inicialização dos dados. O 'update join'
-#'  agora é feito usando tanto 'id' quanto 't', garantindo que apenas o
-#'  primeiro ponto de tempo de cada indivíduo seja inicializado com os
-#'  valores observados.
+#' @title Simula Trajetórias Contrafactuais (VERSÃO 11.0)
 simulate_counterfactual_trajectories = function(
     fitted_models,
-    original_data,
+    original_data, # Agora contém as colunas de proxy _hat_a e _hat_b
     treatment_times,
     regime,
     simple_covs_data = NULL
@@ -159,6 +222,9 @@ simulate_counterfactual_trajectories = function(
   }
   # --- FIM DA CORREÇÃO DO BUG ---
   
+  all_proxy_names = names(original_data)[grep("_hat_", names(original_data))]
+  proxy_data = unique(original_data[, .SD, .SDcols = c("id", all_proxy_names)])
+  
   # 3.2. LOOP DE SIMULAÇÃO (t = t_2, ..., t_T) para covariáveis GAM (sem alterações na lógica)
   if (length(covs_gam) > 0) {
     for (i in 2:length(time_grid)) {
@@ -200,7 +266,10 @@ run_gformula_validation_suite = function(
   dt_conf = scenario_data$confounders
   treatment_times = scenario_config$treatment_times
   cov_names = grep("^X[0-9]+$", names(dt_conf), value = TRUE)
-  
+  proxies = estimate_individual_effects(dt_conf, cov_names, pre_treatment_cutoff_time = treatment_times[1])
+  dt_conf[, id := as.character(id)]
+  proxies[, id := as.character(id)]
+  dt_conf_with_proxies = merge(dt_conf, proxies, by = "id")
   # --- LÓGICA DE DECISÃO HÍBRIDA (RESTAURADA) ---
   model_strategies = list()
   for (i in seq_along(cov_names)) {
@@ -230,7 +299,7 @@ run_gformula_validation_suite = function(
   covs_requiring_gam = names(model_strategies)[model_strategies == "gam"]
   if (length(covs_requiring_gam) > 0) {
     # Prepara os dados com lags e colunas de tratamento
-    prepared_data = prepare_gformula_data(dt_conf, treatment_times)
+    prepared_data = prepare_gformula_data(dt_conf_with_proxies, treatment_times)
     
     fitted_gam_models = fit_covariate_models(
       prepared_data, treatment_times, covs_requiring_gam
@@ -255,16 +324,16 @@ run_gformula_validation_suite = function(
   cat("\nSimulando para o regime 'a_seq'...\n")
   simulated_a = simulate_counterfactual_trajectories(
     fitted_models = fitted_gam_models,
-    original_data = dt_conf,
+    original_data = dt_conf_with_proxies, # Usa dados com proxies
     treatment_times = treatment_times,
     regime = scenario_config$a_seq,
-    simple_covs_data = mean_trajectories_data # Passando os dados das médias
+    simple_covs_data = mean_trajectories_data
   )
   
   cat("\nSimulando para o regime 'another_a_seq'...\n")
   simulated_another_a = simulate_counterfactual_trajectories(
     fitted_models = fitted_gam_models,
-    original_data = dt_conf,
+    original_data = dt_conf_with_proxies,
     treatment_times = treatment_times,
     regime = scenario_config$another_a_seq,
     simple_covs_data = mean_trajectories_data # Passando os dados das médias
