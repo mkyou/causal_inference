@@ -39,27 +39,40 @@ GLOBAL_PARAMS = list(
   regime_a = c(1, 1, 1), # Preenchimento para S=3
   regime_b = c(0, 0, 0)
 )
-
-# -- Componentes Funcionais Globais --
 K = 3 # Número de covariáveis
 
-# Efeito A -> Y (Direto, no Desfecho)
-# Efeito que decai com o tempo desde a aplicação
+# --- Componentes Funcionais Globais ---
+
 DIRECT_EFFECT_A_ON_Y = list(
   function(t, s) ifelse(t >= s, 1.5 * exp(-0.5 * (t - s)), 0),
   function(t, s) ifelse(t >= s, 1.2 * exp(-0.4 * (t - s)), 0),
   function(t, s) ifelse(t >= s, 1.0 * exp(-0.3 * (t - s)), 0)
 )
-
-# Efeito X -> Y (Concorrente, no Desfecho)
 CONCURRENT_EFFECT_X_ON_Y = list(
-  function(t) 1.5 + 0.5 * t,    # Efeito de X1 variante no tempo
-  function(t) 0.8,    # Efeito de X2
-  function(t) -1.0    # Efeito de X3
+  function(t) 1.5 + 0.05 * t,
+  function(t) 0.8,
+  function(t) -1.0
 )
-
-# Trajetória Base do Desfecho
 BASELINE_Y_FUNC = function(t) 10 + 0.5 * t
+
+# --- NOVOS COMPONENTES DINÂMICOS ---
+beta_low_dynamic = matrix(list(NULL), K, K)
+beta_low_dynamic[[2, 1]] = function(t) 0.15 * exp(-0.02 * t)
+
+beta_high_dynamic = matrix(list(NULL), K, K)
+beta_high_dynamic[[2, 1]] = function(t) 0.5 * exp(-0.02 * t)
+
+THETA_MED_S3_DYNAMIC = matrix(
+  c(
+    -1.0, 2.0, 0.8, -0.5, 
+    -1.0, 0.5, 1.5, -1.2, 
+    -0.8, 0.8, 0.8, -0.8
+  ),
+  nrow = 3, byrow = TRUE
+)
+theta_a1_dynamic = THETA_MED_S3_DYNAMIC; theta_a1_dynamic[2:3, 2:4] = 0
+theta_a2_dynamic = THETA_MED_S3_DYNAMIC; theta_a2_dynamic[c(1,3), 2:4] = 0
+theta_a1a3_dynamic = THETA_MED_S3_DYNAMIC; theta_a1a3_dynamic[2, 2:4] = 0
 
 # ===================================================================
 # --- 3. DEFINIÇÃO DOS CENÁRIOS ---
@@ -123,82 +136,63 @@ scenario_configs = c(scenario_configs, list(
 BASELINE_DYNAMIC = list(
   function(t) 0.5*t, function(t) 1, function(t) 10 - 0.5*t
 )
-THETA_MED_S3 = matrix(
-  c(-1, 1.5, 1.2, -1.0, -1, 1.5, 1.2, -1.0, -1, 1.5, 1.2, -1.0),
-  nrow = 3, byrow = TRUE
-)
 GAMMA_ZERO_S3 = matrix(list(function(t,s) 0), K, 3)
-
-beta_low = matrix(list(NULL), K, K); beta_low[[2,1]] = function(t) 0.05
-beta_high = matrix(list(NULL), K, K); beta_high[[2,1]] = function(t) 0.25
+BETA_ZERO = matrix(list(NULL), K, K)
 
 scenario_configs = c(scenario_configs, list(
   `C5_Cross_No` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = BETA_ZERO,
-    gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = THETA_MED_S3,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = BETA_ZERO, gamma_matrix = GAMMA_ZERO_S3,
+    theta_matrix = THETA_MED_S3_DYNAMIC, # <-- Usa theta dinâmico
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
   ),
   `C6_Cross_Low` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = beta_low,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = beta_low_dynamic, # <-- Usa beta dinâmico
     gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = THETA_MED_S3,
+    theta_matrix = THETA_MED_S3_DYNAMIC,
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
   ),
   `C7_Cross_High` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = beta_high,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = beta_high_dynamic, # <-- Usa beta dinâmico
     gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = THETA_MED_S3,
+    theta_matrix = THETA_MED_S3_DYNAMIC,
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
   )
 ))
 
-# --- PUXADA 3: CONFUNDIMENTO VARIANTE NO TEMPO (S=3, EFEITO CRUZADO ALTO) ---
-# O objetivo é testar o ajuste quando o confundimento varia no tempo.
-
-theta_a1 = THETA_MED_S3; theta_a1[2:3, 2:4] = 0
-theta_a2 = THETA_MED_S3; theta_a2[c(1,3), 2:4] = 0
-theta_a1a3 = THETA_MED_S3; theta_a1a3[2, 2:4] = 0
-
+# --- PUXADA 3: CONFUNDIMENTO VARIANTE NO TEMPO (COM EFEITO CRUZADO ALTO) ---
 scenario_configs = c(scenario_configs, list(
   `C8_TimeVarying_A1` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = beta_high,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = beta_high_dynamic,
     gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = theta_a1,
+    theta_matrix = theta_a1_dynamic, # <-- Usa theta dinâmico e variado
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
   ),
   `C9_TimeVarying_A2` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = beta_high,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = beta_high_dynamic,
     gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = theta_a2,
+    theta_matrix = theta_a2_dynamic,
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
   ),
   `C10_TimeVarying_A1A3` = list(
-    treatment_times = c(5, 10, 15),
-    baseline_funcs = BASELINE_DYNAMIC,
-    beta_funcs_matrix = beta_high,
+    treatment_times = c(5, 10, 15), baseline_funcs = BASELINE_DYNAMIC,
+    beta_funcs_matrix = beta_high_dynamic,
     gamma_matrix = GAMMA_ZERO_S3,
-    theta_matrix = theta_a1a3,
+    theta_matrix = theta_a1a3_dynamic,
     direct_effect_funcs = DIRECT_EFFECT_A_ON_Y,
     concurrent_effect_funcs = CONCURRENT_EFFECT_X_ON_Y,
     baseline_y_func = BASELINE_Y_FUNC
@@ -224,27 +218,27 @@ cat("--- Geração de dados concluída. ---\n")
 
 # Usamos `imap` para iterar sobre a lista de cenários e seus nomes,
 # executando a análise e ARMAZENANDO os resultados.
-cat("\n--- Iniciando a análise de todos os cenários... ---\n")
-all_analysis_results = purrr::imap(
-  all_scenarios,
-  function(scenario_data, scenario_name) {
-    
-    full_config = utils::modifyList(
-      GLOBAL_PARAMS,
-      scenario_configs[[scenario_name]]
-    )
-    
-    # A função `analyze_scenario` faz todo o trabalho pesado
-    analysis = analyze_scenario(
-      scenario_data = scenario_data,
-      scenario_config = full_config,
-      scenario_name = scenario_name
-    )
-    
-    return(analysis)
-  }
-)
-cat("--- Análise de todos os cenários concluída. ---\n")
+#cat("\n--- Iniciando a análise de todos os cenários... ---\n")
+#all_analysis_results = purrr::imap(
+#  all_scenarios,
+#  function(scenario_data, scenario_name) {
+#    
+#    full_config = utils::modifyList(
+#      GLOBAL_PARAMS,
+#      scenario_configs[[scenario_name]]
+#    )
+#    
+#    # A função `analyze_scenario` faz todo o trabalho pesado
+#    analysis = analyze_scenario(
+#      scenario_data = scenario_data,
+#      scenario_config = full_config,
+#      scenario_name = scenario_name
+#    )
+#    
+#    return(analysis)
+#  }
+#)
+#cat("--- Análise de todos os cenários concluída. ---\n")
 
 # ===================================================================
 # --- 6. APRESENTAÇÃO DOS RESULTADOS (USANDO IWALK) ---
@@ -252,24 +246,25 @@ cat("--- Análise de todos os cenários concluída. ---\n")
 
 # Agora, usamos `iwalk` para iterar sobre os RESULTADOS da análise
 # apenas para o efeito colateral de imprimir no console.
-cat("\n\n--- APRESENTANDO RESULTADOS DA SUÍTE DE VALIDAÇÃO ---\n")
-purrr::iwalk(
-  all_analysis_results,
-  function(results, scenario_name) {
-    
-    # Imprime um cabeçalho claro para cada cenário
-    cat(paste("\n\n=======================================================\n"))
-    cat(paste("  Resultados para o Cenário:", scenario_name))
-    cat("\n=======================================================\n\n")
-    
-    # Imprime a tabela de resumo da estrutura causal
-    print(results$summary_table)
-    
-    # Imprime o gráfico do efeito causal total
-    print(results$plots$causal_effect)
-    
-    # Opcional: descomente para imprimir os outros gráficos
-    print(results$plots$trajectories)
-    print(results$plots$confounding_structure)
-  }
-)
+# cat("\n\n--- APRESENTANDO RESULTADOS DA SUÍTE DE VALIDAÇÃO ---\n")
+# purrr::iwalk(
+#   all_analysis_results,
+#   function(results, scenario_name) {
+#    
+#    # Imprime um cabeçalho claro para cada cenário
+#    cat(paste("\n\n=======================================================\n"))
+#    cat(paste("  Resultados para o Cenário:", scenario_name))
+#    cat("\n=======================================================\n\n")
+#    
+#    # Imprime a tabela de resumo da estrutura causal
+#    print(results$summary_table)
+#    
+#    # Imprime o gráfico do efeito causal total
+#    print(results$plots$causal_effect)
+#    
+#    # Opcional: descomente para imprimir os outros gráficos
+#    print(results$plots$trajectories)
+#    print(results$plots$confounding_structure)
+#    print(results$plots$cross_covariate_effects)
+#  }
+#)

@@ -183,8 +183,78 @@ plot_confounding_structure = function(scenario_data, scenario_config) {
 
 
 # -------------------------------------------------------------------
-# Função 5: Ponto de Entrada (sem alterações)
+# Função 5 Plotar Efeitos Cruzados
 # -------------------------------------------------------------------
+#' @title Visualiza o Efeito Cruzado Entre Covariáveis
+#' @description Valida a estrutura causal Xj -> Xk. Inspeciona a
+#'   configuração do cenário e gera um gráfico para cada efeito
+#'   cruzado não nulo definido na `beta_funcs_matrix`.
+#' @param scenario_data O data.table gerado.
+#' @param scenario_config A configuração usada para gerar os dados.
+#' @return Uma lista de objetos ggplot, um para cada efeito detectado.
+
+plot_cross_covariate_effect = function(scenario_data, scenario_config) {
+  dt = copy(scenario_data)
+  beta_matrix = scenario_config$beta_funcs_matrix
+  K = sqrt(length(beta_matrix)) # Número de covariáveis
+  
+  plot_list = list()
+  
+  # Itera sobre a matriz beta para encontrar os efeitos a plotar
+  for (k in 1:K) { # covariável de resultado
+    for (j in 1:K) { # covariável preditora
+      
+      # Pula se não houver efeito definido nesta célula
+      if (is.null(beta_matrix[[k, j]])) next
+      
+      cat(paste0(
+        "  - Visualizando efeito cruzado: X", j, " -> X", k, "...\n"
+      ))
+      
+      predictor_name = paste0("X", j)
+      outcome_name = paste0("X", k)
+      predictor_lag_name = paste0(predictor_name, "_lag1")
+      
+      dt[, (predictor_lag_name) := shift(get(predictor_name)), by = id]
+      
+      plot_data = na.omit(dt[sample(.N, min(.N, 5000))])
+      
+      p = ggplot(
+        plot_data, 
+        aes_string(x = predictor_lag_name, y = outcome_name)
+      ) +
+        geom_point(alpha = 0.1, color = "darkgrey") +
+        geom_smooth(
+          method = "gam", formula = y ~ s(x, k = 5), color = "firebrick") +
+        labs(
+          title = paste(
+            "Verificação do Efeito Cruzado:", predictor_name, "->", 
+            outcome_name
+          ),
+          subtitle = paste(
+            "Relação entre", outcome_name, "(t) e", predictor_name, "(t-1)"
+          ),
+          x = paste("Valor de", predictor_name, "(t-1)"),
+          y = paste("Valor de", outcome_name, "(t)")
+        ) +
+        theme_bw()
+      
+      plot_list[[paste0("X", j, "_to_X", k)]] = p
+    }
+  }
+  
+  if (length(plot_list) == 0) {
+    return(NULL)
+  }
+  
+  return(plot_list)
+}
+
+
+# -------------------------------------------------------------------
+# Função 6: Ponto de Entrada
+# -------------------------------------------------------------------
+#' @title (V2.3) Ponto de Entrada para Análise Completa de Cenário
 analyze_scenario = function(
     scenario_data,
     scenario_config,
@@ -193,6 +263,7 @@ analyze_scenario = function(
   
   cat(paste("\n--- Analisando Cenário:", scenario_name, "---\n"))
   
+  # Chamadas para as 4 funções de análise existentes
   cat("  - Verificando estrutura causal...\n")
   summary_table = check_causal_structure(scenario_data, scenario_config)
   summary_table[, Scenario := scenario_name]
@@ -209,15 +280,23 @@ analyze_scenario = function(
     scenario_config
   )
   
+  # --- NOVA CHAMADA ---
+  cat("  - Gerando gráficos de efeitos cruzados (Xj -> Xk)...\n")
+  p_cross_effects = plot_cross_covariate_effect(
+    scenario_data,
+    scenario_config
+  )
+  
+  # Adiciona títulos
   p_traj = p_traj + labs(title = paste(
-    "Trajetórias Individuais | Cenário:", scenario_name
+    "Trajetórias | Cenário:", scenario_name
   ))
   p_effects = p_effects + labs(title = paste(
-    "Efeito Causal Médio | Cenário:", scenario_name
+    "Efeito Causal | Cenário:", scenario_name
   ))
   if(!is.null(p_confounding)) {
     p_confounding = p_confounding + labs(title = paste(
-      "Estrutura de Confundimento | Cenário:", scenario_name
+      "Confundimento | Cenário:", scenario_name
     ))
   }
   
@@ -226,7 +305,8 @@ analyze_scenario = function(
     plots = list(
       trajectories = p_traj,
       causal_effect = p_effects,
-      confounding_structure = p_confounding
+      confounding_structure = p_confounding,
+      cross_covariate_effects = p_cross_effects
     )
   )
   
