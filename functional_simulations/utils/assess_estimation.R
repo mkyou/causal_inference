@@ -16,8 +16,8 @@ library(ggplot2)
 #'   um data.table de métricas funcionais (ao longo do tempo), e um
 #'   gráfico comparativo.
 
-assess_effect_estimation = function(estimation_dt, true_data) {
-  
+assess_effect_estimation = function(model_output, true_data) {
+  estimation_dt = model_output
   # Junta a estimativa com a verdade
   eval_data = merge(
     estimation_dt,
@@ -75,4 +75,77 @@ assess_effect_estimation = function(estimation_dt, true_data) {
     functional = functional_metrics,
     plot = plot_comparison
   ))
+}
+
+
+#' @title Avalia a Qualidade da Simulação das Covariáveis
+#' @description Compara as trajetórias de covariáveis simuladas com as
+#'   trajetórias contrafactuais verdadeiras do PGD.
+#' @param results_dt O data.table de saída da `run_gformula_covariates`.
+#' @return Uma lista com métricas de erro e gráficos comparativos.
+
+assess_covariate_simulation = function(model_output, true_data) {
+  results_dt = model_output 
+  cov_names = grep("^X[0-9]+$", names(results_dt), value = TRUE)
+  all_metrics = list()
+  all_plots = list()
+  
+  for (k in cov_names) {
+    # Nomes das colunas para esta covariável
+    true_a_col = paste0("a_", k)
+    true_b_col = paste0("b_", k)
+    sim_a_col = paste0("sim_a_", k)
+    sim_b_col = paste0("sim_b_", k)
+    
+    # Prepara os dados para análise
+    eval_data = results_dt[, .(
+      t, 
+      true_a = get(true_a_col), sim_a = get(sim_a_col),
+      true_b = get(true_b_col), sim_b = get(sim_b_col)
+    )]
+    
+    # Métricas sumarizadas
+    metrics_a = eval_data[, .(
+      RMSE = sqrt(mean((sim_a - true_a)^2)),
+      Bias = mean(sim_a - true_a)
+    )]
+    metrics_b = eval_data[, .(
+      RMSE = sqrt(mean((sim_b - true_b)^2)),
+      Bias = mean(sim_b - true_b)
+    )]
+    
+    all_metrics[[k]] = list(regime_a = metrics_a, regime_b = metrics_b)
+    
+    # Gráfico comparativo
+    plot_data = eval_data[, .(
+      True_A = mean(true_a), Sim_A = mean(sim_a),
+      True_B = mean(true_b), Sim_B = mean(sim_b)
+    ), by = t]
+    
+    plot = ggplot(plot_data, aes(x = t)) +
+      geom_line(aes(y = True_A, color = "Verdadeiro A"), lty = "dashed") +
+      geom_line(aes(y = Sim_A, color = "Simulado A")) +
+      geom_line(aes(y = True_B, color = "Verdadeiro B"), lty = "dashed") +
+      geom_line(aes(y = Sim_B, color = "Simulado B")) +
+      scale_color_manual(
+        name = "Trajetória",
+        values = c("Verdadeiro A" = "darkblue", "Simulado A" = "lightblue",
+                   "Verdadeiro B" = "darkred", "Simulado B" = "pink")
+      ) +
+      labs(
+        title = paste("Avaliação da Simulação da Covariável:", k),
+        subtitle = paste0(
+          "Regime A (RMSE/Bias): ", 
+          round(metrics_a$RMSE, 2), "/", round(metrics_a$Bias, 2),
+          " | Regime B (RMSE/Bias): ", 
+          round(metrics_b$RMSE, 2), "/", round(metrics_b$Bias, 2)
+        ),
+        x = "Tempo", y = "Valor Médio da Covariável"
+      ) +
+      theme_bw()
+    
+    all_plots[[k]] = plot
+  }
+  
+  return(list(metrics = all_metrics, plots = all_plots))
 }

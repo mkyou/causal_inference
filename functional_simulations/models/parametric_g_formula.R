@@ -106,7 +106,10 @@ simulate_counterfactual_trajectories = function(
     pred_data_t = merge(pred_data_t, history_data, by = "id")
     
     for (cov_name in covs_gam) {
-      predictions = predict(fitted_models[[cov_name]], newdata = pred_data_t)
+      predictions = predict(
+        fitted_models[[cov_name]], 
+        newdata = as.data.frame(pred_data_t)
+      )
       simulated_dt[t == current_t, 
                    (paste0(cov_name, "_sim")) := predictions]
     }

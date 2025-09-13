@@ -85,7 +85,7 @@ generate_sequential_dgp = function(
   
   # --- Estágio 1: Gerar Heterogeneidade Invariante no Tempo ---
   b_ik_matrix = sapply(intercept_sd_vec, function(sd) {
-    rnorm(n_subjects, 0, sd)
+    rbinom(n_subjects, 1, 1)
   })
   
   # --- Estágio 2: Inicialização em t=0 ---
