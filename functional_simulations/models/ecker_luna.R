@@ -1,42 +1,78 @@
 # ===================================================================
-# MODELO 1: Ecker & Luna
+# MODELO 1: Ecker & Luna (V. FINAL com mgcv e dados pré-suavizados)
 # ===================================================================
 library(mgcv)
 library(data.table)
 
-#' @title Ajusta e Estima o Efeito Causal usando o Método Ecker & Luna
-#' @description Versão refatorada para ser compatível com o pipeline de
-#'   simulação. A preparação dos dados e o ajuste do modelo são
-#'   encapsulados em uma única função.
+#' @title (NOVA) Converte Dados do Formato Refund de volta para Longo
+#' @description Função auxiliar que pega a lista de matrizes da
+#'   `prepare_refund_data` e a "re-hidrata" para um único
+#'   data.table longo, tornando-a compatível com `bam`.
+#' @param refund_data A lista de saída da `prepare_refund_data`.
+#' @return Um data.table em formato longo com os dados suavizados.
+
+revert_to_long_format = function(refund_data) {
+  
+  ids = refund_data$id
+  time_grid = refund_data$time_grid
+  
+  # Cria a base do data.table longo
+  dt_long = CJ(id = ids, t = time_grid)
+  
+  # Itera sobre cada variável funcional na lista e a "derrete"
+  for (var_name in names(refund_data$functional_vars)) {
+    dt_long[, (var_name) := as.vector(
+      t(refund_data$functional_vars[[var_name]])
+    )]
+  }
+  
+  # Converte e junta as variáveis escalares de tratamento
+  scalar_vars_long = melt(
+    refund_data$scalar_vars, 
+    id.vars = "id", 
+    variable.name = "t_char", 
+    value.name = "A"
+  )
+  scalar_vars_long[, t := as.numeric(gsub("A_s", "", t_char))]
+  
+  dt_long[scalar_vars_long, on = .(id, t), A := i.A]
+  dt_long[is.na(A), A := 0]
+  
+  return(dt_long)
+}
+
+
+#' @title (FINAL) Ajusta o modelo Ecker & Luna usando GAM
+#' @description Recebe dados no formato `refund`, converte-os de volta para
+#'   longo, e então ajusta o modelo Ecker & Luna com `mgcv::bam`.
 #'
-#' @param scenario_data O data.table completo gerado pelo PGD.
+#' @param scenario_data A lista de dados gerada por `prepare_refund_data`.
 #' @param scenario_config A configuração do cenário.
 #' @param regime_a,regime_b Vetores definindo os regimes a comparar.
 #'
-#' @return Um data.table com as colunas `id`, `t`, e `effect_estimate`.
+#' @return Um data.table com `id`, `t`, e `effect_estimate`.
 
-fit_ecker_luna = function(
+fit_ecker_luna_mgcv = function(
     scenario_data, scenario_config, regime_a, regime_b
 ) {
-  cat("--- Ajustando modelo: Ecker & Luna ---\n")
+  cat("--- Ajustando modelo: Ecker & Luna (mgcv com dados pré-suavizados) ---\n")
   
-  # --- 1. Preparação dos Dados (lógica agora interna) ---
+  # --- 1. Etapa de Conversão de Dados ---
+  # Converte os dados do formato refund/largo de volta para o formato longo
+  model_data = revert_to_long_format(scenario_data)
   
-  # A função agora espera o data.table diretamente
-  model_data = copy(scenario_data)
+  # --- 2. Preparação dos Dados (lógica de Ecker & Luna) ---
   treatment_times = scenario_config$treatment_times
   
   regime_a_label = paste(regime_a, collapse = "_")
   regime_b_label = paste(regime_b, collapse = "_")
   
-  # Cria o histórico de tratamento (ex: "1_1_1")
   treatment_history_dt = model_data[
     t %in% treatment_times, 
     .(treatment_history = paste(A, collapse = "_")), 
     by = id
   ]
   
-  # Extrai as covariáveis de baseline (pré-primeiro tratamento)
   first_treatment_time = min(treatment_times)
   all_times = sort(unique(model_data$t))
   baseline_time = max(all_times[all_times < first_treatment_time])
@@ -49,42 +85,34 @@ fit_ecker_luna = function(
   ]
   setnames(baseline_data, cov_names, base_cov_names)
   
-  # Junta a história e a baseline aos dados principais
-  model_data = merge(model_data, baseline_data, by = "id", all.x = TRUE)
+  model_data = merge(model_data, baseline_data, by = "id")
   model_data = merge(model_data, treatment_history_dt, by = "id")
   
-  # --- 2. Ajuste dos Modelos por Regime ---
+  # --- 3. Ajuste dos Modelos por Regime ---
   
-  # Define a fórmula do modelo
+  # A fórmula usa a sintaxe s(t, by = X_base) que você pediu
   smooth_terms = paste0("s(t, by = ", base_cov_names, ", k = 8)")
   model_formula = as.formula(
     paste("y ~ s(t, k = 15) +", paste(smooth_terms, collapse = " + "))
   )
   
-  # Filtra os dados para cada regime de interesse
   data_a = model_data[treatment_history == regime_a_label]
   data_b = model_data[treatment_history == regime_b_label]
   
-  # Validação
   if(nrow(data_a) < 10 || nrow(data_b) < 10) {
     stop("Dados insuficientes para um ou ambos os regimes.")
   }
   
-  # Ajusta os modelos
   fit_a = bam(model_formula, data = data_a, discrete = TRUE)
   fit_b = bam(model_formula, data = data_b, discrete = TRUE)
   
-  # --- 3. Predição Contrafactual ---
+  # --- 4. Predição e Retorno ---
   
-  # Prevê o desfecho para TODOS os indivíduos usando cada modelo
   pred_Y_a = predict(fit_a, newdata = model_data)
   pred_Y_b = predict(fit_b, newdata = model_data)
   
-  # --- 4. Retorno ---
-  
-  # Calcula o efeito e retorna um data.table limpo
   model_data[, effect_estimate := pred_Y_a - pred_Y_b]
   
-  cat("--- Estimação Ecker & Luna concluída ---\n")
+  cat("--- Estimação Ecker & Luna (mgcv) concluída ---\n")
   return(model_data[, .(id, t, effect_estimate)])
 }

@@ -115,10 +115,11 @@ generate_sequential_dgp = function(
         X_integral = sapply(X_list, function(X) {
           rowSums(X[, 1:prev_t_idx, drop = FALSE]) * dt
         })
-        integral_predictor = rowSums(X_integral * matrix(
+        integral_predictor = rowSums(
+          X_integral * matrix(
           theta_integral_matrix[s_idx, ],
           nrow = n_subjects, ncol = K, byrow = TRUE
-        )
+          )
         )
         linear_predictor = linear_predictor + integral_predictor
       }
@@ -133,14 +134,27 @@ generate_sequential_dgp = function(
     for (k in 1:K) {
       new_val = baseline_funcs[[k]](current_time) + b_ik_matrix[, k]
       
-      cross_effect = 0
+      cross_effect_factual = 0
+      cross_effect_a = 0
+      cross_effect_b = 0
+      
       for (j in 1:K) {
         if (k == j || is.null(beta_funcs_matrix[[k, j]])) next
+        
         beta_val = beta_funcs_matrix[[k, j]](current_time)
-        cross_effect = cross_effect + beta_val * X_list[[j]][, t_idx-1]
+        
+        cross_effect_factual = cross_effect_factual + 
+          beta_val * X_list[[j]][, t_idx-1]
+        
+        cross_effect_a = cross_effect_a + 
+          beta_val * a_X_list[[j]][, t_idx-1]
+        
+        cross_effect_b = cross_effect_b + 
+          beta_val * b_X_list[[j]][, t_idx-1]
       }
       
       feedback_effect = 0; feedback_a = 0; feedback_b = 0
+      
       for (s_idx in 1:S) {
         s_time = treatment_times[s_idx]
         if (current_time >= s_time) {
@@ -153,11 +167,11 @@ generate_sequential_dgp = function(
       
       noise = rnorm(n_subjects, 0, noise_sd_vec[k])
       
-      X_list[[k]][, t_idx] = new_val + cross_effect + 
+      X_list[[k]][, t_idx] = new_val + cross_effect_factual + 
         feedback_effect + noise
-      a_X_list[[k]][, t_idx] = new_val + cross_effect + 
+      a_X_list[[k]][, t_idx] = new_val + cross_effect_a + 
         feedback_a + noise
-      b_X_list[[k]][, t_idx] = new_val + cross_effect + 
+      b_X_list[[k]][, t_idx] = new_val + cross_effect_b + 
         feedback_b + noise
     }
   }

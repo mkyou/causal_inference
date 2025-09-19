@@ -1,16 +1,63 @@
 # ===================================================================
-# Suíte de Análise de Cenário de Simulação (V2.1 - Corrigida)
+# Suíte de Análise para Cenários em Formato Funcional/Refund (V3.0)
 #
-# Contém a suíte completa de funções de análise com a correção
-# na função `plot_confounding_structure` para lidar com a busca
-# de tempo de forma mais robusta.
+# Contém funções para analisar a saída da `prepare_refund_data`.
+# A lógica principal é converter os dados de volta para o formato longo
+# para reutilizar as funções de plotagem existentes.
 # ===================================================================
 
 library(data.table)
 library(ggplot2)
 
+
 # -------------------------------------------------------------------
-# Função 1: Checar Estrutura Causal (sem alterações)
+# Reverter para formato longo
+# -------------------------------------------------------------------
+revert_to_long_format = function(refund_data) {
+  
+  # Pega os metadados da lista
+  ids = refund_data$id
+  time_grid = refund_data$time_grid
+  
+  # Cria a base do data.table longo
+  dt_long = CJ(id = ids, t = time_grid)
+  
+  # Itera sobre cada variável funcional na lista
+  for (var_name in names(refund_data$functional_vars)) {
+    # as.vector(t(matrix)) desfaz o formato largo de volta para longo
+    dt_long[, (var_name) := as.vector(
+      t(refund_data$functional_vars[[var_name]])
+    )]
+  }
+  
+  # Adiciona as variáveis escalares de tratamento
+  scalar_vars_long = melt(
+    refund_data$scalar_vars, 
+    id.vars = "id", 
+    variable.name = "t_char", 
+    value.name = "A"
+  )
+  scalar_vars_long[, t := as.numeric(gsub("A_s", "", t_char))]
+  
+  dt_long[scalar_vars_long, on = .(id, t), A := i.A]
+  dt_long[is.na(A), A := 0]
+  
+  # Recalcula colunas derivadas importantes para os gráficos
+  if (all(c("a_y", "b_y") %in% names(dt_long))) {
+    dt_long[, effect_a_vs_b := a_y - b_y]
+  }
+  
+  # Renomeia colunas para consistência com o PGD antigo, se necessário
+  setnames(dt_long, "b_X1", "another_a_X1", skip_absent = TRUE)
+  setnames(dt_long, "b_X2", "another_a_X2", skip_absent = TRUE)
+  setnames(dt_long, "b_X3", "another_a_X3", skip_absent = TRUE)
+  setnames(dt_long, "b_y", "another_a_y", skip_absent = TRUE)
+  
+  return(dt_long)
+}
+
+# -------------------------------------------------------------------
+# Checar Estrutura Causal
 # -------------------------------------------------------------------
 check_causal_structure = function(scenario_data, scenario_config) {
   dt = scenario_data
@@ -42,14 +89,17 @@ check_causal_structure = function(scenario_data, scenario_config) {
 }
 
 # -------------------------------------------------------------------
-# Função 2: Plotar Trajetórias (sem alterações)
+# Plotar Trajetórias
 # -------------------------------------------------------------------
 plot_scenario_trajectories = function(scenario_data, n_plot = 10) {
   dt = scenario_data
   ids_to_plot = unique(dt$id)[1:min(n_plot, length(unique(dt$id)))]
   dt_plot = dt[id %in% ids_to_plot]
   
-  measure_cols = names(dt_plot)[grep("^(X|a_X|b_X|y|a_y|b_y)", names(dt_plot))]
+  measure_cols = names(dt_plot)[
+    grep("^(X|a_X|b_X|y|a_y|b_y)",
+         names(dt_plot))
+  ]
   
   dt_melt = melt(
     dt_plot, 
@@ -59,7 +109,8 @@ plot_scenario_trajectories = function(scenario_data, n_plot = 10) {
     value.name = "Valor"
   )
   
-  ggplot(dt_melt, aes(x = t, y = Valor, group = id, color = factor(id))) +
+  ggplot(
+    dt_melt, aes(x = t, y = Valor, group = id, color = factor(id))) +
     geom_line(alpha = 0.7) +
     facet_wrap(~ Variavel, scales = "free_y") +
     labs(
@@ -72,12 +123,15 @@ plot_scenario_trajectories = function(scenario_data, n_plot = 10) {
 }
 
 # -------------------------------------------------------------------
-# Função 3: Plotar Efeito Causal Total (sem alterações)
+# Plotar Efeito Causal Total
 # -------------------------------------------------------------------
 plot_scenario_effects = function(scenario_data) {
   dt = scenario_data
   
-  total_effect = dt[, .(efeito_medio=mean(effect_a_vs_b, na.rm=TRUE)), by = t]
+  total_effect = dt[
+    , 
+    .(efeito_medio=mean(effect_a_vs_b, na.rm=TRUE)), by = t
+  ]
   
   ggplot(total_effect, aes(x = t, y = efeito_medio)) +
     geom_line(color = "#0072B2", linewidth = 1.2) +
@@ -91,12 +145,13 @@ plot_scenario_effects = function(scenario_data) {
     theme_bw()
 }
 
-
 # -------------------------------------------------------------------
-# Função 4: Plotar Estrutura de Confundimento (CORRIGIDA)
+# Plotar Estrutura de Confundimento
 # -------------------------------------------------------------------
-#' @title (V2.2 - Corrigida) Visualiza a Força do Confundimento
-plot_confounding_structure = function(scenario_data, scenario_config) {
+plot_confounding_structure = function(
+    scenario_data, 
+    scenario_config
+  ) {
   dt = scenario_data
   
   plot_data_list = list()
@@ -133,7 +188,9 @@ plot_confounding_structure = function(scenario_data, scenario_config) {
     )
     # Checa se as colunas esperadas existem antes de renomear
     if (!all(old_names %in% names(temp_dt_wide))) {
-      warning(paste("Colunas esperadas não encontradas para o tempo", s_time))
+      warning(
+        paste("Colunas esperadas não encontradas para o tempo", s_time)
+      )
       next
     }
     
@@ -159,7 +216,10 @@ plot_confounding_structure = function(scenario_data, scenario_config) {
   plot_data = rbindlist(plot_data_list, fill = TRUE)
   
   # Checa se a coluna Treatment_status existe e não é toda NA
-  if (is.null(plot_data$Treatment_status) || all(is.na(plot_data$Treatment_status))) {
+  if (
+    is.null(plot_data$Treatment_status) || 
+    all(is.na(plot_data$Treatment_status))
+  ) {
     warning("Coluna Treatment_status está vazia ou toda NA.")
     return(NULL)
   }
@@ -181,19 +241,11 @@ plot_confounding_structure = function(scenario_data, scenario_config) {
     theme_bw()
 }
 
-
 # -------------------------------------------------------------------
-# Função 5 Plotar Efeitos Cruzados
+# Plotar Efeitos Cruzados
 # -------------------------------------------------------------------
-#' @title Visualiza o Efeito Cruzado Entre Covariáveis
-#' @description Valida a estrutura causal Xj -> Xk. Inspeciona a
-#'   configuração do cenário e gera um gráfico para cada efeito
-#'   cruzado não nulo definido na `beta_funcs_matrix`.
-#' @param scenario_data O data.table gerado.
-#' @param scenario_config A configuração usada para gerar os dados.
-#' @return Uma lista de objetos ggplot, um para cada efeito detectado.
-
-plot_cross_covariate_effect = function(scenario_data, scenario_config) {
+plot_cross_covariate_effect = function(
+    scenario_data, scenario_config) {
   dt = copy(scenario_data)
   beta_matrix = scenario_config$beta_funcs_matrix
   K = sqrt(length(beta_matrix)) # Número de covariáveis
@@ -252,9 +304,8 @@ plot_cross_covariate_effect = function(scenario_data, scenario_config) {
 
 
 # -------------------------------------------------------------------
-# Função 6: Ponto de Entrada
+# Ponto de Entrada
 # -------------------------------------------------------------------
-#' @title (V2.3) Ponto de Entrada para Análise Completa de Cenário
 analyze_scenario = function(
     scenario_data,
     scenario_config,
@@ -263,27 +314,38 @@ analyze_scenario = function(
   
   cat(paste("\n--- Analisando Cenário:", scenario_name, "---\n"))
   
-  # Chamadas para as 4 funções de análise existentes
+  # --- ETAPA DE CONVERSÃO ---
+  # Primeiro, verifica se os dados estão em formato refund ou longo
+  # Esta é uma checagem simples baseada na estrutura do objeto
+  if (is.list(scenario_data) && all(
+    c("functional_vars", "scalar_vars") %in% names(scenario_data))
+  ) {
+    cat("  - Detectado formato refund. Convertendo para formato longo...\n")
+    scenario_data_long = revert_to_long_format(scenario_data)
+  } else {
+    scenario_data_long = as.data.table(scenario_data)
+  }
+  
+  
   cat("  - Verificando estrutura causal...\n")
-  summary_table = check_causal_structure(scenario_data, scenario_config)
+  summary_table = check_causal_structure(scenario_data_long, scenario_config)
   summary_table[, Scenario := scenario_name]
   
   cat("  - Gerando gráfico de trajetórias...\n")
-  p_traj = plot_scenario_trajectories(scenario_data)
+  p_traj = plot_scenario_trajectories(scenario_data_long)
   
   cat("  - Gerando gráfico do efeito causal...\n")
-  p_effects = plot_scenario_effects(scenario_data)
+  p_effects = plot_scenario_effects(scenario_data_long)
   
   cat("  - Gerando gráfico da estrutura de confundimento...\n")
   p_confounding = plot_confounding_structure(
-    scenario_data,
+    scenario_data_long,
     scenario_config
   )
   
-  # --- NOVA CHAMADA ---
   cat("  - Gerando gráficos de efeitos cruzados (Xj -> Xk)...\n")
   p_cross_effects = plot_cross_covariate_effect(
-    scenario_data,
+    scenario_data_long,
     scenario_config
   )
   

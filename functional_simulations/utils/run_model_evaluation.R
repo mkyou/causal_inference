@@ -13,10 +13,10 @@
 #' @return Uma lista nomeada com os resultados da avaliação.
 
 run_model_evaluation = function(
-    all_scenarios_data,
+    all_scenarios_data, # Agora espera a lista de listas do refund
     scenario_configs,
     model_function,
-    assessment_function, # <-- NOVO PARÂMETRO
+    assessment_function,
     model_name
 ) {
   
@@ -33,8 +33,8 @@ run_model_evaluation = function(
       regime_a_dynamic = rep(1, S)
       regime_b_dynamic = rep(0, S)
       
-      # 1. Executa a função do modelo para obter as estimativas
-      # A saída desta função (`model_output`) será passada para a avaliação
+      # 1. Executa o modelo (ex: fit_ecker_luna_refund)
+      # Ele recebe a lista de dados e retorna um data.table longo
       model_output = model_function(
         scenario_data = scenario_data,
         scenario_config = config,
@@ -42,10 +42,12 @@ run_model_evaluation = function(
         regime_b = regime_b_dynamic
       )
       
-      # 2. Executa a função de avaliação fornecida
+      # 2. Avalia a estimativa
+      # `assessment_function` recebe o data.table longo do modelo
+      # e a lista de dados verdadeiros para extrair a verdade.
       assessment = assessment_function(
         model_output = model_output,
-        true_data = scenario_data
+        true_data_refund = scenario_data
       )
       
       return(assessment)

@@ -11,19 +11,18 @@ library(data.table)
 
 # --- 1. CARREGAMENTO DAS FUNÇÕES DE GERAÇÃO E ANÁLISE ---
 # Assumindo que estes scripts estão no seu ambiente de trabalho
+
 source(
   "functional_simulations/data_generation_process/generate_sequential_dgp.R"
 )
-
 source(
   "functional_simulations/data_generation_process/generate_functional_outcomes.R"
 )
-
 source(
   "functional_simulations/data_generation_process/generate_simulation_scenarios.R"
 )
-
 source("functional_simulations/data_generation_process/analyze_scenario.R")
+source("functional_simulations/data_generation_process/prepare_refund_data.R")
 
 # ===================================================================
 # --- 2. DEFINIÇÃO DOS COMPONENTES GLOBAIS DA SIMULAÇÃO ---
@@ -208,7 +207,8 @@ scenario_configs = c(scenario_configs, list(
 cat("--- Iniciando a geração de dados para todos os cenários... ---\n")
 all_scenarios = generate_simulation_scenarios(
   scenario_configs = scenario_configs,
-  global_params = GLOBAL_PARAMS
+  global_params = GLOBAL_PARAMS,
+  prepare_for_refund = TRUE
 )
 cat("--- Geração de dados concluída. ---\n")
 

@@ -16,45 +16,69 @@ library(ggplot2)
 #'   um data.table de métricas funcionais (ao longo do tempo), e um
 #'   gráfico comparativo.
 
-assess_effect_estimation = function(model_output, true_data) {
-  estimation_dt = model_output
-  # Junta a estimativa com a verdade
-  eval_data = merge(
-    estimation_dt,
-    true_data[, .(id, t, true_effect = effect_a_vs_b)],
-    by = c("id", "t")
+assess_effect_estimation = function(model_output, true_data_refund) {
+  
+  true_effect_mat = true_data_refund$functional_vars$a_y -
+    true_data_refund$functional_vars$b_y
+  
+  true_data_long = as.data.table(true_effect_mat)
+  setnames(
+    true_data_long, 
+    names(true_data_long),
+    as.character(true_data_refund$time_grid)
   )
   
-  # Calcula o erro ponto a ponto
+  true_data_long[, id := true_data_refund$id]
+  true_data_long = melt(
+    true_data_long, id.vars = "id", variable.name = "t",
+    value.name = "true_effect"
+  )
+  true_data_long[, t := as.numeric(as.character(t))]
+  
+  estimation_dt = model_output
+  estimation_dt[, id := as.factor(id)]
+  true_data_long[, id := as.factor(id)]
+  
+  eval_data = merge(estimation_dt, true_data_long, by = c("id", "t"))
+  
   eval_data[, error := effect_estimate - true_effect]
   
-  # 1. Calcula as métricas funcionais (para cada ponto no tempo)
-  functional_metrics = eval_data[, .(
-    Bias = mean(error),
-    RMSE = sqrt(mean(error^2)),
-    MAE = mean(abs(error))
-  ), by = t]
+  functional_metrics = eval_data[
+    , 
+    .(
+      Bias = mean(error),
+      RMSE = sqrt(mean(error^2)),
+      MAE = mean(abs(error))
+    ), 
+    by = t
+  ]
   
-  # 2. Calcula as métricas sumarizadas (agregadas sobre todo o tempo)
-  summary_metrics = eval_data[, .(
-    Mean_Bias = mean(error),
-    Median_Bias = median(error),
-    Mean_RMSE = mean(functional_metrics$RMSE),
-    Overall_RMSE = sqrt(mean(error^2))
-  )]
+  summary_metrics = eval_data[
+    , 
+    .(
+      Mean_Bias = mean(error),
+      Median_Bias = median(error),
+      Mean_RMSE = mean(functional_metrics$RMSE),
+      Overall_RMSE = sqrt(mean(error^2))
+    )
+  ]
   
-  # 3. Calcula a correlação e métrica invariante à escala
-  mean_effects = eval_data[, .(
-    est = mean(effect_estimate),
-    true = mean(true_effect)
-  ), by = t]
+  mean_effects = eval_data[
+    , 
+    .(
+      est = mean(effect_estimate),
+      true = mean(true_effect)
+    ), 
+    by = t
+  ]
   
-  summary_metrics[, Correlation := cor(mean_effects$est, mean_effects$true)]
+  summary_metrics[, Correlation := cor(mean_effects$est,
+                                       mean_effects$true)]
   
-  # 4. Cria o gráfico comparativo
   plot_comparison = ggplot(mean_effects, aes(x = t)) +
     geom_line(
-      aes(y = true, color = "Verdadeiro"), linetype = "dashed", linewidth = 1.1
+      aes(y = true, color = "Verdadeiro"),
+      linetype = "dashed", linewidth = 1.1
     ) +
     geom_line(
       aes(y = est, color = "Estimado"), linewidth = 1.1, alpha = 0.8
@@ -84,7 +108,7 @@ assess_effect_estimation = function(model_output, true_data) {
 #' @param results_dt O data.table de saída da `run_gformula_covariates`.
 #' @return Uma lista com métricas de erro e gráficos comparativos.
 
-assess_covariate_simulation = function(model_output, true_data) {
+assess_covariate_simulation = function(model_output, true_data_refund) {
   results_dt = model_output 
   cov_names = grep("^X[0-9]+$", names(results_dt), value = TRUE)
   all_metrics = list()
@@ -148,4 +172,44 @@ assess_covariate_simulation = function(model_output, true_data) {
   }
   
   return(list(metrics = all_metrics, plots = all_plots))
+}
+
+
+#' @title Avalia o Processo Completo da G-Formula
+#' @description Recebe um objeto rico da `run_gformula_full` e avalia
+#'   cada etapa: covariáveis, desfechos e efeito causal.
+assess_full_gformula_process = function(model_output,
+                                        true_data_refund) {
+  
+  cat("--- Iniciando Avaliação Completa do Processo ---\n")
+  
+  # 1. Avaliar Simulação das Covariáveis
+  cat("  - Avaliando simulação de covariáveis...\n")
+  # A chamada agora está correta, com apenas um argumento
+  assessment_covariates = assess_covariate_simulation(
+    model_output = model_output$covariates
+  )
+  
+  # 2. Avaliar Simulação do Desfecho
+  cat("  - Avaliando simulação de desfechos...\n")
+  outcome_eval_data = model_output$outcomes
+  outcome_metrics = outcome_eval_data[, .(
+    RMSE_A = sqrt(mean((y_a_sim - a_y)^2)),
+    Bias_A = mean(y_a_sim - a_y),
+    RMSE_B = sqrt(mean((y_b_sim - b_y)^2)),
+    Bias_B = mean(y_b_sim - b_y)
+  )]
+  
+  # 3. Avaliar Efeito Causal
+  cat("  - Avaliando estimação do efeito causal...\n")
+  assessment_causal = assess_effect_estimation(
+    model_output = model_output$causal_effect,
+    true_data_refund = true_data_refund
+  )
+  
+  return(list(
+    covariate_assessment = assessment_covariates,
+    outcome_assessment_metrics = outcome_metrics,
+    causal_effect_assessment = assessment_causal
+  ))
 }

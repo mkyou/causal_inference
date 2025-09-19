@@ -1,21 +1,25 @@
 #' @title Gera Múltiplos Cenários de Simulação
-#' @description Orquestra a geração de múltiplos cenários de simulação,
-#'   chamando `generate_sequential_dgp` e em seguida
-#'   `generate_functional_outcome` para cada configuração.
+#' @description Orquestra a geração de cenários, chamando
+#'   `generate_sequential_dgp` e `generate_functional_outcome`.
+#'   Agora inclui uma etapa opcional para preparar os dados para
+#'   pacotes de FDA como o `refund`.
 #'
-#' @param scenario_configs Uma lista nomeada. Cada elemento da lista é outra
-#'   lista contendo todos os parâmetros necessários para gerar um cenário
-#'   completo (tanto para as covariáveis quanto para o desfecho).
-#' @param global_params Uma lista de parâmetros que serão aplicados a
-#'   todos os cenários, a menos que sejam sobrescritos por uma
-#'   configuração específica do cenário.
+#' @param scenario_configs Lista nomeada de configurações de cenário.
+#' @param global_params Lista de parâmetros globais.
+#' @param prepare_for_refund Booleano. Se TRUE, a saída de cada cenário
+#'   será processada por `prepare_refund_data`.
+#' @param refund_nbasis,refund_lambda Parâmetros de suavização a serem
+#'   passados para `prepare_refund_data`.
 #'
-#' @return Uma lista nomeada, onde cada elemento contém o data.table
-#'   completo (covariáveis e desfecho) para um cenário.
+#' @return Uma lista nomeada de cenários. O formato de cada elemento
+#'   depende de `prepare_for_refund`.
 
 generate_simulation_scenarios = function(
     scenario_configs, 
-    global_params = list()
+    global_params = list(),
+    prepare_for_refund = FALSE,
+    refund_nbasis = 20,
+    refund_lambda = 1e-4
 ) {
   # Validação
   if (missing(scenario_configs) || !is.list(scenario_configs) || 
@@ -34,11 +38,11 @@ generate_simulation_scenarios = function(
   for (i in seq_along(scenario_configs)) {
     cat(paste("\n--- Gerando Cenário:", labels[i], "---\n"))
     
-    # 1. Combina parâmetros globais e específicos do cenário
+    # 1. Combina parâmetros
     cfg_specific = scenario_configs[[i]]
     params = utils::modifyList(global_params, cfg_specific)
     
-    # 2. Primeira Etapa: Gerar as covariáveis e tratamentos
+    # 2. Etapa 1: Gerar as covariáveis e tratamentos
     cat("  - Etapa 1: Gerando covariáveis (generate_sequential_dgp)\n")
     dgp_data = generate_sequential_dgp(
       n_subjects = params$n_subjects,
@@ -55,7 +59,7 @@ generate_simulation_scenarios = function(
       regime_b = params$regime_b
     )
     
-    # 3. Segunda Etapa: Gerar o desfecho usando os dados da etapa 1
+    # 3. Etapa 2: Gerar o desfecho
     cat("  - Etapa 2: Gerando desfecho (generate_functional_outcome)\n")
     final_dt = generate_functional_outcome(
       dgp_data = dgp_data,
@@ -66,10 +70,33 @@ generate_simulation_scenarios = function(
       noise_sd = params$outcome_noise_sd
     )
     
-    all_scenarios_data[[i]] = final_dt
+    # --- INÍCIO DA MUDANÇA ---
+    # 4. Etapa 3 (Opcional): Preparar dados para refund/FDA
+    if (prepare_for_refund) {
+      cat("  - Etapa 3: Preparando dados para formato refund/FDA\n")
+      
+      # Permite que os parâmetros de suavização sejam específicos do cenário
+      nbasis = params$refund_nbasis %||% refund_nbasis
+      lambda = params$refund_lambda %||% refund_lambda
+      
+      processed_data = prepare_refund_data(
+        dgp_data = final_dt,
+        treatment_times = params$treatment_times,
+        nbasis = nbasis,
+        lambda = lambda
+      )
+      all_scenarios_data[[i]] = processed_data
+    } else {
+      all_scenarios_data[[i]] = final_dt
+    }
   }
   
   names(all_scenarios_data) = labels
   cat("\n--- Geração de todos os cenários concluída. ---\n")
   return(all_scenarios_data)
+}
+
+# Operador auxiliar para definir valores padrão
+`%||%` = function(a, b) {
+  if (is.null(a)) b else a
 }
