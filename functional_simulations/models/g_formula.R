@@ -161,8 +161,10 @@ run_gformula_full = function(
     A_s_name = paste0("A_s", s_time)
     treatment_status_at_s = full_data_for_fitting[t == s_time, .(id, A)]
     setnames(treatment_status_at_s, "A", A_s_name)
-    full_data_for_fitting = merge(full_data_for_fitting,
-                                  treatment_status_at_s, by = "id", all.x = TRUE)
+    full_data_for_fitting = merge(
+      full_data_for_fitting,
+      treatment_status_at_s, by = "id", all.x = TRUE
+    )
   }
   a_s_cols = paste0("A_s", treatment_times)
   full_data_for_fitting[, (a_s_cols) := lapply(
@@ -176,7 +178,7 @@ run_gformula_full = function(
   fit_data_y[, id := as.factor(id)]
   
   cov_names = grep("^X[0-9]+$", names(fit_data_y), value = TRUE)
-  base_formula_y = "s(t, k = 15)"
+  base_formula_y = "s(t, k = 30)"
   cov_form_y = paste(
     sapply(
       cov_names,
@@ -187,7 +189,7 @@ run_gformula_full = function(
   treat_form_y = paste(
     sapply(
       treatment_times,
-      function(s) paste0("s(t, by = A_s", s, ", k=8)")
+      function(s) paste0("s(t, by = A_s", s, ", k = 20)")
     ), collapse = " + "
   )
   
@@ -199,7 +201,7 @@ run_gformula_full = function(
   print(model_formula_y)
   
   outcome_model = bam(model_formula_y, data = fit_data_y,
-                      discrete = TRUE)
+                      discrete = TRUE, select = TRUE)
   
   # --- ETAPA 3: PREDIÇÃO ---
   cat("  - Etapa 3: Prevendo desfechos contrafactuais...\n")
