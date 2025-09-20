@@ -80,34 +80,6 @@ purrr::iwalk(
   }
 )
 
-# ----- G-FORMULA PARA COVARIÁVEIS-------------------------------------
-cat("\n\n--- AVALIANDO COVARIAVEIS (G-Formula) ---\n")
-results_gformula_covariates = run_model_evaluation(
-  all_scenarios_data = all_scenarios,
-  scenario_configs = scenario_configs,
-  model_function = run_gformula_covariates_for_assessment,
-  assessment_function = assess_covariate_simulation,
-  model_name = "G-Formula (Etapa de Covariáveis)"
-)
-
-# Apresentação interativa dos gráficos
-cat("\n\n--- APRESENTAÇÃO INTERATIVA DOS GRÁFICOS (COVS G-FORMULA) ---\n")
-purrr::iwalk(
-  results_gformula_covariates,
-  function(assessment, scenario_name) {
-    cat("\n=====================================================\n")
-    cat(">>> Análise do Cenário:", scenario_name, "\n")
-    cat("=====================================================\n\n")
-    
-    print(assessment$plot)
-    
-    # Pausa para permitir a visualização antes de passar para o próximo
-    readline(prompt = "Pressione [enter] para ver o próximo cenário...")
-  }
-)
-
-
-
 # ----- ECKER E LUNA -----------------------------------------
 cat("\n\n--- AVALIANDO O EFEITO FINAL (ECKER & LUNA) ---\n")
 results_ecker_luna = run_model_evaluation(

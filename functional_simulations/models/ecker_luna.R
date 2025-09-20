@@ -1,48 +1,13 @@
 # ===================================================================
-# MODELO 1: Ecker & Luna (V. FINAL com mgcv e dados pré-suavizados)
+# MODELO 1: Ecker & Luna
 # ===================================================================
 library(mgcv)
 library(data.table)
 
-#' @title (NOVA) Converte Dados do Formato Refund de volta para Longo
-#' @description Função auxiliar que pega a lista de matrizes da
-#'   `prepare_refund_data` e a "re-hidrata" para um único
-#'   data.table longo, tornando-a compatível com `bam`.
-#' @param refund_data A lista de saída da `prepare_refund_data`.
-#' @return Um data.table em formato longo com os dados suavizados.
-
-revert_to_long_format = function(refund_data) {
-  
-  ids = refund_data$id
-  time_grid = refund_data$time_grid
-  
-  # Cria a base do data.table longo
-  dt_long = CJ(id = ids, t = time_grid)
-  
-  # Itera sobre cada variável funcional na lista e a "derrete"
-  for (var_name in names(refund_data$functional_vars)) {
-    dt_long[, (var_name) := as.vector(
-      t(refund_data$functional_vars[[var_name]])
-    )]
-  }
-  
-  # Converte e junta as variáveis escalares de tratamento
-  scalar_vars_long = melt(
-    refund_data$scalar_vars, 
-    id.vars = "id", 
-    variable.name = "t_char", 
-    value.name = "A"
-  )
-  scalar_vars_long[, t := as.numeric(gsub("A_s", "", t_char))]
-  
-  dt_long[scalar_vars_long, on = .(id, t), A := i.A]
-  dt_long[is.na(A), A := 0]
-  
-  return(dt_long)
-}
+source("functional_simulations/utils/revert_to_long_format.R")
 
 
-#' @title (FINAL) Ajusta o modelo Ecker & Luna usando GAM
+#' @title Ajusta o modelo Ecker & Luna usando GAM
 #' @description Recebe dados no formato `refund`, converte-os de volta para
 #'   longo, e então ajusta o modelo Ecker & Luna com `mgcv::bam`.
 #'
@@ -55,7 +20,9 @@ revert_to_long_format = function(refund_data) {
 fit_ecker_luna_mgcv = function(
     scenario_data, scenario_config, regime_a, regime_b
 ) {
-  cat("--- Ajustando modelo: Ecker & Luna (mgcv com dados pré-suavizados) ---\n")
+  cat(
+    "--- Ajustando modelo: Ecker & Luna (mgcv com dados pré-suavizados) ---\n"
+  )
   
   # --- 1. Etapa de Conversão de Dados ---
   # Converte os dados do formato refund/largo de volta para o formato longo
@@ -91,9 +58,9 @@ fit_ecker_luna_mgcv = function(
   # --- 3. Ajuste dos Modelos por Regime ---
   
   # A fórmula usa a sintaxe s(t, by = X_base) que você pediu
-  smooth_terms = paste0("s(t, by = ", base_cov_names, ", k = 8)")
+  smooth_terms = paste0("s(t, by = ", base_cov_names, ", k = 15)")
   model_formula = as.formula(
-    paste("y ~ s(t, k = 15) +", paste(smooth_terms, collapse = " + "))
+    paste("y ~ s(t, k = 30) +", paste(smooth_terms, collapse = " + "))
   )
   
   data_a = model_data[treatment_history == regime_a_label]

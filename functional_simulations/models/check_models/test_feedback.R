@@ -21,8 +21,8 @@ source("functional_simulations/utils/run_model_evaluation.R")
 # ----- G-FORMULA -------------------------------------
 cat("\n\n--- AVALIANDO DADOS (G-Formula) ---\n")
 results_gformula = run_model_evaluation(
-  all_scenarios_data = all_scenarios,
-  scenario_configs = scenario_configs,
+  all_scenarios_data = all_feedback_scenarios,
+  scenario_configs = scenario_configs_feedback,
   model_function = run_gformula_full,
   assessment_function = assess_full_gformula_process,
   model_name = "G-Formula"
@@ -38,6 +38,8 @@ causal_summary_table = purrr::map_dfr(
 
 cat("\n\n--- TABELA DE RESUMO: EFEITO CAUSAL ---\n")
 print(causal_summary_table)
+
+# results_gformula$F5_Cross_High$covariate_assessment$plots
 
 # --- Tabela de Resumo para as COVARIÁVEIS ---
 covariate_summary_table = purrr::map_dfr(
@@ -79,6 +81,8 @@ purrr::iwalk(
     readline(prompt = "Pressione [enter] para ver o próximo cenário...")
   }
 )
+
+results_gformula$F4_Cross_Low$covariate_assessment
 
 # ----- G-FORMULA PARA COVARIÁVEIS-------------------------------------
 cat("\n\n--- AVALIANDO COVARIAVEIS (G-Formula) ---\n")
