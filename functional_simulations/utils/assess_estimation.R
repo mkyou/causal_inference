@@ -175,19 +175,42 @@ assess_covariate_simulation = function(model_output, true_data_refund) {
 }
 
 
+#' @title Avalia o Ajuste de um Modelo de Desfecho Já Treinado
+assess_factual_fit = function(fitted_outcome_model, k_folds = 5) {
+  # Extrai métricas in-sample do sumário do modelo
+  summary_model = summary(fitted_outcome_model)
+  metrics = data.table(
+    Metric = c("R_squared_adj", "Deviance_explained"),
+    Value = c(summary_model$r.sq, summary_model$dev.expl),
+    Type = "In-Sample"
+  )
+  # (A lógica de Validação Cruzada, se desejada, seria adicionada aqui)
+  return(metrics)
+}
+
+
+
 #' @title Avalia o Processo Completo da G-Formula
 #' @description Recebe um objeto rico da `run_gformula_full` e avalia
 #'   cada etapa: covariáveis, desfechos e efeito causal.
-assess_full_gformula_process = function(model_output,
-                                        true_data_refund) {
+assess_full_gformula_process = function(model_results, true_data_refund) {
   
   cat("--- Iniciando Avaliação Completa do Processo ---\n")
   
-  # 1. Avaliar Simulação das Covariáveis
-  cat("  - Avaliando simulação de covariáveis...\n")
-  # A chamada agora está correta, com apenas um argumento
+  # ETAPA 0: AVALIAR O AJUSTE DO MODELO DE DESFECHO NOS DADOS FACTUAIS
+  cat("  - Etapa 0: Avaliando performance do modelo de desfecho...\n")
+  assessment_outcome_model_fit = assess_factual_fit(
+    fitted_outcome_model = model_results$fitted_models$outcome_model
+  )
+  
+  # Extrai o data.table principal de resultados para as próximas etapas
+  results_data = model_results$results_data
+  
+  # ETAPA 1: AVALIAR SIMULAÇÃO DAS COVARIÁVEIS
+  cat("  - Etapa 1: Avaliando simulação de covariáveis...\n")
   assessment_covariates = assess_covariate_simulation(
-    model_output = model_output$covariates
+    model_output = results_data, # Passa o data.table correto
+    true_data_refund = true_data_refund
   )
   
   # 2. Avaliar Simulação do Desfecho
@@ -200,14 +223,15 @@ assess_full_gformula_process = function(model_output,
     Bias_B = mean(y_b_sim - b_y)
   )]
   
-  # 3. Avaliar Efeito Causal
-  cat("  - Avaliando estimação do efeito causal...\n")
+  # ETAPA 3: AVALIAR EFEITO CAUSAL
+  cat("  - Etapa 3: Avaliando estimação do efeito causal...\n")
   assessment_causal = assess_effect_estimation(
-    model_output = model_output$causal_effect,
+    model_output = results_data, # Passa o data.table correto
     true_data_refund = true_data_refund
   )
   
   return(list(
+    outcome_model_factual_fit = assessment_outcome_model_fit,
     covariate_assessment = assessment_covariates,
     outcome_assessment_metrics = outcome_metrics,
     causal_effect_assessment = assessment_causal
