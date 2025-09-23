@@ -1,4 +1,3 @@
-# g_formula.R (CORRIGIDO)
 library(mgcv)
 library(data.table)
 
@@ -13,8 +12,8 @@ run_gformula_full = function(
   
   cat("--- Iniciando G-Formula Completa ---\n")
   
-  # --- ETAPA 1: SIMULAÇÃO DAS COVARIÁVEIS (AGORA CORRETA) ---
-  cat("  - Etapa 1: Simulando trajetórias das covariáveis sequencialmente...\n")
+  # --- ETAPA 1: SIMULAÇÃO DAS COVARIÁVEIS ---
+  cat("  - Etapa 1: Simulando trajetórias das covariáveis...\n")
   covariate_sims_list = run_gformula_covariates_for_simulation(
     prepared_data, scenario_config, regime_a, regime_b
   )
@@ -27,46 +26,81 @@ run_gformula_full = function(
   treatment_times = scenario_config$treatment_times
   cov_names = grep("^X[0-9]+$", names(fit_data_y), value = TRUE)
   base_formula_y = "s(t, k = 30)"
+  
   cov_form_y = paste(
     sapply(
-      cov_names, 
+      cov_names,
       function(k) paste0("s(", k, ") + ti(t, ", k, ")")
-    ), 
+    ),
     collapse = " + "
   )
+  
   treat_form_y = paste(
     sapply(
-      treatment_times, 
-      function(s) paste0("s(t, by = A_s", s, ", k = 20)")
-    ), 
+      treatment_times,
+      function(s) {
+        # A fórmula agora usa a variável 'by' causalmente correta
+        paste0("s(time_since_s", s, ", by = by_s", s, ", k = 20)")
+      }
+    ),
     collapse = " + "
   )
+  
   model_formula_y = as.formula(
     paste("y ~", base_formula_y, "+", cov_form_y, "+", treat_form_y)
   )
   
   outcome_model = bam(
-    model_formula_y, 
-    data = fit_data_y, 
-    discrete = TRUE, 
+    model_formula_y,
+    data = fit_data_y,
+    discrete = TRUE,
     select = TRUE
   )
   
   # --- ETAPA 3: PREDIÇÃO DO DESFECHO ---
   cat("  - Etapa 3: Prevendo desfechos contrafactuais...\n")
+  
+  prepared_data[, id := as.factor(id)]
   prediction_data = merge(
-    prepared_data, 
-    covariate_sims_list$simulated_data, 
+    prepared_data,
+    covariate_sims_list$simulated_data,
     by = c("id", "t")
   )
   
-  # Prepara newdata para predição (substituindo X pelos X simulados)
-  newdata_a = copy(prediction_data); setnames(
-    newdata_a, paste0("sim_a_", cov_names), cov_names
-  )
-  newdata_b = copy(prediction_data); setnames(
-    newdata_b, paste0("sim_b_", cov_names), cov_names
-  )
+  cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
+  a_s_cols = paste0("A_s", treatment_times)
+  
+  newdata_a = copy(prediction_data)
+  setnames(newdata_a, paste0("sim_a_", cov_names), cov_names)
+  # 1. Força as colunas de tratamento para o regime A
+  for (i in 1:length(a_s_cols)) {
+    set(newdata_a, j = a_s_cols[i], value = regime_a[i])
+  }
+  for (s_time in treatment_times) {
+    by_col = paste0("by_s", s_time)
+    A_s_col = paste0("A_s", s_time)
+    newdata_a[
+      , 
+      (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), 
+      .SDcols = A_s_col
+    ]
+  }
+  
+  newdata_b = copy(prediction_data)
+  setnames(newdata_b, paste0("sim_b_", cov_names), cov_names)
+  # 1. Força as colunas de tratamento para o regime B
+  for (i in 1:length(a_s_cols)) {
+    set(newdata_b, j = a_s_cols[i], value = regime_b[i])
+  }
+  for (s_time in treatment_times) {
+    by_col = paste0("by_s", s_time)
+    A_s_col = paste0("A_s", s_time)
+    newdata_b[
+      , 
+      (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), 
+      .SDcols = A_s_col
+    ]
+  }
   
   Y_a_sim = predict(outcome_model, newdata = newdata_a)
   Y_b_sim = predict(outcome_model, newdata = newdata_b)

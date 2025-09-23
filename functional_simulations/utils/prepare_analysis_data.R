@@ -1,5 +1,3 @@
-# functional_simulations/utils/prepare_analysis_data.R
-
 library(data.table)
 
 #' @title Prepara os Dados para Análise da G-Formula
@@ -33,15 +31,20 @@ prepare_analysis_data = function(data_long, treatment_times) {
     dt = merge(dt, treatment_status_at_s, by = "id", all.x = TRUE)
   }
   
-  # Garante que não haja NAs nas colunas de tratamento
-  a_s_cols = paste0("A_s", treatment_times)
-  dt[
-    , 
-    (a_s_cols) := lapply(
-      .SD, function(x) ifelse(is.na(x), 0, x)
-    ), 
-    .SDcols = a_s_cols
-  ]
+  # Adiciona colunas de "tempo desde o tratamento" para alinhar com o PGD
+  for (s_time in treatment_times) {
+    # Variável de tempo desde o tratamento
+    time_since_col = paste0("time_since_s", s_time)
+    dt[, (time_since_col) := fifelse(t >= s_time, t - s_time, 0)]
+    
+    # Variável 'by' para o spline
+    by_col = paste0("by_s", s_time)
+    A_s_col = paste0("A_s", s_time)
+    dt[
+      , (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), 
+      .SDcols = A_s_col
+    ]
+  }
   
   return(dt)
 }

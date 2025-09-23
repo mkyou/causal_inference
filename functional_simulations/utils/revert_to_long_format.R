@@ -30,10 +30,11 @@ revert_to_long_format = function(refund_data) {
   dt_long[scalar_vars_long, on = .(id, t), A := i.A]
   dt_long[is.na(A), A := 0]
   
-  # Recalcula colunas derivadas para compatibilidade com a suíte de análise
   if (all(c("a_y", "b_y") %in% names(dt_long))) {
     dt_long[, effect_a_vs_b := a_y - b_y]
   }
+  
+  dt_long[, id := as.factor(id)]
   
   return(dt_long)
 }
