@@ -1,4 +1,4 @@
-#' @title Converte Dados do Formato Refund de volta para Longo
+#' @title Converte Dados do Formato Largo de volta para Longo
 #' @description Pega a lista de matrizes da `prepare_refund_data` e a
 #'   "re-hidrata" para um único data.table longo, compatível com `mgcv`.
 #' @param refund_data A lista de saída da `prepare_refund_data`.

@@ -1,6 +1,6 @@
 library(data.table)
 
-#' @title Prepara os Dados para Análise da G-Formula
+#' @title Prepara os Dados para Análise
 #' @description Função centralizada que recebe os dados brutos em formato
 #'   longo e adiciona todas as colunas necessárias para o ajuste dos
 #'   modelos (lags e tratamentos por tempo).

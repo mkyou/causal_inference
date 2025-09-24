@@ -1,4 +1,3 @@
-# Versão final com impressão de fórmulas e correção do 'return'
 run_fmsm = function(
     prepared_data,
     scenario_config,
@@ -15,7 +14,7 @@ run_fmsm = function(
   lagged_names = paste0(cov_names, "_lag1")
   
   # --- ETAPA 1: AJUSTE DOS MODELOS DE PROPENSÃO ---
-  cat("  - Etapa 1: Ajustando modelos de propensão para cada tempo de tratamento...\n")
+  cat("  - Etapa 1: Ajustando modelos para cada tempo de tratamento...\n")
   propensity_models = list()
   
   # A fórmula é a mesma para todos os modelos, apenas os dados mudam
@@ -30,10 +29,8 @@ run_fmsm = function(
   )
   ps_formula = as.formula(paste("A ~ s(t, k=5) +", history_formula))
   
-  # ****** IMPRIME A FÓRMULA DO MODELO DE PROPENSÃO ******
-  cat("    -> Fórmula do Modelo de Propensão (usada para todos os tempos de tratamento):\n")
+  cat("    -> Fórmula do Modelo de Propensão:\n")
   print(ps_formula)
-  # ******************************************************
   
   for (s_time in treatment_times) {
     cat(paste0("    - Ajustando para t = ", s_time, "\n"))
@@ -63,21 +60,37 @@ run_fmsm = function(
     valid_data_at_s = na.omit(data_at_s, cols = lagged_names)
     
     if (nrow(valid_data_at_s) > 0) {
-      p_denom = predict(ps_model, newdata = valid_data_at_s, type = "response")
-      prob_received_denom = ifelse(valid_data_at_s$A == 1, p_denom, 1 - p_denom)
+      p_denom = predict(
+        ps_model, 
+        newdata = valid_data_at_s, 
+        type = "response"
+      )
+      
+      prob_received_denom = ifelse(
+        valid_data_at_s$A == 1, p_denom, 1 - p_denom
+      )
       
       p_num = mean(valid_data_at_s$A)
       prob_received_num = ifelse(valid_data_at_s$A == 1, p_num, 1 - p_num)
       
       valid_data_at_s[, (col_name) := prob_received_num / prob_received_denom]
       
-      dt = merge(dt, valid_data_at_s[, c("id", "t", col_name), with = FALSE], 
-                 by = c("id", "t"), all.x = TRUE)
+      dt = merge(
+        dt, valid_data_at_s[, c("id", "t", col_name), with = FALSE],
+        by = c("id", "t"), all.x = TRUE
+      )
     }
   }
   
-  dt[, (weight_component_cols) := lapply(.SD, function(col) zoo::na.locf(col, na.rm = FALSE)), 
-     by = id, .SDcols = weight_component_cols]
+  dt[
+    , 
+    (weight_component_cols) := lapply(
+      .SD, 
+      function(col) zoo::na.locf(col, na.rm = FALSE)
+    ),
+    by = id, 
+    .SDcols = weight_component_cols
+  ]
   
   for (col in weight_component_cols) {
     dt[is.na(get(col)), (col) := 1.0]
@@ -104,10 +117,8 @@ run_fmsm = function(
   )
   outcome_formula = as.formula(paste("y ~ s(t, k = 30) +", treat_form_y))
   
-  # ****** IMPRIME A FÓRMULA DO MODELO DE DESFECHO ******
   cat("    -> Fórmula do Modelo de Desfecho Marginal Ponderado:\n")
   print(outcome_formula)
-  # ******************************************************
   
   msm_outcome_model = bam(
     outcome_formula,
@@ -127,9 +138,17 @@ run_fmsm = function(
     A_s_col = paste0("A_s", s_time)
     by_col = paste0("by_s", s_time)
     newdata_a[, (A_s_col) := regime_a[i]]
-    newdata_a[, (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), .SDcols = A_s_col]
+    newdata_a[
+      , 
+      (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), 
+      .SDcols = A_s_col
+    ]
     newdata_b[, (A_s_col) := regime_b[i]]
-    newdata_b[, (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), .SDcols = A_s_col]
+    newdata_b[
+      , 
+      (by_col) := .SD[[A_s_col]] * fifelse(t >= s_time, 1, 0), 
+      .SDcols = A_s_col
+    ]
   }
   
   dt[, y_a_msm := predict(msm_outcome_model, newdata = newdata_a)]
@@ -139,15 +158,17 @@ run_fmsm = function(
   cat("--- F-MSM Concluído ---\n")
   
   # --- ETAPA 5: EMPACOTAR RESULTADOS ---
-  return(list(
-    results_data = dt, 
-    fitted_models = list(
-      propensity_models = propensity_models,
-      outcome_model = msm_outcome_model
-    ),
-    formulas = list(
-      propensity_formula = ps_formula,
-      outcome_formula = outcome_formula
+  return(
+    list(
+      results_data = dt,
+      fitted_models = list(
+        propensity_models = propensity_models,
+        outcome_model = msm_outcome_model
+      ),
+      formulas = list(
+        propensity_formula = ps_formula,
+        outcome_formula = outcome_formula
+      )
     )
-  ))
+  )
 }
