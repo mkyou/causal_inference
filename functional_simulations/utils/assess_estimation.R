@@ -7,22 +7,37 @@ assess_effect_estimation = function(results_data_with_truth) {
   eval_data = results_data_with_truth
   eval_data[, error := effect_estimate - effect_a_vs_b_true]
   
-  functional_metrics = eval_data[, .(
-    Bias = mean(error), RMSE = sqrt(mean(error^2))
-  ), by = t]
+  # Adiciona um pequeno epsilon para estabilidade numérica no sMAPE
+  epsilon = 1e-8
+  eval_data[
+    , 
+    smape_val := 2 * abs(error) / 
+      (abs(effect_estimate) + abs(effect_a_vs_b_true) + epsilon)
+  ]
   
-  summary_metrics = eval_data[, .(
-    Mean_Bias = mean(error),
-    Median_Bias = median(error),
-    Overall_RMSE = sqrt(mean(error^2))
-  )]
+  functional_metrics = eval_data[, .(
+    Bias = mean(error), 
+    RMSE = sqrt(mean(error^2))
+  ), by = t]
   
   mean_effects = eval_data[, .(
     est = mean(effect_estimate, na.rm = TRUE),
     true = mean(effect_a_vs_b_true, na.rm = TRUE)
   ), by = t]
   
+  # Métricas resumidas sobre as médias temporais
+  ss_res = sum((mean_effects$true - mean_effects$est)^2)
+  ss_tot = sum((mean_effects$true - mean(mean_effects$true))^2)
+  
+  summary_metrics = eval_data[, .(
+    Mean_Bias = mean(error),
+    Median_Bias = median(error),
+    Overall_RMSE = sqrt(mean(error^2)),
+    sMAPE = mean(smape_val)
+  )]
+  
   summary_metrics[, Correlation := cor(mean_effects$est, mean_effects$true)]
+  summary_metrics[, R_squared := 1 - (ss_res / ss_tot)]
   
   plot_comparison = ggplot(mean_effects, aes(x = t)) +
     geom_line(aes(y = true, color = "Verdadeiro"), lty = "dashed", lwd = 1.1) +
@@ -30,9 +45,11 @@ assess_effect_estimation = function(results_data_with_truth) {
     labs(
       title = "Comparação: Efeito Causal Verdadeiro vs. Estimado",
       subtitle = paste0(
-        "Corr: ", round(summary_metrics$Correlation, 3),
-        ", RMSE Total: ", round(summary_metrics$Overall_RMSE, 3),
-        ", Viés Médio: ", round(summary_metrics$Mean_Bias, 3)
+        "R²: ", round(summary_metrics$R_squared, 3),
+        ", Corr: ", round(summary_metrics$Correlation, 3),
+        ", RMSE: ", round(summary_metrics$Overall_RMSE, 3),
+        ", Viés: ", round(summary_metrics$Mean_Bias, 3),
+        ", sMAPE: ", round(summary_metrics$sMAPE, 3)
       ),
       x = "Tempo", y = "Efeito Causal Médio", color = "Série"
     ) +
@@ -131,7 +148,12 @@ assess_factual_fit = function(
     train_data = fit_data[-test_indices, ]
     test_data = fit_data[test_indices, ]
     
-    fold_model = bam(outcome_model_formula, data = train_data, discrete = TRUE, select = TRUE)
+    fold_model = bam(
+      outcome_model_formula, 
+      data = train_data, 
+      discrete = TRUE, 
+      select = TRUE
+    )
     predictions_fold = predict(fold_model, newdata = test_data)
     cv_errors[[i]] = test_data$y - predictions_fold
   }
@@ -147,77 +169,81 @@ assess_factual_fit = function(
 }
 
 
-# --- FUNÇÃO DE AVALIAÇÃO DO MODELO DE PROPENSÃO (RECONSTRUÍDA) ---
-#' @title Avalia os Modelos de Propensão com Validação Cruzada
-#' @description Usa validação cruzada para fornecer uma avaliação robusta
-#'   da performance preditiva do modelo de propensão.
-#'
-#' @param propensity_models Lista de modelos de propensão ajustados no F-MSM.
-#' @param prepared_data O data.table com os dados preparados.
-#' @param k_folds Número de folds para a validação cruzada.
-#'
-#' @return Uma lista de diagnósticos para cada tempo de tratamento.
-
 assess_propensity_models = function(
     propensity_models, 
     prepared_data, 
     k_folds = 5
 ) {
-  cat("    - Avaliando modelos de propensão com validação cruzada...\n")
+  cat(" - Avaliando modelos de propensão com validação cruzada...\n")
   all_assessments = list()
+  
+  # Pega todos os nomes de covariáveis base
+  cov_names = grep("^X[0-9]+$", names(prepared_data), value = TRUE)
+  lagged_names = paste0(cov_names, "_lag1")
   
   for (s_time_char in names(propensity_models)) {
     s_time = as.numeric(s_time_char)
     model = propensity_models[[s_time_char]]
-    data_at_s = na.omit(prepared_data[t == s_time])
     
-    # Prepara para CV
-    data_at_s = data_at_s[sample(.N)] # Embaralha os dados
-    folds = cut(seq(1, nrow(data_at_s)), breaks = k_folds, labels = FALSE)
+    cat(paste(" - Preparando dados pontuais para CV em t =", s_time, "\n"))
+    
+    # Pegamos apenas os dados no tempo 's_time' (uma linha por indivíduo)
+    data_for_cv = prepared_data[t == s_time]
+    data_for_cv = na.omit(data_for_cv, cols = c("A", lagged_names))
+
+    if (nrow(data_for_cv) < k_folds) {
+      warning("Dados insuficientes para validação cruzada em t = ", s_time)
+      next
+    }
+    
+    # Prepara para CV nos dados pontuais
+    data_for_cv = data_for_cv[sample(.N)] # Embaralha as linhas
+    folds = cut(seq(1, nrow(data_for_cv)), breaks = k_folds, labels = FALSE)
     
     cv_predictions = vector("list", length = k_folds)
     
     for (i in 1:k_folds) {
-      test_indices = which(folds == i, arr.ind = TRUE)
-      train_data = data_at_s[-test_indices, ]
-      test_data = data_at_s[test_indices, ]
+      test_indices = which(folds == i)
+      train_data = data_for_cv[-test_indices, ]
+      test_data = data_for_cv[test_indices, ]
       
-      # Ajusta o modelo no fold de treino
-      fold_model = bam(
+      fold_model = try(bam(
         formula(model), 
         data = train_data, 
         family = binomial(),
         select = TRUE,
         discrete = TRUE
-        )
+      ), silent = TRUE)
       
-      # Prevê no fold de teste
-      preds = predict(fold_model, newdata = test_data, type = "response")
+      if (inherits(fold_model, "try-error") || nrow(test_data) == 0) {
+        warning("Falha ao ajustar ou prever no fold ", i, " para t = ", s_time)
+        next
+      }
       
+      predictions = predict(fold_model, newdata = test_data, type = "response")
       cv_predictions[[i]] = data.table(
-        prob = preds, obs = test_data$A, fold = i
+        prob = predictions,
+        obs = test_data$A,
+        fold = i
       )
     }
+    if (length(cv_predictions) == 0 || all(sapply(cv_predictions, is.null))) {
+      warning("Nenhum modelo de CV pôde ser ajustado para t = ", s_time)
+      next
+    }
     
-    # Consolida predições fora da amostra
     oof_preds = rbindlist(cv_predictions)
     
-    # Calcula Métricas
     brier = mean((oof_preds$obs - oof_preds$prob)^2)
-    
-    # Métricas de classificação (com limiar 0.5)
     preds_class = ifelse(oof_preds$prob > 0.5, 1, 0)
     tp = sum(preds_class == 1 & oof_preds$obs == 1)
     fp = sum(preds_class == 1 & oof_preds$obs == 0)
     fn = sum(preds_class == 0 & oof_preds$obs == 1)
     tn = sum(preds_class == 0 & oof_preds$obs == 0)
-    
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
     accuracy = (tp + tn) / nrow(oof_preds)
     f1_score = 2 * (precision * recall) / (precision + recall)
-    
-    # AUC
     roc_dt = oof_preds[order(-prob)]
     roc_dt[, tpr := cumsum(obs) / sum(obs)]
     roc_dt[, fpr := cumsum(1 - obs) / sum(1 - obs)]
@@ -225,10 +251,11 @@ assess_propensity_models = function(
       (roc_dt$fpr[-1] - roc_dt$fpr[-nrow(roc_dt)]) * 
         roc_dt$tpr[-nrow(roc_dt)]
     )
-    
     metrics_summary = data.table(
-      Metrica = c("Brier_Score", "AUC", "F1_Score", "Acuracia", 
-                  "Precisao", "Recall"),
+      Metrica = c(
+        "Brier_Score", "AUC", "F1_Score", 
+        "Acuracia", "Precisao", "Recall"
+      ), 
       Valor = c(brier, auc, f1_score, accuracy, precision, recall)
     )
     
@@ -300,8 +327,8 @@ assess_full_msm_process = function(model_results, true_data_refund) {
   )
   
   cat("  - Preparando dados para avaliação causal...\n")
-  true_data_long = revert_to_long_format(true_data_refund)
-  
+  # true_data_long = revert_to_long_format(true_data_refund)
+  true_data_long = copy(true_data_refund)
   cols_to_rename = names(true_data_long)[!names(true_data_long) %in% 
                                            c("id", "t")]
   new_names = paste0(cols_to_rename, "_true")

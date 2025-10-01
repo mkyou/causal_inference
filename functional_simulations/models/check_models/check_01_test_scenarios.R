@@ -31,15 +31,15 @@ source(paste0(utils_path, "run_model_evaluation.R"))
 # --- 2. GERAÇÃO DOS DADOS DE TESTE ---
 all_data = generate_test_scenarios(n_subjects = 2000)
 
-analise_1 = analyze_scenario_processed(all_data$CrescimentoHumano)
-analise_1$design_summary
-analise_1$positivity_summary$summary_proportions
-analise_1$collinearity_results$correlation_matrix
+# analise_1 = analyze_scenario_processed(all_data$CrescimentoHumano)
+# analise_1$design_summary
+# analise_1$positivity_summary$summary_proportions
+# analise_1$collinearity_results$correlation_matrix
 
-analise_2 = analyze_scenario_processed(all_data$AquisicaoHabilidade)
-analise_2$design_summary
-analise_2$positivity_summary$summary_proportions
-analise_2$collinearity_results$correlation_matrix
+# analise_2 = analyze_scenario_processed(all_data$AquisicaoHabilidade)
+# analise_2$design_summary
+# analise_2$positivity_summary$summary_proportions
+# analise_2$collinearity_results$correlation_matrix
 
 # --- 3. DEFINIÇÃO DOS MODELOS A SEREM AVALIADOS ---
 models_to_run = list(
@@ -70,6 +70,7 @@ all_results = purrr::imap(
   }
 )
 
+
 # --- 5. APRESENTAÇÃO COMPARATIVA DOS RESULTADOS ---
 summary_table = purrr::map_dfr(
   all_results,
@@ -84,12 +85,16 @@ summary_table = purrr::map_dfr(
 cat("\n\n--- TABELA COMPARATIVA DE PERFORMANCE FINAL ---\n")
 print(summary_table)
 
+all_results$MSM$CrescimentoHumano$propensity_model_assessment
 all_results$MSM$CrescimentoHumano$outcome_model_factual_fit
 all_results$MSM$CrescimentoHumano$propensity_model_assessment$`2`$metrics
 all_results$MSM$CrescimentoHumano$propensity_model_assessment$`8`$metrics
 all_results$MSM$CrescimentoHumano$propensity_model_assessment$`14`$metrics
 
 all_results$MSM$CrescimentoHumano$weight_assessment$summary
+
+all_results$MSM$AquisicaoHabilidade$propensity_model_assessment$`3`$metrics
+all_results$MSM$AquisicaoHabilidade$propensity_model_assessment$`8`$metrics
 
 all_results$MSM$CrescimentoHumano$causal_effect_assessment$plot
 all_results$MSM$AquisicaoHabilidade$causal_effect_assessment$plot

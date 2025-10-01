@@ -43,8 +43,8 @@ generate_sequential_dgp = function(
     regime_a = NULL,
     regime_b = NULL,
     static_covariate_indices = NULL,
-    propensity_min = 0.001,
-    propensity_max = 0.999
+    propensity_min = 0,
+    propensity_max = 1
 ) {
   
   # --- Setup e Validações ---

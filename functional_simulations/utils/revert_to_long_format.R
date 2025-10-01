@@ -36,7 +36,5 @@ revert_to_long_format = function(processed_data) {
     dt_long[, effect_a_vs_b := a_y - b_y]
   }
   
-  dt_long[, id := as.factor(id)]
-  
   return(dt_long)
 }

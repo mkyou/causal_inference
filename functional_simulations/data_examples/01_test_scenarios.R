@@ -6,7 +6,7 @@ generate_test_scenarios = function(
     # Parâmetros "Globais"
     n_subjects = n_subjects,
     time_grid = seq(0, 25, by = 0.1),
-    noise_sd_vec = c(0, 0.2, 0.1, 0.3),
+    noise_sd_vec = c(0.1, 0.2, 0.1, 0.3),
     outcome_noise_sd = 2.0,
     smoothing_nbasis = smoothing_nbasis,
     
@@ -43,21 +43,21 @@ generate_test_scenarios = function(
     theta_matrix = rbind(
       # A1 (t=2): Aleatório, P=0.5
       c(0, 0.0, 0.0, 0.0, 0.0),
-      # A2 (t=8): Coeficientes que usamos na última tentativa
-      c(2.5, -0.03, 0.5, -0.05, 0),
-      # A3 (t=14): Coeficientes que usamos na última tentativa
-      c(-1.5, -0.01, 1.0, 0.05, 0)
+      # A2 (t=8): Coeficientes mais fortes
+      c(1.5, -0.0, 1.0, -0.2, 0.1),
+      # A3 (t=14): Coeficientes mais fortes
+      c(-1.0, -0.0, 1.5, 0.1, -0.1)
     ),
     
     zeta_funcs_matrix = NULL,
     baseline_y_func = function(t) 180 / (1 + exp(-0.4 * (t - 13))),
     direct_effect_funcs = rep(list(function(t, s) 0), 3),
     concurrent_effect_funcs = list(
-      function(t) 0.8, function(t) 15 * exp(-0.1 * (t-10)^2),
-      function(t) -0.5, function(t) 0
+      function(t) 0.08, function(t) 0.015 * exp(-0.01 * (t-10)^2),
+      function(t) -0.05, function(t) 0
     ),
-    propensity_min = 0.1,
-    propensity_max = 0.9
+    propensity_min = 0,
+    propensity_max = 1
   )
   
   scenario_2 = list(
@@ -109,8 +109,8 @@ generate_test_scenarios = function(
     concurrent_effect_funcs = list(
       function(t) 15, function(t) 5, function(t) 40, function(t) 20*exp(-0.1*t)
     ),
-    propensity_min = 0.05,
-    propensity_max = 0.95
+    propensity_min = 0,
+    propensity_max = 1
   )
   
   # --- ORQUESTRAÇÃO FINAL ---
@@ -121,7 +121,7 @@ generate_test_scenarios = function(
   
   all_scenarios = generate_simulation_scenarios(
     scenario_configs = scenario_configs,
-    process_and_smooth = TRUE
+    process_and_smooth = FALSE
   )
   
   return(all_scenarios)

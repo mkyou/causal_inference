@@ -20,7 +20,8 @@ fit_ecker_luna_mgcv = function(
 ) {
   if (verbose) cat("--- Ajustando modelo: Ecker & Luna (mgcv) ---\n")
   
-  model_data = revert_to_long_format(scenario_data)
+  # model_data = revert_to_long_format(scenario_data)
+  model_data = copy(scenario_data)
   treatment_times = scenario_config$treatment_times
   
   regime_a_label = paste(regime_a, collapse = "_")
@@ -88,19 +89,24 @@ fit_ecker_luna_mgcv = function(
 }
 
 run_ecker_luna = function(
-    scenario_object, prepared_data, scenario_config, regime_a, regime_b
+    unprepared_data, prepared_data, scenario_config, regime_a, regime_b, ...
 ) {
-  # Esta função ignora 'prepared_data' e usa os dados processados originais
+  
+  # A função agora usa 'unprepared_data' como sua fonte de dados principal
   estimates_dt = fit_ecker_luna_mgcv(
-    scenario_data = scenario_object$data,
+    scenario_data = unprepared_data, # Usa o novo argumento
     scenario_config = scenario_config,
     regime_a = regime_a,
     regime_b = regime_b,
     verbose = FALSE
   )
   
-  # O 'prepared_data' é usado aqui apenas como esqueleto para o merge
-  full_results_data = merge(prepared_data, estimates_dt, by = c("id", "t"))
+  # O resto da função permanece igual
+  full_results_data = merge(
+    prepared_data, 
+    estimates_dt, by = c("id", "t"), 
+    all.x = TRUE
+  )
   
   return(list(results_data = full_results_data))
 }
@@ -108,7 +114,8 @@ run_ecker_luna = function(
 assess_ecker_luna_process = function(model_results, true_data_refund) {
   cat("--- Iniciando Avaliação Simplificada para Ecker & Luna ---\n")
   
-  true_data_long = revert_to_long_format(true_data_refund)
+  # true_data_long = revert_to_long_format(true_data_refund)
+  true_data_long = copy(true_data_refund)
   setnames(true_data_long, "effect_a_vs_b", "effect_a_vs_b_true")
   
   results_with_truth = merge(

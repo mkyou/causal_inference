@@ -1,17 +1,6 @@
 library(mgcv)
 library(data.table)
 
-#' @title Ajusta um MSM "Semi-Ingênuo"
-#' @description Implementa um Marginal Structural Model com um modelo de
-#'   propensão linear (ingênuo) e um modelo de desfecho marginal
-#'   funcional (com splines).
-#'
-#' @param prepared_data O data.table de entrada.
-#' @param scenario_config A configuração do cenário.
-#' @param regime_a,regime_b Vetores definindo os regimes a comparar.
-#'
-#' @return Uma lista com os resultados, modelos ajustados e fórmulas usadas.
-
 run_fmsm = function(
     prepared_data,
     scenario_config,
@@ -20,39 +9,37 @@ run_fmsm = function(
     ...
 ) {
   cat(
-    "--- Iniciando Semi-Naive MSM (Propensão Linear, Desfecho Funcional) ---\n"
+    "--- Iniciando MSM (Propensão Pontual, Desfecho Funcional) ---\n"
   )
   
-  # --- Setup ---
   dt = copy(prepared_data)
   treatment_times = scenario_config$treatment_times
   cov_names = grep("^X[0-9]+$", names(dt), value = TRUE)
+  
+  # --- INÍCIO DO ROLLBACK ---
   lagged_names = paste0(cov_names, "_lag1")
   
-  # --- ETAPA 1: AJUSTE DOS MODELOS DE PROPENSÃO ---
-  cat("  - Etapa 1: Ajustando modelos de propensão com splines e seleção...\n")
+  # --- ETAPA 1: AJUSTE DOS MODELOS DE PROPENSÃO (PONTUAL) ---
+  cat("  - Etapa 1: Ajustando modelos de propensão pontuais com GAM...\n")
   propensity_models = list()
-  history_formula = paste(lagged_names, collapse = " + ")
+  
+  # Fórmula revertida para usar splines nos preditores _lag1
+  history_formula = paste(paste0("s(", lagged_names, ")"), collapse = " + ")
   ps_formula = as.formula(paste("A ~", history_formula))
   
-  cat("    > Fórmula de Propensão:\n")
+  cat("    > Fórmula de Propensão Pontual:\n")
   print(ps_formula)
   
-  treatment_times = scenario_config$treatment_times
   for (s_time in treatment_times) {
     data_at_s = dt[t == s_time]
-    
-    # MUDANÇA DEFINITIVA: Criar um data.frame limpo para o modelo
-    # Apenas com a resposta (A) e os preditores permitidos (lags).
-    # Isso impede fisicamente qualquer vazamento de dados das colunas A_s*.
     model_df = data_at_s[, c("A", lagged_names), with = FALSE]
     model_df = na.omit(model_df)
     
     ps_model = bam(
       ps_formula, 
-      data = model_df, # Usa o data.frame limpo
+      data = model_df, 
       family = binomial(link = "logit"),
-      select = TRUE, 
+      select = TRUE,
       discrete = TRUE
     )
     propensity_models[[as.character(s_time)]] = ps_model
@@ -65,26 +52,33 @@ run_fmsm = function(
     s_time = treatment_times[i]
     col_name = weight_component_cols[i]
     ps_model = propensity_models[[as.character(s_time)]]
-    
-    # A variável 'dt' já está definida e é a correta a ser usada aqui
     data_at_s = dt[t == s_time]
+    
+    # Revertido para usar lagged_names
     valid_data_at_s = na.omit(data_at_s, cols = c("t", lagged_names))
     
     if (nrow(valid_data_at_s) > 0) {
-      p_denom = predict(ps_model, newdata = valid_data_at_s, type = "response")
-      prob_received_denom = ifelse(valid_data_at_s$A == 1, p_denom, 1-p_denom)
+      p_denom = predict(
+        ps_model, 
+        newdata = valid_data_at_s, 
+        type = "response"
+      )
+      prob_received_denom = ifelse(
+        valid_data_at_s$A == 1, 
+        p_denom, 
+        1 - p_denom
+      )
       p_num = mean(valid_data_at_s$A)
-      prob_received_num = ifelse(valid_data_at_s$A == 1, p_num, 1-p_num)
-      
+      prob_received_num = ifelse(valid_data_at_s$A == 1, p_num, 1 - p_num)
       prob_received_denom[prob_received_denom < 1e-6] = 1e-6
-      
-      valid_data_at_s[, (col_name) := prob_received_num/prob_received_denom]
+      valid_data_at_s[, (col_name) := prob_received_num / prob_received_denom]
       dt = merge(
         dt, valid_data_at_s[, c("id", "t", col_name), with = FALSE],
         by = c("id", "t"), all.x = TRUE
       )
     }
   }
+  
   dt[, (weight_component_cols) := lapply(.SD, zoo::na.locf, na.rm = FALSE),
      by = id, .SDcols = weight_component_cols]
   for (col in weight_component_cols) { dt[is.na(get(col)), (col) := 1.0] }
