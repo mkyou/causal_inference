@@ -2,7 +2,7 @@ library(data.table)
 library(ggplot2)
 library(mgcv)
 
-#' @title Avalia a Estimação de um Efeito Causal (Corrigido)
+#' @title Avalia a Estimação de um Efeito Causal
 assess_effect_estimation = function(results_data_with_truth) {
   eval_data = results_data_with_truth
   eval_data[, error := effect_estimate - effect_a_vs_b_true]
@@ -47,9 +47,12 @@ assess_effect_estimation = function(results_data_with_truth) {
 
 
 
-#' @title Avalia a Simulação das Covariáveis (Alinhado)
+#' @title Avalia a Simulação das Covariáveis
 assess_covariate_simulation = function(results_data_with_truth) {
-  cov_names_base = grep("^X[0-9]+$", names(results_data_with_truth), value = TRUE)
+  cov_names_base = grep(
+    "^X[0-9]+$", 
+    names(results_data_with_truth), value = TRUE
+  )
   all_metrics = list()
   all_plots = list()
   
@@ -104,8 +107,7 @@ assess_covariate_simulation = function(results_data_with_truth) {
   return(list(metrics = all_metrics, plots = all_plots))
 }
 
-
-#' @title Avalia o Ajuste Factual do Modelo de Desfecho com CV (Corrigido)
+#' @title Avalia o Ajuste Factual do Modelo de Desfecho com CV
 assess_factual_fit = function(
     fitted_outcome_model, 
     factual_data,
@@ -145,93 +147,112 @@ assess_factual_fit = function(
 }
 
 
+# --- FUNÇÃO DE AVALIAÇÃO DO MODELO DE PROPENSÃO (RECONSTRUÍDA) ---
+#' @title Avalia os Modelos de Propensão com Validação Cruzada
+#' @description Usa validação cruzada para fornecer uma avaliação robusta
+#'   da performance preditiva do modelo de propensão.
+#'
+#' @param propensity_models Lista de modelos de propensão ajustados no F-MSM.
+#' @param prepared_data O data.table com os dados preparados.
+#' @param k_folds Número de folds para a validação cruzada.
+#'
+#' @return Uma lista de diagnósticos para cada tempo de tratamento.
 
-#' @title Avalia o Processo Completo da G-Formula (Corrigido)
-assess_full_gformula_process = function(model_results, true_data_refund) {
-  cat("--- Iniciando Avaliação Completa do Processo ---\n")
-  assessment_outcome_model_fit = assess_factual_fit(
-    fitted_outcome_model = model_results$fitted_models$outcome_model,
-    factual_data = model_results$results_data,
-    outcome_model_formula = model_results$formulas$outcome_model_formula
-  )
-  results_data = model_results$results_data
-  
-  cat("  - Preparando dados para avaliação...\n")
-  true_data_long = revert_to_long_format(true_data_refund)
-  
-  cols_to_rename = names(true_data_long)[
-    !names(true_data_long) %in% c("id", "t")
-  ]
-  new_names = paste0(cols_to_rename, "_true")
-  setnames(true_data_long, cols_to_rename, new_names)
-  
-  results_data_with_truth = merge(
-    results_data, 
-    true_data_long, 
-    by = c("id", "t")
-  )
-  
-  # ETAPA 1: AVALIAR SIMULAÇÃO DAS COVARIÁVEIS
-  cat("  - Etapa 1: Avaliando simulação de covariáveis...\n")
-  assessment_covariates = assess_covariate_simulation(results_data_with_truth)
-  
-  # ETAPA 2: AVALIAR SIMULAÇÃO DO DESFECHO
-  cat("  - Avaliando simulação de desfechos...\n")
-  outcome_metrics = results_data_with_truth[, .(
-    RMSE_A = sqrt(mean((y_a_sim - a_y_true)^2, na.rm = TRUE)),
-    Bias_A = mean(y_a_sim - a_y_true, na.rm = TRUE),
-    RMSE_B = sqrt(mean((y_b_sim - b_y_true)^2, na.rm = TRUE)),
-    Bias_B = mean(y_b_sim - b_y_true, na.rm = TRUE)
-  )]
-  
-  # ETAPA 3: AVALIAR EFEITO CAUSAL
-  cat("  - Etapa 3: Avaliando estimação do efeito causal...\n")
-  assessment_causal = assess_effect_estimation(results_data_with_truth)
-  
-  return(
-    list(
-      outcome_model_factual_fit = assessment_outcome_model_fit,
-      covariate_assessment = assessment_covariates,
-      outcome_assessment_metrics = outcome_metrics,
-      causal_effect_assessment = assessment_causal
-    )
-  )
-}
-
-#' @title Avalia os Modelos de Propensão do MSM
-#' @description Fornece diagnósticos básicos para os modelos de propensão ajustados.
-assess_propensity_models = function(propensity_models, prepared_data) {
-  
-  cat("    - Avaliando modelos de propensão...\n")
-  all_summaries = list()
+assess_propensity_models = function(
+    propensity_models, 
+    prepared_data, 
+    k_folds = 5
+) {
+  cat("    - Avaliando modelos de propensão com validação cruzada...\n")
+  all_assessments = list()
   
   for (s_time_char in names(propensity_models)) {
     s_time = as.numeric(s_time_char)
     model = propensity_models[[s_time_char]]
-    data_at_s = prepared_data[t == s_time]
+    data_at_s = na.omit(prepared_data[t == s_time])
     
-    # Prever as propensões
-    predicted_probs = predict(model, newdata = data_at_s, type = "response")
+    # Prepara para CV
+    data_at_s = data_at_s[sample(.N)] # Embaralha os dados
+    folds = cut(seq(1, nrow(data_at_s)), breaks = k_folds, labels = FALSE)
     
-    # Resumo da distribuição das propensões (diagnóstico de positividade)
-    prob_summary = summary(predicted_probs)
+    cv_predictions = vector("list", length = k_folds)
     
-    # Gráfico de calibração simples
-    calib_data = data.table(predicted_probs, observed = data_at_s$A)
-    calib_plot = ggplot(calib_data, aes(x = predicted_probs, y = observed)) +
+    for (i in 1:k_folds) {
+      test_indices = which(folds == i, arr.ind = TRUE)
+      train_data = data_at_s[-test_indices, ]
+      test_data = data_at_s[test_indices, ]
+      
+      # Ajusta o modelo no fold de treino
+      fold_model = bam(
+        formula(model), 
+        data = train_data, 
+        family = binomial(),
+        select = TRUE,
+        discrete = TRUE
+        )
+      
+      # Prevê no fold de teste
+      preds = predict(fold_model, newdata = test_data, type = "response")
+      
+      cv_predictions[[i]] = data.table(
+        prob = preds, obs = test_data$A, fold = i
+      )
+    }
+    
+    # Consolida predições fora da amostra
+    oof_preds = rbindlist(cv_predictions)
+    
+    # Calcula Métricas
+    brier = mean((oof_preds$obs - oof_preds$prob)^2)
+    
+    # Métricas de classificação (com limiar 0.5)
+    preds_class = ifelse(oof_preds$prob > 0.5, 1, 0)
+    tp = sum(preds_class == 1 & oof_preds$obs == 1)
+    fp = sum(preds_class == 1 & oof_preds$obs == 0)
+    fn = sum(preds_class == 0 & oof_preds$obs == 1)
+    tn = sum(preds_class == 0 & oof_preds$obs == 0)
+    
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    accuracy = (tp + tn) / nrow(oof_preds)
+    f1_score = 2 * (precision * recall) / (precision + recall)
+    
+    # AUC
+    roc_dt = oof_preds[order(-prob)]
+    roc_dt[, tpr := cumsum(obs) / sum(obs)]
+    roc_dt[, fpr := cumsum(1 - obs) / sum(1 - obs)]
+    auc = sum(
+      (roc_dt$fpr[-1] - roc_dt$fpr[-nrow(roc_dt)]) * 
+        roc_dt$tpr[-nrow(roc_dt)]
+    )
+    
+    metrics_summary = data.table(
+      Metrica = c("Brier_Score", "AUC", "F1_Score", "Acuracia", 
+                  "Precisao", "Recall"),
+      Valor = c(brier, auc, f1_score, accuracy, precision, recall)
+    )
+    
+    # Gráfico de Calibração (com predições OOF)
+    calib_plot = ggplot(oof_preds, aes(x = prob, y = obs)) +
       geom_smooth(method = "loess", color = "blue") +
       geom_abline(intercept = 0, slope = 1, lty = "dashed", color = "red") +
-      labs(title = paste("Calibração do Modelo de Propensão em t =", s_time),
-           x = "Probabilidade Prevista", y = "Probabilidade Observada") +
+      labs(
+        title = paste(
+          "Calibração (CV) do Modelo de Propensão em t =", 
+          s_time
+        ),
+        x = "Probabilidade Prevista (Fora da Amostra)", 
+        y = "Probabilidade Observada"
+      ) +
       coord_fixed(xlim = c(0,1), ylim = c(0,1)) +
       theme_bw()
     
-    all_summaries[[s_time_char]] = list(
-      summary = prob_summary,
+    all_assessments[[s_time_char]] = list(
+      metrics = metrics_summary,
       plot = calib_plot
     )
   }
-  return(all_summaries)
+  return(all_assessments)
 }
 
 
@@ -242,45 +263,56 @@ assess_full_msm_process = function(model_results, true_data_refund) {
   # ETAPA 1: AVALIAR OS MODELOS DE PROPENSÃO
   assessment_propensity = assess_propensity_models(
     propensity_models = model_results$fitted_models$propensity_models,
-    prepared_data = model_results$results_data # O MSM results_data tem os dados originais
+    prepared_data = model_results$results_data
   )
   
-  # ETAPA 2: AVALIAR A DISTRIBUIÇÃO DOS PESOS
+  # ETAPA 2: AVALIAR A DISTRIBUIÇÃO DOS PESOS (com avisos)
   cat("    - Avaliando a distribuição dos pesos (SW)...\n")
-  weight_summary = summary(model_results$results_data$sw)
-  weight_plot = ggplot(model_results$results_data, aes(x = sw)) +
+  weights = model_results$results_data$sw
+  weight_summary = summary(weights)
+  if (max(weights, na.rm = TRUE) > 50) {
+    warning(
+      "Instabilidade de pesos detectada: Peso máximo (", 
+      round(max(weights, na.rm = TRUE), 2), ") excede o limiar de 50."
+    )
+  }
+  if (sd(weights, na.rm = TRUE) > 5) {
+    warning(
+      "Alta variabilidade de pesos detectada: Desvio Padrão (",
+      round(sd(weights, na.rm = TRUE), 2), ") excede o limiar de 5."
+    )
+  }
+  
+  weight_plot = ggplot(data.table(sw = weights), aes(x = sw)) +
     geom_histogram(bins = 50, fill = "skyblue", color = "black") +
-    labs(title = "Distribuição dos Pesos Estabilizados (SW)", x = "Peso (SW)") +
+    labs(
+      title = "Distribuição dos Pesos Estabilizados (SW)", 
+      x = "Peso (SW)"
+    ) +
     theme_bw()
   
   # ETAPA 3: AVALIAR O AJUSTE FACTUAL DO MODELO DE DESFECHO
   assessment_outcome_model_fit = assess_factual_fit(
     fitted_outcome_model = model_results$fitted_models$outcome_model,
-    # Atenção: o modelo foi ajustado com pesos, a avaliação factual pode ser otimista
+    # O modelo foi ajustado com pesos, a avaliação factual pode ser otimista
     factual_data = model_results$results_data,
     outcome_model_formula = model_results$formulas$outcome_formula
   )
   
-  # --- Preparação dos dados para avaliação causal ---
   cat("  - Preparando dados para avaliação causal...\n")
   true_data_long = revert_to_long_format(true_data_refund)
   
-  # Renomeia as colunas da "verdade" para evitar conflitos
-  cols_to_rename = names(true_data_long)[!names(true_data_long) %in% c("id", "t")]
+  cols_to_rename = names(true_data_long)[!names(true_data_long) %in% 
+                                           c("id", "t")]
   new_names = paste0(cols_to_rename, "_true")
   setnames(true_data_long, cols_to_rename, new_names)
   
-  # Junta os resultados do MSM com a verdade
   results_data_with_truth = merge(
-    model_results$results_data, 
-    true_data_long, 
-    by = c("id", "t")
+    model_results$results_data, true_data_long, by = c("id", "t")
   )
   
-  # Renomeia a coluna de efeito para ser compatível com a função de avaliação
   setnames(results_data_with_truth, "effect_estimate_msm", "effect_estimate")
   
-  # ETAPA 4: AVALIAR EFEITO CAUSAL
   cat("  - Avaliando estimação do efeito causal...\n")
   assessment_causal = assess_effect_estimation(results_data_with_truth)
   

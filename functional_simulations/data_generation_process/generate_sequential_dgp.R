@@ -1,33 +1,31 @@
 library(data.table)
 
-#' @title Gera Dados Longitudinais com PGD Sequencial e Funcional
-#' @description Gera dados de covariáveis funcionais. Esta versão utiliza
-#'   parâmetros de base específicos por indivíduo para gerar trajetórias
-#'   de base únicas, permitindo a simulação de confundimento não medido.
+#' @title Gera Dados Longitudinais com PGD Sequencial e Funcional (Refatorado)
+#' @description Gera dados de covariáveis funcionais. 
 #'
 #' @param n_subjects Número de indivíduos a simular.
 #' @param time_grid Vetor numérico definindo a grade de tempo.
 #' @param treatment_times Vetor numérico dos tempos onde o tratamento ocorre.
 #'
-#' @param baseline_func_templates Lista de K "templates" de função, onde cada
-#'   função aceita `t` e um vetor de `params`. 
-#'   Ex: `function(t, p) p[1] + p[2]*t`.
-#' @param baseline_params_list Lista de K matrizes de parâmetros. Cada matriz
-#'   tem dimensão `n_subjects` x `n_params` para a função correspondente.
+#' @param baseline_func_templates Lista de K "templates" de função.
+#' @param baseline_params_list Lista de K matrizes de parâmetros para as bases.
 #'
-#' @param beta_funcs_matrix Matriz KxK de funções beta_kj(t) para o efeito
-#'   de Xj(t-1) em Xk(t).
-#' @param gamma_matrix Matriz KxS de funções gamma_ks(t) para o efeito do
-#'   tratamento A(s) em Xk(t) (feedback).
+#' @param beta_funcs_matrix Matriz KxK de funções para o efeito de Xj(t-1) em 
+#' Xk(t).
+#' @param gamma_matrix Matriz KxS de funções para o efeito do tratamento A(s) 
+#' em Xk(t).
 #'
-#' @param theta_matrix Matriz Sx(K+1) de coeficientes para o modelo de
-#'   propensão (baseado em X(s-1)).
-#' @param zeta_funcs_matrix Matriz SxK opcional de funções de ponderação
-#'   zeta_sk(u) para a integral histórica.
+#' @param theta_matrix Matriz Sx(K+1) de coeficientes para o modelo de 
+#' propensão.
+#' @param zeta_funcs_matrix Matriz SxK opcional para o termo histórico no 
+#' modelo de propensão.
 #'
 #' @param noise_sd_vec Vetor de K desvios padrão para o ruído estocástico.
 #'
 #' @param regime_a,regime_b Vetores definindo regimes contrafactuais.
+#' @param static_covariate_indices Vetor numérico opcional indicando os índices
+#'   (de 1 a K) das covariáveis que devem ser estáticas no tempo (exceto por
+#'   feedback ou efeitos cruzados).
 #'
 #' @return Um data.table longo com trajetórias factuais e contrafactuais.
 
@@ -43,11 +41,14 @@ generate_sequential_dgp = function(
     noise_sd_vec,
     zeta_funcs_matrix = NULL,
     regime_a = NULL,
-    regime_b = NULL
+    regime_b = NULL,
+    static_covariate_indices = NULL,
+    propensity_min = 0.001,
+    propensity_max = 0.999
 ) {
   
   # --- Setup e Validações ---
-  K = length(baseline_funcs)
+  K = length(baseline_func_templates)
   S = length(treatment_times)
   total_times = length(time_grid)
   dt = time_grid[2] - time_grid[1]
@@ -74,29 +75,46 @@ generate_sequential_dgp = function(
   b_X_list = lapply(1:K, function(k) matrix(0, n_subjects, total_times))
   A = A_a = A_b = matrix(0, n_subjects, S)
   
-  # --- Estágio 1: Inicialização em t=0 ---
-  t0 = time_grid[1]
-  for (k in 1:K) {
-    noise_t0 = rnorm(n_subjects, 0, noise_sd_vec[k])
-    
-    func_template = baseline_func_templates[[k]]
-    params_matrix = baseline_params_list[[k]]
-    
-    subject_specific_baselines = sapply(1:n_subjects, function(i) {
-      func_template(t0, params_matrix[i, ])
+  # 1. Pré-cálculo das trajetórias base (muito mais eficiente)
+  cat("  - Pré-calculando trajetórias base e ruído...\n")
+  baseline_matrices = lapply(1:K, function(k) {
+    # sapply aninhado para criar uma matriz [n_subjects x total_times]
+    sapply(time_grid, function(t) {
+      sapply(1:n_subjects, function(i) {
+        baseline_func_templates[[k]](t, baseline_params_list[[k]][i, ])
+      })
     })
-    
-    base_val = subject_specific_baselines + noise_t0
-    
+  })
+  
+  # 2. Pré-cálculo da matriz de ruído (controlando para covariáveis estáticas)
+  noise_matrices = lapply(1:K, function(k) {
+    if (k %in% static_covariate_indices) {
+      # Covariável estática: gera ruído uma vez e o replica ao longo do tempo
+      noise_at_t0 = rnorm(n_subjects, 0, noise_sd_vec[k])
+      matrix(noise_at_t0, nrow = n_subjects, ncol = total_times)
+    } else {
+      # Covariável dinâmica: gera ruído para todos os tempos e sujeitos
+      matrix(
+        rnorm(n_subjects * total_times, 0, noise_sd_vec[k]),
+        nrow = n_subjects, ncol = total_times
+      )
+    }
+  })
+  
+  # --- Estágio 1: Inicialização em t=0 ---
+  for (k in 1:K) {
+    base_val = baseline_matrices[[k]][, 1] + noise_matrices[[k]][, 1]
     X_list[[k]][, 1] = base_val
     a_X_list[[k]][, 1] = base_val
     b_X_list[[k]][, 1] = base_val
   }
   
   # --- Estágio 2: Loop de Simulação Sequencial ---
+  cat("  - Iniciando loop de simulação sequencial...\n")
   for (t_idx in 2:total_times) {
     current_time = time_grid[t_idx]
     
+    # --- Atribuição de Tratamento ---
     if (current_time %in% treatment_times) {
       s_idx = which(treatment_times == current_time)
       prev_t_idx = t_idx - 1
@@ -104,65 +122,51 @@ generate_sequential_dgp = function(
       X_prev = sapply(X_list, function(X) X[, prev_t_idx])
       linear_predictor = cbind(1, X_prev) %*% theta_matrix[s_idx, ]
       
-      integral_predictor = 0
-      all_integrals = sapply(1:K, function(k) {
-        history_matrix = X_list[[k]][, 1:prev_t_idx, drop = FALSE]
-        if (
-          !is.null(zeta_funcs_matrix) &&
-          !is.null(zeta_funcs_matrix[[s_idx, k]])
-          ) {
-          zeta_func = zeta_funcs_matrix[[s_idx, k]]
-          time_weights = zeta_func(time_grid[1:prev_t_idx])
-          history_matrix = history_matrix * matrix(
-            time_weights,
-            nrow = n_subjects,
-            ncol = prev_t_idx,
-            byrow = TRUE
-          )
-        }
-        if (ncol(history_matrix) < 2) return(rep(0, n_subjects))
-        y_i = history_matrix[, -1, drop = FALSE]
-        y_im1 = history_matrix[, -ncol(history_matrix), drop = FALSE]
-        return(rowSums(0.5 * (y_i + y_im1)) * dt)
-      })
-      
-      integral_predictor = rowSums(
-        all_integrals *
-          matrix(
-            theta_integral_matrix[s_idx, ],
-            nrow = n_subjects, ncol = K, byrow = TRUE
-          )
-      )
-      
-      linear_predictor = linear_predictor + integral_predictor
+      if (!is.null(zeta_funcs_matrix)) {
+        all_integrals = sapply(1:K, function(k) {
+          history_matrix = X_list[[k]][, 1:prev_t_idx, drop = FALSE]
+          if (!is.null(zeta_funcs_matrix[[s_idx, k]])) {
+            zeta_func = zeta_funcs_matrix[[s_idx, k]]
+            time_weights = zeta_func(time_grid[1:prev_t_idx])
+            history_matrix = history_matrix * matrix(
+              time_weights, nrow = n_subjects, ncol = prev_t_idx, byrow = TRUE
+            )
+          }
+          if (ncol(history_matrix) < 2) return(rep(0, n_subjects))
+          # Regra do Trapézio para integração numérica
+          y_i = history_matrix[, -1, drop = FALSE]
+          y_im1 = history_matrix[, -ncol(history_matrix), drop = FALSE]
+          return(rowSums(0.5 * (y_i + y_im1)) * dt)
+        })
+        integral_predictor = rowSums(all_integrals)
+        linear_predictor = linear_predictor + integral_predictor
+      }
       
       propensity = plogis(linear_predictor)
+      propensity = pmax(propensity_min, pmin(propensity_max, propensity))
       A[, s_idx] = rbinom(n_subjects, 1, propensity)
       A_a[, s_idx] = regime_a[s_idx]
       A_b[, s_idx] = regime_b[s_idx]
     }
     
+    # --- Evolução das Covariáveis ---
     for (k in 1:K) {
-      func_template = baseline_func_templates[[k]]
-      params_matrix = baseline_params_list[[k]]
-      subject_specific_baselines = sapply(1:n_subjects, function(i) {
-        func_template(current_time, params_matrix[i, ])
-      })
-      new_val = subject_specific_baselines
+      new_val = baseline_matrices[[k]][, t_idx]
       
       cross_effect_factual = 0; cross_effect_a = 0; cross_effect_b = 0
       for (j in 1:K) {
         if (k == j || is.null(beta_funcs_matrix[[k, j]])) next
         beta_val = beta_funcs_matrix[[k, j]](current_time)
-        cross_effect_factual = cross_effect_factual + beta_val * 
-          X_list[[j]][, t_idx-1]
+        cross_effect_factual = cross_effect_factual + 
+          beta_val * X_list[[j]][, t_idx-1]
         cross_effect_a = cross_effect_a + beta_val * a_X_list[[j]][, t_idx-1]
         cross_effect_b = cross_effect_b + beta_val * b_X_list[[j]][, t_idx-1]
       }
+      
       feedback_effect = 0; feedback_a = 0; feedback_b = 0
       for (s_idx in 1:S) {
         s_time = treatment_times[s_idx]
-        if (current_time >= s_time) {
+        if (current_time > s_time) {
           gamma_val = gamma_matrix[[k, s_idx]](current_time, s_time)
           feedback_effect = feedback_effect + gamma_val * A[, s_idx]
           feedback_a = feedback_a + gamma_val * A_a[, s_idx]
@@ -170,7 +174,8 @@ generate_sequential_dgp = function(
         }
       }
       
-      noise = rnorm(n_subjects, 0, noise_sd_vec[k])
+      # MELHORIA: Usa ruído pré-calculado
+      noise = noise_matrices[[k]][, t_idx]
       
       X_list[[k]][, t_idx] = new_val + cross_effect_factual + 
         feedback_effect + noise
@@ -179,20 +184,24 @@ generate_sequential_dgp = function(
     }
   }
   
+  # --- Formatação do Output para data.table longo ---
+  cat("  - Formatando a saída para o formato longo...\n")
   dt_long = data.table(
-    id = rep(1:n_subjects, each = total_times), 
+    id = rep(1:n_subjects, each = total_times),
     t = rep(time_grid, n_subjects)
   )
   
   A_long = as.data.table(A); A_long[, id := .I]
   A_long = melt(
-    A_long, id.vars = "id", 
-    variable.name = "s_idx_char", value.name = "A"
+    A_long, id.vars = "id", variable.name = "s_idx_char", value.name = "A"
   )
-  A_long[, s_idx := as.numeric(gsub("V", "", s_idx_char))][
-    , t := treatment_times[s_idx]
-  ]
-  dt_long[A_long, on=.(id,t), A := i.A]; dt_long[is.na(A), A := 0]
+  A_long[
+    , 
+    s_idx := as.numeric(gsub("V", "", s_idx_char))][
+      , t := treatment_times[s_idx]
+    ]
+  dt_long[A_long, on = .(id, t), A := i.A]
+  dt_long[is.na(A), A := 0]
   
   for (k in 1:K) {
     dt_long[, paste0("X", k) := as.vector(t(X_list[[k]]))]
