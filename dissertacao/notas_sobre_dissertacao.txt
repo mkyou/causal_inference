@@ -1,0 +1,19 @@
+Notas sobre a dissertação
+
+Para falar sobre no capítulo de conclusão:
+
+- Assumimos implicitamente que todos os indivíduos têm sinal registrado nos mesmos momentos do tempo. É uma suposição forte que, possivelmente, poderia ser relaxada sem muitos prejuízos.
+Ao menos na arquitetura atual, em que não temos tratamentos e covariáveis mudando no tempo.
+
+- Assumimos um sinal regular (já mencionamos). Relaxar isso pode comprometer a latência do suavizador online. -> É uma melhoria para o rLifting! Acredito que não seria um problema para o FATE.
+Novamente, na arquitetura atual.
+
+- Assumimos linearidade funcional. Isso aqui é facilmente generalizável através de abordagens de ML mais robustas (vale menção às Causal Forests, por exemplo).
+
+- Assumimos um modelo funcional concorrente. Em palavras, o valor de X "agora" só afeta o desfecho "agora". Também poderia ser relaxado, embora fosse complicar bastante alguns cálculos. 
+
+- O bootstrap poderia se adaptar mais a curva. Atualmente pegamos os desvios dos percentis 2.5 e 97.5 entre os piores desvios de toda a trajetória. 
+Poderíamos pensar em uma adaptação que respeitasse melhor a forma da curva. Isso pode complicar a garantira dos 95% de cobertura.
+
+- Operacionalizar o procedimento de reamostragem online é um _must have_. Deixar essas bandas "menos largas" desnecessariamente é bom também. Já falamos sobre isso, mas vale reforçar.
+Por enquanto, crescer o N é a única forma de ter bandas boas o suficiente.

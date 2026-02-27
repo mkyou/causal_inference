@@ -1,0 +1,7 @@
+\babel@toc {brazil}{}\relax 
+\babel@toc {brazilian}{}\relax 
+\contentsline {figure}{\numberline {1}{\ignorespaces Ondaletas de Haar e chapéu mexicano.}}{21}{figure.caption.15}%
+\contentsline {figure}{\numberline {2}{\ignorespaces A série de Fourier força uma representação periódica (esquerda) para uma função que é inerentemente localizada e não periódica (direita).}}{23}{figure.caption.16}%
+\contentsline {figure}{\numberline {3}{\ignorespaces Comparação da resolução tempo-frequência. A STFT (esquerda) possui resolução fixa, enquanto as ondaletas (direita) possuem resolução adaptativa.}}{25}{figure.caption.17}%
+\contentsline {figure}{\numberline {4}{\ignorespaces Distribuição do MSE na reconstrução do sinal Doppler (\(T=1024\)) ao longo de 50 simulações. Menores valores indicam melhor desempenho.}}{50}{figure.caption.19}%
+\contentsline {figure}{\numberline {5}{\ignorespaces Suavização em tempo real de um fluxo de dados. A linha sólida (azul) representa a estimativa calculada incrementalmente pelo \texttt {rLifting} à medida que novos pontos (cinza) são observados. A linha preta tracejada é a função original.}}{50}{figure.caption.20}%
