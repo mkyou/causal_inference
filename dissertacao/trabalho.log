@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.2.20)  26 FEB 2026 16:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.2.20)  27 FEB 2026 06:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1895,13 +1895,18 @@ L3 programming layer <2020/03/25>
 
 LaTeX Warning: There were undefined references.
 
-Package rerunfilecheck Info: File `trabalho.brf' has not changed.
-(rerunfilecheck)             Checksum: 8BF696395590F68BDF6839273F9CCA14;7590.
+
+Package rerunfilecheck Warning: File `trabalho.brf' has changed.
+(rerunfilecheck)                Rerun to get bibliographical references right.
+
+Package rerunfilecheck Info: Checksums for `trabalho.brf':
+(rerunfilecheck)             Before: DD8F064D864F266E663B99590B665500;7684
+(rerunfilecheck)             After:  8BF696395590F68BDF6839273F9CCA14;7590.
  ) 
 Here is how much of TeX's memory you used:
  47717 strings out of 475128
  1041481 string characters out of 5763169
- 2149025 words of memory out of 5000000
+ 2149024 words of memory out of 5000000
  69309 multiletter control sequences out of 15000+600000
  719265 words of font info for 318 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
