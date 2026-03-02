@@ -93,15 +93,20 @@ Dispon{\'\i}vel em: \url{https://CRAN.R-project.org/package=Rcpp}.}
 {GUIDORIZZI, H.~L. \emph{Um curso de cálculo. vol. 4}. 5a. ediçâo. ed. São Paulo: Grupo Gen - LTC, 2013. OCLC: 912305651.
 ISBN 978-85-216-1330-5.}
 
+\bibitem[Heisenberg 1927]{heisenbergBerAnschaulichenInhalt1927}
+\abntrefinfo{Heisenberg}{HEISENBERG}{1927}
+{HEISENBERG, W. �ber den anschaulichen {Inhalt} der quantentheoretischen {Kinematik} und {Mechanik}.
+\emph{Zeitschrift f�r Physik}, v.~43, n.~3-4, p. 172--198, mar. 1927.
+ISSN 1434-6001, 1434-601X.
+Disponivel em: \url{http://link.springer.com/10.1007/BF01397280}.}
 \bibitem[Hernán e Robins 2023]{hernan_causal_2023}
 \abntrefinfo{Hernán e Robins}{HERNáN; ROBINS}{2023}
 {HERNáN, M.; ROBINS, J.~M. \emph{Causal inference: what if}. First edition. Boca Raton: Taylor and Francis, 2023.
 ISBN 978-1-4200-7616-5 978-0-367-71133-7.}
-
 \bibitem[Holland 1986]{holland_statistics_1986}
 \abntrefinfo{Holland}{HOLLAND}{1986}
 {HOLLAND, P.~W. Statistics and {Causal} {Inference}.
-\emph{Journal of the Aman Statistical Association}, v.~81, n.~396, p. 945--960, dez. 1986.
+\emph{Journal of the American Statistical Association}, v.~81, n.~396, p. 945--960, dez. 1986.
 ISSN 0162-1459, 1537-274X.
 Dispon{\'\i}vel em: \url{http://www.tandfonline.com/doi/abs/10.1080/01621459.1986.10478354}.}
 
@@ -159,6 +164,13 @@ ISSN 1942-4787.}
 \emph{Statistics and Computing}, v.~16, n.~2, p. 143--159, jun. 2006.
 ISSN 0960-3174, 1573-1375.
 Dispon{\'\i}vel em: \url{http://link.springer.com/10.1007/s11222-006-6560-y}.}
+
+\bibitem[Pearl 1995]{pearlCausalDiagramsEmpirical1995}
+\abntrefinfo{Pearl}{PEARL}{1995}
+{PEARL, J. Causal diagrams for empirical research.
+\emph{Biometrika}, v.~82, n.~4, p. 669--688, 1995.
+ISSN 0006-3444, 1464-3510.
+Dispon{\'\i}vel em: \url{https://academic.oup.com/biomet/article-lookup/doi/10.1093/biomet/82.4.669}.}
 
 \bibitem[Ramsay e Silverman 2005]{ramsay_functional_2005}
 \abntrefinfo{Ramsay e Silverman}{RAMSAY; SILVERMAN}{2005}

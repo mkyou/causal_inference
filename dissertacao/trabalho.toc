@@ -16,14 +16,16 @@
 \contentsline {subsubsection}{\numberline {2.2.6.1}Extensão de bordas na DWT}{37}{subsubsection.2.2.6.1}%
 \contentsline {chapter}{\chapternumberline {3}Metodologia}{39}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Estimação do FATE}{39}{section.3.1}%
-\contentsline {subsubsection}{\numberline {3.1.0.1}Estimação das bandas de confiança}{41}{subsubsection.3.1.0.1}%
-\contentsline {subsection}{\numberline {3.1.1}Estimador com pré-processamento \emph {online}}{42}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.1}Estimador com pré-processamento \emph {offline}}{40}{subsection.3.1.1}%
+\contentsline {subsubsection}{\numberline {3.1.1.1}Estimação das bandas de confiança}{41}{subsubsection.3.1.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Estimador com pré-processamento \emph {online}}{42}{subsection.3.1.2}%
 \contentsline {section}{\numberline {3.2}\texttt {rLifting}}{44}{section.3.2}%
 \contentsline {subsection}{\numberline {3.2.1}Implementação}{45}{subsection.3.2.1}%
 \contentsline {subsection}{\numberline {3.2.2}Funcionalidades}{47}{subsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.2.3}Desempenho em exemplos controlados}{49}{subsection.3.2.3}%
 \contentsline {section}{\numberline {3.3}Limitações}{51}{section.3.3}%
 \contentsline {chapter}{\chapternumberline {4}ESTUDOS DE SIMULAÇÃO}{53}{chapter.4}%
-\contentsline {chapter}{\chapternumberline {5}CONCLUSÃO}{54}{chapter.5}%
+\contentsline {section}{\numberline {4.1}Processo gerador de dados}{53}{section.4.1}%
+\contentsline {chapter}{\chapternumberline {5}CONCLUSÃO}{56}{chapter.5}%
 \vspace {\cftbeforepartskip }
-\contentsline {chapter}{\uppercase {Refer\^encias Bibliogr\'aficas}}{55}{section*.24}%
+\contentsline {chapter}{\uppercase {Refer\^encias Bibliogr\'aficas}}{57}{section*.25}%

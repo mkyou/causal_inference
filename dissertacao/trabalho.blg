@@ -20,6 +20,7 @@ Reallocated wiz_functions (elt_size=4) to 9000 items from 6000.
 Database file #1: abntex2-options.bib
 Database file #2: referencias.bib
 Warning--I didn't find a database entry for "NBR6028:2003"
+Warning--I didn't find a database entry for "liebl_fast_2023"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
@@ -29,45 +30,45 @@ Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 | Em caso de dúvidas ou problemas com este estilo procure |
 | http://www.abntex.net.br/                               |
 +---------------------------------------------------------+
-You've used 41 entries,
+You've used 43 entries,
             6714 wiz_defined-function locations,
-            1492 strings with 18139 characters,
-and the built_in function-call counts, 59231 in all, are:
-= -- 6604
-> -- 1357
-< -- 1340
-+ -- 1826
-- -- 400
-* -- 3893
-:= -- 7267
-add.period$ -- 189
-call.type$ -- 41
-change.case$ -- 460
-chr.to.int$ -- 109
-cite$ -- 38
-duplicate$ -- 5546
-empty$ -- 2458
-format.name$ -- 1991
-if$ -- 12231
+            1510 strings with 18584 characters,
+and the built_in function-call counts, 63025 in all, are:
+= -- 7084
+> -- 1389
+< -- 1467
++ -- 1955
+- -- 410
+* -- 4118
+:= -- 7718
+add.period$ -- 199
+call.type$ -- 43
+change.case$ -- 474
+chr.to.int$ -- 117
+cite$ -- 40
+duplicate$ -- 5995
+empty$ -- 2577
+format.name$ -- 2037
+if$ -- 12952
 int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 765
-newline$ -- 240
-num.names$ -- 191
-pop$ -- 908
+missing$ -- 799
+newline$ -- 254
+num.names$ -- 201
+pop$ -- 940
 preamble$ -- 1
-purify$ -- 163
+purify$ -- 169
 quote$ -- 0
-skip$ -- 5549
+skip$ -- 5978
 stack$ -- 1
-substring$ -- 2427
-swap$ -- 2182
-text.length$ -- 82
+substring$ -- 2635
+swap$ -- 2353
+text.length$ -- 90
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 2
 warning$ -- 0
-while$ -- 299
+while$ -- 318
 width$ -- 0
-write$ -- 668
-(There was 1 warning)
+write$ -- 706
+(There were 2 warnings)

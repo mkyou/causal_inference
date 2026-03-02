@@ -3,7 +3,7 @@ library(data.table)
 #' Configura os parâmetros baseado em Ecker et al.
 #' @param N Número de indivíduos
 #' @param T_pts Número de pontos no tempo
-#' @return Lista com todos os argumentos necessários para 
+#' @return Lista com todos os argumentos necessários para
 #'  generate_sequential_dgp
 get_ecker_configuration = function(N, T_pts) {
   # 1. Definição das 9 Covariáveis (Tabela D.1 - Men)
@@ -17,10 +17,10 @@ get_ecker_configuration = function(N, T_pts) {
   # 7. foreign_par (Binomial)
   # 8. par_sec_edu (Binomial)
   # 9. par_tert_edu (Binomial)
-  
+
   # Matriz de Parâmetros Basais (N x Parametros)
   # Como a função base é constante (p[1]), a matriz é N x 1 (o próprio valor)
-  
+
   params_list = list(
     matrix(rnorm(N, -2.3, 1.2), ncol=1), # 1
     matrix(rnorm(N, 8.3, 4.1), ncol=1), # 2
@@ -32,10 +32,10 @@ get_ecker_configuration = function(N, T_pts) {
     matrix(rbinom(N, 1, 0.297), ncol=1), # 8
     matrix(rbinom(N, 1, 0.112), ncol=1)  # 9
   )
-  
+
   # Templates: funções constantes no tempo (X é estático)
   func_templates = rep(list(function(t, p) p[1]), 9)
-  
+
   # 2. Propensão / Confundimento (X -> A)
   # Tabela E.1 (Men)
   # Ordem: Intercepto, X1, ..., X9
@@ -43,14 +43,14 @@ get_ecker_configuration = function(N, T_pts) {
     -6.194, -0.052, -0.001, 0.020, -0.097, -0.056,
     0.510, 0.568, 0.674, 0.851
     )
-  
+
   # Matriz S x (K+1). Como S=1 (um tratamento), é 1 x 10.
   theta_matrix = matrix(theta_vec, nrow = 1, ncol = 10)
-  
+
   # 3. Efeitos no Desfecho (X -> Y(t))
   # Funções beta_X(t). Ecker não dá a fórmula, mas sabemos que variam no tempo.
   # Criamos funções suaves razoáveis para simular o efeito na renda.
-  
+
   concurrent_funcs = list(
     function(t) -0.02, # 1. year (constante)
     function(t) 0.5 * exp(-2 * t), # 2. prev_inc (decai)
@@ -62,18 +62,18 @@ get_ecker_configuration = function(N, T_pts) {
     function(t) 0.1 * exp(-t), # 8. par_sec (decai)
     function(t) 0.15 * exp(-t) # 9. par_tert (decai)
   )
-  
+
   # 4. Desligando Dinâmica Sequencial
   K = 9
   S = 1
   # X -> X (zero)
-  beta_funcs_matrix = matrix(list(), K, K) 
+  beta_funcs_matrix = matrix(list(), K, K)
   # A -> X (zero feedback)
   gamma_matrix = matrix(list(function(t,s) 0), K, S)
-  
+
   # Intercepto do Desfecho (Tendência global de renda)
   baseline_y = function(t) 2 * log(t + 0.5)
-  
+
   return(
     list(
       baseline_func_templates = func_templates,

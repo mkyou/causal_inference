@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.2.20)  27 FEB 2026 06:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.2.20)  1 MAR 2026 09:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1769,61 +1769,61 @@ Cap\'{\i }tulo 3.
 
 
 ]
+LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <14.4> not available
+(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 15.
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 45.
+
+Package cleveref Info: loaded `brazilian' language definitions on input line 43.
 [40]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 66.
+Package cleveref Info: loaded `brazilian' language definitions on input line 64.
 [41]
-LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <14.4> not available
-(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 82.
 
-
-Package cleveref Info: loaded `brazilian' language definitions on input line 90.
+Package cleveref Info: loaded `brazilian' language definitions on input line 88.
 [42]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 106.
+Package cleveref Info: loaded `brazilian' language definitions on input line 104.
 [43]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 116.
+Package cleveref Info: loaded `brazilian' language definitions on input line 114.
 [44]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 126.
+Package cleveref Info: loaded `brazilian' language definitions on input line 124.
 [45]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 161.
+Package cleveref Info: loaded `brazilian' language definitions on input line 159.
 [46]
-Overfull \hbox (14.30023pt too wide) in paragraph at lines 181--181
+Overfull \hbox (14.30023pt too wide) in paragraph at lines 179--179
 [] \T1/lmtt/m/n/12 # Passo 1: Predicao (P) (usando, para fins de exemplo, interpolacao linear)[] 
  []
 
 
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 183.
+Package cleveref Info: loaded `brazilian' language definitions on input line 181.
 [47]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 223.
+Package cleveref Info: loaded `brazilian' language definitions on input line 221.
 [48]
-<figuras/benchmark_mse.pdf, id=727, 433.62pt x 252.945pt>
+<figuras/benchmark_mse.pdf, id=736, 433.62pt x 252.945pt>
 File: figuras/benchmark_mse.pdf Graphic file (type pdf)
 <use figuras/benchmark_mse.pdf>
-Package pdftex.def Info: figuras/benchmark_mse.pdf  used on input line 248.
+Package pdftex.def Info: figuras/benchmark_mse.pdf  used on input line 246.
 (pdftex.def)             Requested size: 341.25pt x 199.07173pt.
 
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 255.
+Package cleveref Info: loaded `brazilian' language definitions on input line 253.
 [49]
-<figuras/realtime_denoising.pdf, id=736, 505.89pt x 252.945pt>
+<figuras/realtime_denoising.pdf, id=745, 505.89pt x 252.945pt>
 File: figuras/realtime_denoising.pdf Graphic file (type pdf)
 <use figuras/realtime_denoising.pdf>
-Package pdftex.def Info: figuras/realtime_denoising.pdf  used on input line 260.
+Package pdftex.def Info: figuras/realtime_denoising.pdf  used on input line 258.
 (pdftex.def)             Requested size: 341.25pt x 170.6263pt.
 
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 271.
+Package cleveref Info: loaded `brazilian' language definitions on input line 269.
 [50 <./figuras/benchmark_mse.pdf> <./figuras/realtime_denoising.pdf>]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 278.
+Package cleveref Info: loaded `brazilian' language definitions on input line 276.
 [51])
 
 Package cleveref Info: loaded `brazilian' language definitions on input line 206.
@@ -1832,7 +1832,7 @@ Package cleveref Info: loaded `brazilian' language definitions on input line 206
 
  (./texto/estudos_simulacao.tex
 Cap\'{\i }tulo 4.
-)
+
 
 [53
 
@@ -1840,13 +1840,27 @@ Cap\'{\i }tulo 4.
 
 
 ]
+Overfull \hbox (44.46417pt too wide) in paragraph at lines 38--53
+ [][] 
+ []
+
+
+LaTeX Warning: Citation `liebl_fast_2023' on page 54 undefined on input line 56.
+
+)
+
+Package cleveref Info: loaded `brazilian' language definitions on input line 207.
+[54]
+
+Package cleveref Info: loaded `brazilian' language definitions on input line 207.
+[55]
 \openout2 = `texto/conclusao.aux'.
 
  (./texto/conclusao.tex
 Cap\'{\i }tulo 5.
 )
 
-[54
+[56
 
 
 
@@ -1859,20 +1873,72 @@ Cap\'{\i }tulo 5.
 bibitemlist
 
 
-[55
+[57
 
 
 
 ]
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 149.
-[56]
+! LaTeX Error: Unicode character � (U+FFFD)
+               not set up for use with LaTeX.
 
-Package cleveref Info: loaded `brazilian' language definitions on input line 214.
-[57])
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.112 
+      
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character � (U+FFFD)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.112 
+      
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+Package cleveref Info: loaded `brazilian' language definitions on input line 160.
+[58]
+
+Package cleveref Info: loaded `brazilian' language definitions on input line 226.
+[59])
+Runaway argument?
+ \abntrefinfo {Yao et al.}{YAO et al.}{2021} {YAO, L.; CHU, Z.; LI, S\ETC.
+! File ended while scanning use of \BR@@lbibitem.
+<inserted text> 
+                \par 
+l.221 \bibliography{referencias.bib}
+                                    
+I suspect you have forgotten a `}', causing me
+to read past where you wanted me to stop.
+I'll try to recover; but if the error is serious,
+you'd better type `E' or `X' now and fix your file.
+
+! Argument of \BR@@lbibitem has an extra }.
+<inserted text> 
+                \par 
+l.221 \bibliography{referencias.bib}
+                                    
+I've run across a `}' that doesn't seem to match anything.
+For example, `\def\a#1{...}' and `\a}' would produce
+this error. If you simply proceed now, the `\par' that
+I've just inserted will cause me to report a runaway
+argument that might be the root of the problem. But if
+your `}' was spurious, just type `2' and it will go away.
+
+
 
 Package cleveref Info: loaded `brazilian' language definitions on input line 246.
-[58]
+[60]
 \tf@lof=\write6
 \openout6 = `trabalho.lof'.
 
@@ -1895,27 +1961,22 @@ L3 programming layer <2020/03/25>
 
 LaTeX Warning: There were undefined references.
 
-
-Package rerunfilecheck Warning: File `trabalho.brf' has changed.
-(rerunfilecheck)                Rerun to get bibliographical references right.
-
-Package rerunfilecheck Info: Checksums for `trabalho.brf':
-(rerunfilecheck)             Before: DD8F064D864F266E663B99590B665500;7684
-(rerunfilecheck)             After:  8BF696395590F68BDF6839273F9CCA14;7590.
+Package rerunfilecheck Info: File `trabalho.brf' has not changed.
+(rerunfilecheck)             Checksum: 02004A0598FED69B8F44DDBC6F6A4966;7974.
  ) 
 Here is how much of TeX's memory you used:
- 47717 strings out of 475128
- 1041481 string characters out of 5763169
- 2149024 words of memory out of 5000000
- 69309 multiletter control sequences out of 15000+600000
- 719265 words of font info for 318 fonts, out of 8000000 for 9000
+ 47765 strings out of 475128
+ 1042695 string characters out of 5763169
+ 2148951 words of memory out of 5000000
+ 69345 multiletter control sequences out of 15000+600000
+ 719403 words of font info for 319 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
  117i,15n,121p,1575b,2171s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/matha6.600pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/matha7.600pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/mathx10.600pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/matha10.600pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/mathx10.720pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/matha8.600pk> <c:/Users/moise/AppData/Roaming/TinyTeX/texmf-var/fonts/pk/ljfour/public/mathabx/matha12.600pk><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi6.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi8.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmib10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr6.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmri12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmri8.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmss12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmss17.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmss8.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmssbx10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsso12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy8.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt12.pfb><c:/Users/moise/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on trabalho.pdf (58 pages, 734505 bytes).
+Output written on trabalho.pdf (60 pages, 752499 bytes).
 PDF statistics:
- 1222 PDF objects out of 1440 (max. 8388607)
- 998 compressed objects within 10 object streams
- 238 named destinations out of 1000 (max. 500000)
- 89919 words of extra memory for PDF output out of 106986 (max. 10000000)
+ 1270 PDF objects out of 1440 (max. 8388607)
+ 1042 compressed objects within 11 object streams
+ 248 named destinations out of 1000 (max. 500000)
+ 89935 words of extra memory for PDF output out of 106986 (max. 10000000)
 
