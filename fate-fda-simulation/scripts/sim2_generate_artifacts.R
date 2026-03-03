@@ -9,36 +9,47 @@ if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
+# Tema base para todos os graficos harmonizado com LaTeX
+base_theme = theme_bw(base_size = 14) +
+  theme(
+    text = element_text(family = "serif"),
+    plot.title = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    strip.background = element_rect(fill = "gray95", color = "gray80"),
+    strip.text = element_text(margin = margin(5, 5, 5, 5), face = "bold")
+  )
+
 # -----------------------------------------------------------------------------
 # 1. Gráficos de Boxplot do NRMSE Online por Cenário
 # -----------------------------------------------------------------------------
 cat("Gerando boxplots do NRMSE...\n")
 df_raw = fread(file.path(input_dir, "sim2_raw.csv"))
 
-scenarios = unique(df_raw$Scenario)
+for(scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
+    p_data = df_raw[Scenario == scen_name]
+    if(nrow(p_data) == 0) next
+    
+    # Label para o título do arquivo (Escada se Heavisine)
+    scen_label = ifelse(scen_name == "Heavisine", "Escada", scen_name)
 
-for(scen in scenarios) {
-    p_data = df_raw[Scenario == scen]
+    # Preparação dos fatores
+    p_data[, N_label := factor(paste("N =", N), levels = paste("N =", sort(unique(N))))]
+    p_data[, T_factor := factor(T_pts, levels = sort(unique(T_pts)))]
+    p_data[, Method := "Ondaletas (Online)"]
 
-    # Preparação dos fatores e labels
-    p_data[, N_factor := as.factor(N)]
-    p_data[, T_label := factor(paste("T =", T_pts), levels = c("T = 64", "T = 128", "T = 256", "T = 512"))]
-
-    p = ggplot(p_data, aes(x = N_factor, y = NRMSE_online)) +
-        geom_boxplot(fill = "royalblue", color = "black", alpha = 0.8) +
-        facet_wrap(~ T_label, ncol = 3) +
-        theme_bw(base_family = "serif", base_size = 12) +
+    p = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, fill = Method)) +
+        geom_boxplot(color = "black", alpha = 0.8) +
+        facet_wrap(~ N_label, ncol = 3) +
+        scale_fill_manual(values = c("Ondaletas (Online)" = "royalblue")) +
         labs(
-            x = "Tamanho da amostra",
+            x = "Pontos na grade (T)",
             y = "NRMSE online"
         ) +
-        theme(
-            legend.position = "none",
-            strip.background = element_rect(fill = "grey95")
-        )
+        base_theme
 
     ggsave(
-        filename = file.path(output_dir, sprintf("boxplot_nrmse_%s.png", scen)),
+        filename = file.path(output_dir, sprintf("boxplot_nrmse_%s.png", scen_label)),
         plot = p,
         width = 6.5,
         height = 3.5,
@@ -61,27 +72,27 @@ p_mean = p_data_curves[, .(
   theta_true = mean(TrueCurve)
 ), by = .(Scenario, t_val)]
 
-for (scen in scenarios) {
-  scen_data = p_mean[Scenario == scen]
+for (scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
+  scen_data = p_mean[Scenario == scen_name]
+  if(nrow(scen_data) == 0) next
+  
+  scen_label = ifelse(scen_name == "Heavisine", "Escada", scen_name)
 
   p = ggplot(scen_data, aes(x = t_val)) +
-    geom_line(aes(y = theta_true, color = "FATE Verdadeiro"), linewidth = 0.8) +
-    geom_line(aes(y = mean_online, color = "FATE Estimado (Online)"), linewidth = 0.8, linetype = "dashed") +
+    geom_line(aes(y = theta_true, color = "Verdadeiro"), linewidth = 0.8) +
+    geom_line(aes(y = mean_online, color = "Ondaletas (Online)"), linewidth = 0.8, linetype = "dashed") +
     scale_color_manual(
-        values = c("FATE Verdadeiro" = "black", "FATE Estimado (Online)" = "royalblue")
+        values = c("Verdadeiro" = "black", "Ondaletas (Online)" = "royalblue")
     ) +
-    theme_bw(base_family = "serif", base_size = 12) +
     labs(
-         x = "Tempo",
+         x = "Tempo (t)",
          y = expression(theta(t)),
          color = NULL
     ) +
-    theme(
-        legend.position = "bottom"
-    )
+    base_theme
 
   ggsave(
-      filename = file.path(output_dir, sprintf("fate_curves_%s.png", scen)),
+      filename = file.path(output_dir, sprintf("fate_curves_%s.png", scen_label)),
       plot = p,
       width = 5.5,
       height = 3.5,
@@ -89,4 +100,30 @@ for (scen in scenarios) {
   )
 }
 
-cat("Pronto! Artefatos salvos em", output_dir, "\n")
+# -----------------------------------------------------------------------------
+# 3. Tabela Gerencial Summary
+# -----------------------------------------------------------------------------
+cat("Gerando tabela gerencial summary...\n")
+
+# Calcular RMSE Global e Bias Global por Simulação a partir das curvas
+agg_sim = df_curves[, .(
+  RMSE = sqrt(mean((Est - TrueCurve)^2)),
+  Bias = mean(Est - TrueCurve)
+), by = .(SimID, Scenario, N, T_pts)]
+
+# Adicionar RMSE e Bias ao df_raw para consolidação
+df_raw[agg_sim, c("RMSE", "Bias") := .(i.RMSE, i.Bias), on = .(SimID, Scenario, N, T_pts)]
+
+dt_summary = df_raw[, .(
+  NRMSE_Mean = mean(NRMSE_online, na.rm = TRUE),
+  NRMSE_Median = median(NRMSE_online, na.rm = TRUE),
+  NRMSE_SD = sd(NRMSE_online, na.rm = TRUE),
+  RMSE_Mean = mean(RMSE, na.rm = TRUE),
+  Bias_Mean = mean(Bias, na.rm = TRUE),
+  Latency_Mean_us = mean(Latency_mean_us, na.rm = TRUE)
+), by = .(Scenario, N, T_pts)]
+
+setorder(dt_summary, Scenario, N, T_pts)
+fwrite(dt_summary, file.path(input_dir, "sim2_summary.csv"))
+
+cat("Pronto! Artefatos salvos em", output_dir, "e", input_dir, "\n")
