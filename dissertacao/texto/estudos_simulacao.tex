@@ -1,4 +1,4 @@
-\chapter[ESTUDOS DE SIMULAÇÃO]{Estudos de simulação}\label{sec-estudos-simulacao}
+\chapter[Estudos de simulação]{Estudos de simulação}\label{sec-estudos-simulacao}
 A fim de exemplificar a aplicabilidade da nossa proposta metodológica e avaliar o comportamento empírico dos estimadores propostos, apresentamos, neste capítulo, as especificações e os resultados dos estudos de simulação que conduzimos.
 
 Desenvolvemos duas simulações principais. A primeira compara três abordagens de pré-processamento --- ondaletas \emph{offline} (Seção \ref{sec-estimador-offline}), ondaletas causais (Seção \ref{sec-estimador-online}) e \emph{splines} (método empregado no trabalho de \citeonline{ecker_causal_2024}; Seção \ref{sec-inferencia-causal-funcional}) --- quanto à precisão pontual, ao viés e à cobertura das bandas de confiança simultâneas. Conforme discutido no Capítulo \ref{sec-metodologia}, o cenário de intervenção única
@@ -77,8 +77,8 @@ Formalmente, tomamos:
 	\mathrm{NRMSE}^{(r)} = \frac{\sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}}{\max_k \theta(t_k) - \min_k \theta(t_k)},
 \end{equation*}
 \begin{equation*}	
-	\text{V\text{i}\'es}_{t_k} = \frac{1}{R}\sum_{r=1}^{R} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
+	\text{Viés}_{t_k} = \frac{1}{R}\sum_{r=1}^{R} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
 \end{equation*}
 \begin{equation*}
-	\text{V\text{i}\'es}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
+	\text{Viés}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
 \end{equation*}
