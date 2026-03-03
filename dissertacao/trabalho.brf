@@ -31,11 +31,13 @@
 \backcite {ecker_causal_2024}{{17}{2.1.1}{subsection.2.1.1}}
 \backcite {ecker_causal_2024}{{17}{2.1.1}{equation.2.2}}
 \backcite {ramsay_functional_2005}{{17}{2.1.1}{equation.2.2}}
+\backcite {testa_doubly-robust_2025}{{18}{2.1.1}{equation.2.4}}
+\backcite {ecker_causal_2024}{{18}{2.1.1}{equation.2.4}}
 \backcite {sparkes_functional_2024}{{19}{2.1.1}{equation.2.5}}
 \backcite {sparkes_functional_2024}{{19}{2.1.1}{equation.2.5}}
 \backcite {sparkes_functional_2024}{{19}{2.1.1}{equation.2.5}}
 \backcite {testa_doubly-robust_2025}{{19}{2.1.1}{equation.2.5}}
-\backcite {imbens_causal_2015}{{19}{2.1.1}{equation.2.5}}
+\backcite {imbens_causal_2015}{{20}{2.1.1}{equation.2.5}}
 \backcite {testa_doubly-robust_2025}{{20}{2.1.1}{equation.2.5}}
 \backcite {wong_kernel-based_2018}{{20}{2.1.1}{equation.2.5}}
 \backcite {colantuoni_statistical_2018}{{20}{2.1.1}{equation.2.5}}
@@ -52,12 +54,15 @@
 \backcite {mallat_theory_1989}{{27}{2.2.3.1}{subsubsection.2.2.3.1}}
 \backcite {mallat_theory_1989}{{27}{2.2.3.1}{Item.10}}
 \backcite {mallat_theory_1989}{{28}{2.2.3.1}{equation.2.16}}
-\backcite {nason_wavethresh_1999}{{30}{2.2.4}{subsection.2.2.4}}
+\backcite {nason_wavethresh_1999, aldrich_wavelets_2005, brandon_whitcher_waveslim_2001}{{30}{2.2.4}{subsection.2.2.4}}
+\backcite {nason_wavethresh_1999, aldrich_wavelets_2005, brandon_whitcher_waveslim_2001}{{30}{2.2.4}{subsection.2.2.4}}
+\backcite {nason_wavethresh_1999, aldrich_wavelets_2005, brandon_whitcher_waveslim_2001}{{30}{2.2.4}{subsection.2.2.4}}
 \backcite {sweldens_lifting_1995}{{30}{2.2.4}{subsection.2.2.4}}
 \backcite {daubechies_factoring_1998}{{30}{2.2.4}{subsection.2.2.4}}
 \backcite {daubechies_factoring_1998}{{31}{2.2.4}{equation.2.20}}
-\backcite {daubechies_factoring_1998}{{31}{2.2.4}{equation.2.22}}
-\backcite {nunes_adaptive_2006}{{34}{2.2.4}{Item.14}}
+\backcite {daubechies_factoring_1998}{{32}{2.2.4}{equation.2.22}}
+\backcite {nunes_adaptive_2006, knight_nlt_2008}{{34}{2.2.4}{Item.14}}
+\backcite {nunes_adaptive_2006, knight_nlt_2008}{{34}{2.2.4}{Item.14}}
 \backcite {sweldens_lifting_1995}{{34}{2.2.4}{Item.14}}
 \backcite {morettin_wavelets_2017}{{34}{2.2.5}{subsection.2.2.5}}
 \backcite {liu_improved_2014}{{35}{2.2.5}{equation.2.25}}
@@ -75,16 +80,17 @@
 \backcite {testa_doubly-robust_2025}{{39}{3.1}{section.3.1}}
 \backcite {sparkes_functional_2024}{{39}{3.1}{section.3.1}}
 \backcite {testa_doubly-robust_2025}{{39}{3.1}{section.3.1}}
-\backcite {sparkes_functional_2024}{{40}{3.1}{section.3.1}}
+\backcite {sparkes_functional_2024}{{39}{3.1}{section.3.1}}
 \backcite {ying_causality_2024}{{40}{3.1}{section.3.1}}
 \backcite {ecker_causal_2024}{{40}{3.1.1}{subsection.3.1.1}}
+\backcite {liu_improved_2014}{{40}{3}{Item.21}}
 \backcite {liu_improved_2014}{{40}{4}{Item.22}}
 \backcite {ecker_causal_2024}{{41}{3.1.1}{Item.26}}
 \backcite {chatterjee_bootstrapping_2011}{{41}{3.1.1}{Item.26}}
 \backcite {chatterjee_bootstrapping_2011}{{41}{3.1.1.1}{subsubsection.3.1.1.1}}
 \backcite {ecker_causal_2024}{{42}{3.1.1.1}{equation.3.2}}
-\backcite {ecker_causal_2024}{{43}{3.1.2}{Item.41}}
-\backcite {ying_causality_2024}{{43}{3.1.2}{Item.41}}
+\backcite {ecker_causal_2024}{{44}{3.1.2}{Item.41}}
+\backcite {ying_causality_2024}{{44}{3.1.2}{Item.41}}
 \backcite {aldrich_wavelets_2005, brandon_whitcher_waveslim_2001, nason_wavethresh_1999}{{44}{3.2}{section.3.2}}
 \backcite {aldrich_wavelets_2005, brandon_whitcher_waveslim_2001, nason_wavethresh_1999}{{44}{3.2}{section.3.2}}
 \backcite {aldrich_wavelets_2005, brandon_whitcher_waveslim_2001, nason_wavethresh_1999}{{44}{3.2}{section.3.2}}
@@ -94,7 +100,10 @@
 \backcite {eddelbuettel_rcpp_2008}{{45}{3.2.1}{subsection.3.2.1}}
 \backcite {liu_improved_2014}{{47}{3.2.1}{subsection.3.2.1}}
 \backcite {daubechies_factoring_1998}{{47}{3.2.2}{subsection.3.2.2}}
-\backcite {ecker_causal_2024}{{54}{4.1}{equation.4.4}}
+\backcite {ecker_causal_2024}{{53}{4}{chapter.4}}
+\backcite {ecker_causal_2024}{{53}{4.1}{section.4.1}}
+\backcite {ecker_causal_2024}{{54}{4.1}{equation.4.1}}
 \backcite {ecker_causal_2024}{{54}{4.1}{table.caption.21}}
 \backcite {donoho_ideal_1994}{{54}{4.1}{table.caption.21}}
-\backcite {liebl_fast_2023}{{54}{4.1}{table.caption.21}}
+\backcite {ecker_causal_2024}{{55}{4.1}{table.caption.21}}
+\backcite {lieblFastFairSimultaneous2023}{{55}{4.1}{table.caption.21}}

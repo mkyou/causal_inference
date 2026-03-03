@@ -11,6 +11,101 @@ Novamente, na arquitetura atual.
 - Assumimos linearidade funcional. Isso aqui é facilmente generalizável através de abordagens de ML mais robustas (vale menção às Causal Forests, por exemplo).
 
 - Assumimos um modelo funcional concorrente. Em palavras, o valor de X "agora" só afeta o desfecho "agora". Também poderia ser relaxado, embora fosse complicar bastante alguns cálculos. 
+# Notas sobre a dissertação
+
+## Construção de argumentos e lacunas
+### Diretrizes Gerais:
+- Padronização Capítulo/Seção corrigida: "Capítulo" para \chapter, "Seção" para tudo abaixo. (X)
+- Estou padronizando as \footnotes para que apareçam após o "." nas frases: "{frase}.\footnote{}" em vez de "{frase}\footnote{}.".
+- Estou padronizando siglas/acrônimos para minúsculas quando apresentadas no texto: Análise de Dados Funcionais (FDA) -> análise de dados funcionais (FDA); 
+Desvio Absoluto Mediano (MAD) -> desvio absoluto mediano (MAD).
+
+### Introdução
+-> Situa o interesse em FDA (X)
+-> Menciona que estimadores do FATE costumam supor regularidade temporal; e que essa suposição não é verificável (X)
+-> Menciona que estimadores do FATE costumam empregar técnicas de pré-processamento que violam a seta do tempo (X)
+-> Introduz as ondaletas como uma solução para ambos os problemas (X)
+-> Nota terminológica sobre causalidade estatística X causalidade operacional; conectando ambos os temas (X)
+
+### Referencial teórico
+#### Inferência Causal 
+-> Definimos o que chamamos de Inferência Causal Tradicional (X)
+-> Definimos as suposições necessárias para identificabilidade na Inferência Causal Tradicional (X)
+-> Transição suave entre Inferência Causal Tradicional e Funcional (X)
+-> Define um efeito do tratamento \(a\) heterogêneo: varia de indivíduo para indivíduo conforme o valor registrado das covariáveis (X)
+-> Define o MGP trazendo, simultaneamente, a independência entre indivíduos e a dependência temporal (X)
+-> Definimos o estimador como a diferença entre as predições de ambos os modelos (X)
+-> Reforçamos que os dados observados costumam ser discretos e ruidosos, aproveitando para deixar implícito que existem representações funcionais posteriores ao ajuste do modelo,
+embora deixando claro que o padrão é filtrar/suavizar antes (X)
+-> Apresenta o trabalho de Sparkles para posicionar outras abordagens que propõem/estimam o FATE; pontua que as suposições por eles empregadas não são mais simples que as tradicionais (X)
+-> Apresenta o trabalho de Testa, já criticando a prática de suavizar após o ajuste do modelo, preparando o "terreno" para o futuro (X)
+-> Retoma a simulação reforçando a necessidade de um pré-processamento adequado (X)
+
+#### Ondaletas
+-> Define o que é uma ondaleta (X)
+-> Menciona vantagens frente a métodos globais (X)
+-> De modo didático, fala sobre Série/Transformada d de Fourier (X)
+-> Volta para ondaletas, introduzindo a DWT e a MRA (X)
+  1) Separa notação teórica/prática (decomposição de funções e sinais discretos) (X)
+  2) Defini k < T, com T \in \mathbb{N}. Depois, na metodologia, vale vincular o \mathcal{T} e o T em si (X)
+-> DWT via lifting scheme (X)
+-> Pontua algumas vantagens da DWT via lifting scheme (X)
+-> Fala sobre limiarização e sobre processamento em tempo real. Defende brevemente a abordagem que adotaremos no trabalho (acho que é o suficiente. 
+A contribuição não é em um pré-processamento online estatisticamente mais eficiente; e sim em Inferência Causal) (X)
+
+### Metodologia
+-> Mencionamos que contribuiremos em duas frentes: estimador com pré-processamento por ondaletas para relaxar hipótese de regularidade; estimador com pré-processamento adequado para 
+cenários em que precisamos estimar em tempo real (X)
+-> Assumimos o arcabouço de Ecker et al (X)
+-> Formalizamos o que é um pré-processamento online (X)
+-> Reescrito o trecho sobre "online desnecessário". Clarificado que ambos estimadores são avaliados no cenário de intervenção única,
+com o offline servindo de teto de desempenho. Detalhes de comparação migrados para o capítulo de simulações. (X)
+-> Aplicado destaque visual (estimatorbox com bordas e título em bold) para os estimadores offline, online e bootstrap. (X)
+-> Arthur mencionou que quando falamos que "nossa defesa é direta: o respeito à seta do tempo, garantida pela janela móvel, é sobretudo importante para dados..." teve a ideia de colocar
+uma DAG simples no Cap 2 para explicar melhor a seta temporal, e porque ela importa. Pode ser legal, mas tenho receio de soar redundante (e não sei se a estrutura do Cap 2, como está agora,
+permite essa inserção de forma simples; ninguém estava se preocupando com isso na literatura de inferência funcional ainda --- isto é, não com possíveis extensões). Vale pensarmos ()
+-> Trocamos verbatim por fancyvrb (Verbatim com borda fina, fonte \small, preto/branco). Cabeçalhos mantidos dentro do bloco. (X)
+-> Apresentamos o rLifting, casando-o com nossa metodologia (X)
+
+Pontos menores: 
+- Seção sec-inferencia-causal-funcional-+ . t \in \mathcal{T} \in (?) \mathbb{R^+}.
+- Adicionada footnote explicando ignorabilidade média vs condicional (Seção 2.1.1, revisao.tex). (X)
+
+- TODO (Cap. Estudos de Simulação): Na abertura do capítulo de simulações, mencionar a metodologia de comparação entre os estimadores:
+  o cenário de intervenção única permite avaliar tanto o offline quanto o online, estabelecendo o offline como teto de desempenho
+  para o online e viabilizando uma comparação justa com os splines de Ecker et al.
+
+De resto, até aqui, estamos ok.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Para falar sobre no capítulo de conclusão:
+
+
+
+
+
+- Assumimos implicitamente que todos os indivíduos têm sinal registrado nos mesmos momentos do tempo. É uma suposição forte que, possivelmente, poderia ser relaxada sem muitos prejuízos.
+Ao menos na arquitetura atual, em que não temos tratamentos e covariáveis mudando no tempo.
+
+- Assumimos um sinal regular (já mencionamos). Relaxar isso pode comprometer a latência do suavizador online. -> É uma melhoria para o rLifting! Acredito que não seria um problema para o FATE.
+Novamente, na arquitetura atual.
+
+- Assumimos linearidade funcional. Isso aqui é facilmente generalizável através de abordagens de ML mais robustas (vale menção às Causal Forests, por exemplo).
+
+- Assumimos um modelo funcional concorrente. Em palavras, o valor de X "agora" só afeta o desfecho "agora". Também poderia ser relaxado, embora fosse complicar bastante alguns cálculos. 
 
 - O bootstrap poderia se adaptar mais a curva. Atualmente pegamos os desvios dos percentis 2.5 e 97.5 entre os piores desvios de toda a trajetória. 
 Poderíamos pensar em uma adaptação que respeitasse melhor a forma da curva. Isso pode complicar a garantira dos 95% de cobertura.

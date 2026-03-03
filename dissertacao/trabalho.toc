@@ -26,6 +26,7 @@
 \contentsline {section}{\numberline {3.3}Limitações}{51}{section.3.3}%
 \contentsline {chapter}{\chapternumberline {4}ESTUDOS DE SIMULAÇÃO}{53}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Processo gerador de dados}{53}{section.4.1}%
-\contentsline {chapter}{\chapternumberline {5}CONCLUSÃO}{56}{chapter.5}%
+\contentsline {section}{\numberline {4.2}Métricas de comparação}{55}{section.4.2}%
+\contentsline {chapter}{\chapternumberline {5}CONCLUSÃO}{57}{chapter.5}%
 \vspace {\cftbeforepartskip }
-\contentsline {chapter}{\uppercase {Refer\^encias Bibliogr\'aficas}}{57}{section*.25}%
+\contentsline {chapter}{\uppercase {Refer\^encias Bibliogr\'aficas}}{58}{section*.25}%

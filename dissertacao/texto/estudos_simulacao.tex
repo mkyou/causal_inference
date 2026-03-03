@@ -1,56 +1,84 @@
 \chapter[ESTUDOS DE SIMULAÇÃO]{Estudos de simulação}\label{sec-estudos-simulacao}
+A fim de exemplificar a aplicabilidade da nossa proposta metodológica e avaliar o comportamento empírico dos estimadores propostos, apresentamos, neste capítulo, as especificações e os resultados dos estudos de simulação que conduzimos.
 
-A fim de exemplificar a aplicabilidade da nossa proposta metodológica e avaliar o comportamento empírico dos estimadores propostos, apresentamos, neste capítulo, as especificações e os resultados dos nossos estudos de simulação.
-
-Desenvolvemos duas simulações principais. A primeira compara três abordagens de pré-processamento --- ondaletas \emph{offline} (Seção \ref{sec-estimacao-fate}), ondaletas causais (Seção \ref{sec-estimador-online}) e \emph{splines} (Seção \ref{sec-inferencia-causal-funcional}) --- quanto à precisão pontual, ao viés e à cobertura das bandas de confiança simultâneas. A segunda avalia o estimador \emph{online}, mensurando a latência computacional do processamento ponto a ponto e a qualidade da estimativa resultante. Para esta última, não realizamos comparações com métodos da literatura, uma vez que não identificamos propostas anteriores voltadas à estimação do \(\mathrm{FATE}\) em tempo real.
+Desenvolvemos duas simulações principais. A primeira compara três abordagens de pré-processamento --- ondaletas \emph{offline} (Seção \ref{sec-estimador-offline}), ondaletas causais (Seção \ref{sec-estimador-online}) e \emph{splines} (método empregado no trabalho de \citeonline{ecker_causal_2024}; Seção \ref{sec-inferencia-causal-funcional}) --- quanto à precisão pontual, ao viés e à cobertura das bandas de confiança simultâneas. Conforme discutido no Capítulo \ref{sec-metodologia}, o cenário de intervenção única
+permite avaliar os três métodos sob as mesmas condições experimentais, com o estimador \emph{offline} servindo de teto de desempenho para o \emph{online} (uma vez que o primeiro tem acesso às trajetórias completas, é esperado que tenha desempenho superior nos cenários em que o respeito à causalidade operacional é dispensável). A segunda simulação avalia o estimador \emph{online}, mensurando a latência computacional do processamento ponto a ponto e a qualidade da estimativa resultante quando os dados chegam sequencialmente. Para esta última, não realizamos comparações com métodos da literatura, uma vez que não identificamos propostas anteriores voltadas à estimação do \(\mathrm{FATE}\) em tempo real.
 
 \section{Processo gerador de dados}\label{sec-pgd}
 
-Para compor os cenários, geramos \(p = 9\) covariáveis pré-tratamento, denotadas pelo vetor \(\mathbf{X}_i = (X_{i1}, \dots, X_{i9})^\top\) para o \(i\)-ésimo indivíduo. A intervenção binária foi atribuída conforme o modelo logístico
-\begin{equation}
+Para compor os cenários e permitir uma comparação limpa entre os métodos, tentamos emular o processo gerador de dados da simulação proposta por \citeonline{ecker_causal_2024}. Geramos \(p = 9\) covariáveis pré-tratamento, denotadas pelo vetor \(\mathbf{X}_i = (X_{i1}, \dots, X_{i9})^\top\) para o \(i\)-ésimo indivíduo, e atribuímos a intervenção binária conforme o modelo logístico
+\begin{equation*}
 	\pi(\mathbf{X}_i) = \mathbb{P}(A_i = 1 \mid \mathbf{X}_i) = \mathrm{expit}(\gamma_0 + \boldsymbol{\gamma}^\top \mathbf{X}_i) = \frac{\exp(\gamma_0 + \boldsymbol{\gamma}^\top \mathbf{X}_i)}{1 + \exp(\gamma_0 + \boldsymbol{\gamma}^\top \mathbf{X}_i)},
-\end{equation}
+\end{equation*}
 em que \(\gamma_0 = -6.194\) é o intercepto e \(\boldsymbol{\gamma}\) é o vetor de parâmetros que induz o viés de seleção. Para assegurar o cumprimento prático da suposição de positividade condicional, as propensões obtidas foram truncadas para o intervalo \([0.001, 0.999]\).
-O desfecho funcional de cada indivíduo foi definido conforme o modelo funcional concorrente
-\begin{equation}
+
+Definimos o desfecho funcional de cada indivíduo conforme o modelo concorrente
+\begin{equation*}
 	Y_i(t) = \mu_Y(t) + \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(A_i)}(t) + \epsilon_i(t),
 	\label{eq:pgd_desfecho}
-\end{equation}
-em que \(\mu_Y(t) = 2\log(t + 0.5)\) é um intercepto funcional; \(\boldsymbol{\beta}^{(a)}(t)\) representa os efeitos concorrentes das covariáveis sobre o desfecho no grupo de tratamento \(a \in \{0,1\}\); e \(\epsilon_i(t)\) denota um processo gaussiano com função de covariância exponencial,
-\begin{equation}
+\end{equation*}
+com \(\mu_Y(t) = 2\log(t + 0.5)\) denotando um intercepto funcional; \(\boldsymbol{\beta}^{(a)}(t)\) representando os efeitos concorrentes das covariáveis sobre o desfecho no grupo de tratamento \(a \in \{0,1\}\); e \(\epsilon_i(t)\) denotando um processo gaussiano com função de covariância exponencial,
+\begin{equation*}
 	\mathrm{Cov}\left(\epsilon_i(s), \epsilon_i(t)\right) = \sigma^2 \exp\!\left(-\frac{|s - t|}{\rho}\right),
-\end{equation}
+\end{equation*}
 com \(\sigma = 0.5\) e \(\rho = 0.8\), definidos sobre o domínio normalizado \([0,1]\). Conforme especificado na Seção \ref{sec-inferencia-causal-funcional}, os erros são independentes entre indivíduos.
 
-O efeito causal funcional é heterogêneo: os vetores de coeficientes \(\boldsymbol{\beta}^{(1)}(t)\) e \(\boldsymbol{\beta}^{(0)}(t)\) diferem por um deslocamento \(\boldsymbol{\delta}(t) = \boldsymbol{\beta}^{(1)}(t) - \boldsymbol{\beta}^{(0)}(t)\), de modo que o \(\mathrm{FATE}\) verdadeiro é dado por
+Tomamos ainda um efeito causal funcional heterogêneo: os vetores de coeficientes \(\boldsymbol{\beta}^{(1)}(t)\) e \(\boldsymbol{\beta}^{(0)}(t)\) diferem por um deslocamento \(\boldsymbol{\delta}(t) = \boldsymbol{\beta}^{(1)}(t) - \boldsymbol{\beta}^{(0)}(t)\), de modo que o \(\mathrm{FATE}\) verdadeiro é dado por
 \begin{equation}
 	\theta(t) = \bar{\mathbf{X}}^{\mathsf{T}}\boldsymbol{\delta}(t).
 	\label{eq:fate_verdadeiro}
 \end{equation}
-Distribuímos o efeito uniformemente entre as \(K + 1 = 10\) componentes do modelo (intercepto mais 9 covariáveis), de forma que \(\delta_k(t) = \text{effect}(t) / 10\), para \(k = 0, \dots, 9\).
+Distribuímos o efeito uniformemente entre as \(K + 1 = 10\) componentes do modelo (intercepto mais 9 covariáveis), de forma que \(\delta_k(t) = \text{effect}(t) / 10\), para \(k = 0, \dots, 9\).\footnote{A componente \(\delta_0(t)\) corresponde ao intercepto do modelo de regressão e não aparece	na Tabela \ref{tab:parametros_pgd}, que lista apenas as covariáveis \(X_{i1}, \dots, X_{i9}\). Ainda que \(\delta_0(t)\) não interaja com nenhuma covariável observada, ela contribui para o \(\mathrm{FATE}\) verdadeiro por meio do intercepto de \(\bar{\mathbf{X}}\).}
 
-Embora tenhamos buscado emular o processo gerador de dados de \citeonline{ecker_causal_2024}, implementamos duas modificações em relação à proposta original.
-A primeira concerne à origem das covariáveis. Sem acesso à base de dados empírica original, geramos \(\mathbf{X}\) de forma paramétrica, a partir de distribuições teóricas predefinidas (Normal, Poisson e Binomial). Para replicar a proposta dos autores com o máximo de fidelidade possível, calibramos os parâmetros dessas distribuições e as funções de efeito concorrente \(\beta_k^{(0)}(t)\) com base nas estatísticas descritivas reportadas no artigo original. O detalhamento dessa especificação encontra-se na Tabela~\ref{tab:parametros_pgd}.
+Conquanto tenhamos buscado emular o processo gerador de dados de \citeonline{ecker_causal_2024}, vale dizer que implementamos duas modificações em relação à proposta original.
+A primeira concerne à origem das covariáveis. Sem acesso à base de dados empírica original, geramos \(\mathbf{X}\) de forma paramétrica, a partir de distribuições teóricas predefinidas (Normal, Poisson e Binomial). Para replicar a proposta dos autores com o máximo de fidelidade possível, calibramos os parâmetros dessas distribuições e as funções de efeito concorrente \(\beta_k^{(0)}(t)\) com base nas estatísticas descritivas reportadas no artigo original. O detalhamento dessa especificação encontra-se na Tabela \ref{tab:parametros_pgd}.
 \begin{table}[ht]
 	\centering
 	\caption{Especificação paramétrica do processo gerador de dados das simulações.}
 	\label{tab:parametros_pgd}
-	\begin{tabular}{llcc}
+	\begin{tabular}{llrr}
 		\toprule
-		\textbf{Covariável} ($k$) & \textbf{Distribuição} & \textbf{Escore de propensão} ($\gamma_k$) & \textbf{Efeito concorrente} ($\beta_k^{(0)}(t)$) \\
+		Covariável & Distribuição & Escore de propensão & Efeito concorrente \\
 		\midrule
-		$X_{i1}$ & $\mathrm{N}(-2.3,\ 1.2^2)$  & $-0.052$ & $-0.02$ \\
-		$X_{i2}$ & $\mathrm{N}(8.3,\ 4.1^2)$   & $-0.001$ & $0.5\exp(-2t)$ \\
-		$X_{i3}$ & $\mathrm{Bin}(1, 0.019)$     & $0.020$  & $-0.1 + 0.2(t-0.5)^2$ \\
-		$X_{i4}$ & $\mathrm{Bin}(1, 0.710)$     & $-0.097$ & $0.2t$ \\
-		$X_{i5}$ & $\mathrm{Pois}(2.3)$         & $-0.056$ & $0.01\sin(10t)$ \\
-		$X_{i6}$ & $\mathrm{N}(11.8,\ 0.9^2)$  & $0.510$  & $0.05$ \\
-		$X_{i7}$ & $\mathrm{Bin}(1, 0.023)$     & $0.568$  & $-0.1$ \\
-		$X_{i8}$ & $\mathrm{Bin}(1, 0.297)$     & $0.674$  & $0.1\exp(-t)$ \\
-		$X_{i9}$ & $\mathrm{Bin}(1, 0.112)$     & $0.851$  & $0.15\exp(-t)$ \\
+		\(X_{i1}\) & \(\mathrm{N}(-2.3;\ 1.2^2)\) & \(-0.052\) & \(-0.02\) \\
+		\(X_{i2}\) & \(\mathrm{N}(8.3;\ 4.1^2)\) & \(-0.001\) & \(0.5\exp(-2t)\) \\
+		\(X_{i3}\) & \(\mathrm{Bin}(1;\ 0.019)\) & \(0.020\) & \(-0.1 + 0.2(t-0.5)^2\) \\
+		\(X_{i4}\) & \(\mathrm{Bin}(1;\ 0.710)\) & \(-0.097\) & \(0.2t\) \\
+		\(X_{i5}\) & \(\mathrm{Pois}(2.3)\) & \(-0.056\) & \(0.01\sin(10t)\) \\
+		\(X_{i6}\) & \(\mathrm{N}(11.8;\ 0.9^2)\) & \(0.510\) & \(0.05\) \\
+		\(X_{i7}\) & \(\mathrm{Bin}(1;\ 0.023)\) & \(0.568\) & \(-0.1\) \\
+		\(X_{i8}\) & \(\mathrm{Bin}(1;\ 0.297)\) & \(0.674\) & \(0.1\exp(-t)\) \\
+		\(X_{i9}\) & \(\mathrm{Bin}(1;\ 0.112)\) & \(0.851\) & \(0.15\exp(-t)\) \\
 		\bottomrule
 	\end{tabular}
 \end{table}
-A segunda modificação consiste em ampliar o conjunto de formas funcionais avaliadas para \(\theta(t)\). \citeonline{ecker_causal_2024} restringem sua análise a funções suaves; nós testamos quatro perfis distintos: \emph{Sigmoide}, \emph{Doppler}, \emph{Bumps} e \emph{Heavisine}. Esses perfis são referências consagradas na literatura de avaliação de estimadores de ondaletas \cite{donoho_ideal_1994} e permitem escrutinar o desempenho dos métodos em cenários que vão desde funções globalmente suaves até aquelas com oscilações abruptas e descontinuidades.
+A segunda modificação consiste em ampliar o conjunto de formas funcionais avaliadas para \(\theta(t)\). \citeonline{ecker_causal_2024} restringem sua análise a funções suaves; nós testamos quatro perfis distintos: \emph{Sigmoide}, \emph{Doppler}, \emph{Bumps} e \emph{Escada}. Os três primeiros perfis são referências consagradas na literatura de avaliação de estimadores de ondaletas \cite{donoho_ideal_1994} e permitem escrutinar o desempenho dos métodos em cenários que vão desde funções globalmente suaves até aquelas com oscilações abruptas e descontinuidades. O cenário \emph{Escada} complementa o conjunto com uma função de degraus puros, cujas descontinuidades desafiam particularmente os métodos de suavização global.
 
-Quanto à reprodução das bandas analíticas da Equação \ref{eq:ecker_bandas_simultaneas}, fizemos uma escolha deliberadamente conservadora na calibração do limiar \(u_\alpha(t)\). A implementação original emprega o pacote \texttt{ffscb} \cite{liebl_fast_2023}, que constrói \(u_\alpha(t)\) como uma função linear por partes, apoiada na fórmula de Kac-Rice e num parâmetro de rugosidade local \(\hat{\tau}(t)\). Em nossa implementação, adotamos um limiar escalar constante, obtido como o quantil de \(\sup_{t}|Z(t)|\) sob a estrutura de correlação estimada --- equivalente ao caso mais conservador do referido pacote. As bandas resultantes são sistematicamente mais largas do que as originais, de modo que eventuais falhas de cobertura observadas nos resultados não decorrem de bandas indevidamente estreitas. Por fim, lembramos que a validade dessas bandas pressupõe a gaussianidade de \(\hat{\theta}(t)\), premissa discutida na Seção \ref{sec-inferencia-causal-funcional}: embora o OLS preserve essa propriedade, a seleção do parâmetro de suavização por GCV constitui uma operação não-linear que pode, em princípio, violá-la.
+Ambas as simulações exploram o cruzamento completo dos tamanhos de amostra \(N \in \{200, 500, 2000\}\) e dos números de pontos observados por curva \(T \in \{128, 256, 512\}\). Cada configuração é replicada 1000 vezes. Onde aplicável, a janela do pré-processamento causal é \(W = 64\) para \(T \in \{128, 256\}\) e \(W = 128\) para \(T = 512\).
+
+Para os métodos baseados em ondaletas, a família mãe é determinada
+conforme o cenário (Haar para Sigmoide e Escada; Daubechies-2 para Bumps e Doppler), as demais configurações são conforme o padrão do \texttt{rLifting} e as bandas de confiança simultâneas provêm do bootstrap (Seção \ref{sec-bootstrap-ic}).
+Para os \emph{splines}, utilizamos as bandas analíticas derivadas
+em \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}). Optamos por uma escolha deliberadamente conservadora para calibração do limiar \(u_\alpha\). Na implementação original, o pacote \texttt{ffscb}
+\cite{lieblFastFairSimultaneous2023} constrói \(u_\alpha(t)\) como uma função linear por partes, apoiada na fórmula de Kac-Rice e num parâmetro de rugosidade local. Nós, em contrapartida, adotamos um limiar escalar constante que corresponde ao caso mais conservador do referido pacote. Salientamos que a ideia não era
+prejudicar o estimador de referência, mas buscar favorecê-lo. Nosso intuito era averiguar se as bandas analíticas conseguiriam atingir a cobertura nominal mesmo quando violamos a suposição de regularidade temporal do efeito. Ao alargar sistematicamente essas bandas, asseguramos que eventuais subcoberturas empíricas
+não decorram de uma calibração excessivamente estreita (como resultado, é claro, a comparação da largura das bandas de confiança foi comprometida). O leitor verá mais adiante que nossas precauções demonstraram-se infrutíferas.
+
+Para o estimador \emph{online}, não construímos bandas de confiança, conforme a limitação computacional discutida na Seção \ref{sec-bootstrap-ic}. Em contrapartida, mensuramos a sua latência por processamento.
+
+\section{Métricas de comparação}\label{sec-metricas}
+Para comparar os métodos objetivamente, definimos as seguintes métricas de comparação: erro quadrático médio e raíz do erro quadrático médio normalizado (RMSE e NRMSE, respectivamente, para considerar como os erros variavam com o tamanho do efeito e numa escala adimensional --- que permitia comparar o desempenho em cenários de efeito distintos); viés (para detectar se os estimadores tendiam a superestimar/subestimar o efeito em trechos da curva); o percentual da cobertura simultânea das bandas de confiança (para detectar se os estimadores intervalares desempenham conforme o desejado) e a largura média dessas bandas (para reforçarmos o caráter conservador do estimador e mostrarmos sua evolução com \(N\) e \(T\)). 
+
+Formalmente, tomamos:
+\begin{equation*}
+	\text{RMSE}_{t_k} = \sqrt{\frac{1}{R}\sum_{r=1}^{R} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2},
+\end{equation*}
+\begin{equation*}
+	\mathrm{NRMSE}^{(r)} = \frac{\sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}}{\max_k \theta(t_k) - \min_k \theta(t_k)},
+\end{equation*}
+\begin{equation*}	
+	\mathrm{Viés}_{t_k} = \frac{1}{R}\sum_{r=1}^{R} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
+\end{equation*}
+\begin{equation*}
+	\mathrm{Viés}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
+\end{equation*}

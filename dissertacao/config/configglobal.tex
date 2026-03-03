@@ -121,3 +121,31 @@
 % ----------------------------------------------------------
 %\newsubfloat{figure}% Desativado — subcaption provê o ambiente subfigure
 \providecommand*{\subfigureautorefname}{Subfigura}
+% ----------------------------------------------------------
+% Configuração do fancyvrb (blocos de código)
+% ----------------------------------------------------------
+\fvset{
+  fontsize=\small,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{black}
+}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% Ambiente para destaque de estimadores e procedimentos
+% ----------------------------------------------------------
+\newsavebox{\estimatorboxcontent}
+\newlength{\estimatorboxpad}
+\setlength{\estimatorboxpad}{10pt}
+\newenvironment{estimatorbox}[1][]{%
+  \begin{lrbox}{\estimatorboxcontent}%
+  \begin{minipage}{\dimexpr\textwidth-2\estimatorboxpad-2\fboxrule\relax}%
+  \ifx\\#1\\\else{\smallskip\noindent\textbf{#1}\par\smallskip}\fi%
+}{%
+  \end{minipage}%
+  \end{lrbox}%
+  {\setlength{\fboxsep}{\estimatorboxpad}%
+  \noindent\fbox{\usebox{\estimatorboxcontent}}}%
+  \medskip%
+}
+% ----------------------------------------------------------

@@ -1,18 +1,17 @@
 \chapter[Metodologia]{Metodologia}\label{sec-metodologia}
-
 Neste capítulo, detalhamos como propomos estimar o \(\mathrm{FATE}\) utilizando ondaletas na etapa de pré-processamento dos dados funcionais (veja a Equação \ref{eq:fate_identificabilidade}). Contribuiremos em duas frentes. Primeiro, propomos substituir o uso de \emph{splines} por ondaletas, dispensando a hipótese de que o efeito de tratamento seja uma função suave no tempo. Segundo, consideramos cenários em que a estimativa causal precisa ser atualizada em tempo real --- necessidade que endereçamos por meio do \texttt{rLifting}, nossa implementação do \emph{lifting scheme}, fortemente inspirada no texto de \citeonline{liu_improved_2014}.
 
-Assumiremos as suposições necessárias à identificabilidade do \(\mathrm{FATE}\) (Seção \ref{sec-inferencia-causal-funcional}) e consideraremos um processo gerador de dados alinhado ao de \citeonline{ecker_causal_2024}. Teremos \(i = 1, \dots, N\) unidades amostrais, cada uma com um vetor de covariáveis pré-intervenção \(\mathbf{X}_i \in \mathbb{R}^{p}\) e uma atribuição binária de tratamento \(A_i \in \mathcal{A} \equiv \{0,1\}\). O desfecho de interesse é uma trajetória temporal \(Y_i(t)\), observada na prática através do sinal \(Y_i[k]\), com \(k = 0, \dots, T-1\) e \(T \in \mathbb{N}\) denotando o número de observações por unidade amostral. 
+Assumiremos as suposições necessárias à identificabilidade do \(\mathrm{FATE}\) (Seção \ref{sec-inferencia-causal-funcional}) e consideraremos um processo gerador de dados alinhado ao de \citeonline{ecker_causal_2024}. Teremos \(i = 1, \dots, N\) unidades amostrais, cada uma com um vetor de covariáveis pré-intervenção \(\mathbf{X}_i \in \mathbb{R}^{p}\) e uma atribuição binária de tratamento \(A_i \in \mathcal{A} \equiv \{0,1\}\). O desfecho de interesse é uma trajetória temporal \(Y_i(t)\) (\(t \in \mathcal{T}\)), observada na prática através do sinal \(Y_i[k]\), com \(k = 0, \dots, T-1\) e \(T \in \mathbb{N}, T < \mathcal{T}\) denotando o número de observações por unidade amostral. 
 
 Para garantir clareza, diremos que um pré-processamento é operacionalmente causal (\emph{online}) quando a reconstrução da função em \(t_k \equiv k\) depender apenas dos pontos \(Y_i[0], \dots, Y_i[k]\); caso contrário, chamaremo-lo de global (\emph{offline}). 
 
-Na primeira contribuição, utilizar técnicas de pré-processamento \emph{online} não é necessário. Uma vez que o desenho do experimento prevê uma única intervenção, estática e aplicada no início do acompanhamento, o vazamento temporal acaba não comprometendo significativamente a direcionalidade do efeito causal. Essa construção permitirá que mensuremos o ganho ``puro'' das ondaletas em relação às \emph{splines}, e nos dará um teto para o desempenho das ondaletas causais (a versão \emph{offline} dispõe de mais informação do que a \emph{online} e, portanto, deve performar melhor). Na segunda contribuição, a necessidade de atualização em tempo real impõe a causalidade operacional, exigindo, portanto, que adaptemos nosso pré-processamento de acordo.
+A primeira contribuição assume um cenário com intervenção única, aplicada no início do acompanhamento. Sob essa premissa, o viés de antecipação não compromete a direcionalidade do efeito causal, de modo que a causalidade operacional é dispensável. Esse cenário nos permite mensurar o ganho das ondaletas em relação aos \emph{splines}, independentemente da escolha entre os modos de pré-processamento. Na segunda contribuição, por outro lado, a necessidade de atualização em tempo real impõe a causalidade operacional, exigindo que o pré-processamento seja adaptado de acordo.
 
 \section{Estimação do FATE}\label{sec-estimacao-fate}
 
-A escolha por basear nosso estimador no arcabouço de \citeonline{ecker_causal_2024} --- preterindo \citeonline{testa_doubly-robust_2025} e \citeonline{sparkes_functional_2024} --- se deve a motivos práticos e estruturais já abordados anteriormente neste trabalho. Ao contrário da proposta de \citeonline{testa_doubly-robust_2025}, nós defendemos que o pré-processamento para limpeza das trajetórias ruidosas deve anteceder a fase de modelagem (Seção \ref{sec-inferencia-causal-funcional}). Além disso, preferimos a manutenção do formalismo dos resultados potenciais, deixado de lado por \citeonline{sparkes_functional_2024}, dado que essa estrutura possui literatura consolidada e facilita diálogos com possíveis extensões longitudinais, como as de \citeonline{ying_causality_2024}.
+A escolha por basear nosso estimador no arcabouço de \citeonline{ecker_causal_2024} --- preterindo \citeonline{testa_doubly-robust_2025} e \citeonline{sparkes_functional_2024} --- se deve a motivos práticos e estruturais abordados anteriormente neste trabalho. Ao contrário da proposta de \citeonline{testa_doubly-robust_2025}, nós defendemos que a representação funcional deve anteceder a fase de modelagem, objetivando a limpeza das trajetórias ruidosas (Seção \ref{sec-inferencia-causal-funcional}). Além disso, preferimos a manutenção do formalismo dos resultados potenciais, deixado de lado por \citeonline{sparkes_functional_2024}, dado que essa estrutura possui literatura consolidada e facilita diálogos com possíveis extensões longitudinais, como as de \citeonline{ying_causality_2024}.
 
-\subsection{Estimador com pré-processamento \emph{offline}}
+\subsection{Estimador com pré-processamento \emph{offline}}\label{sec-estimador-offline}
 Assim como \citeonline{ecker_causal_2024}, também empregaremos um modelo linear funcional para o desfecho, ajustando uma regressão para o grupo tratado (\(a = 1\)) e outra para o de comparação (\(a = 0)\). A partir desses ajustes, tomamos \(\hat{\theta}(t)\) como a média das diferenças entre as predições de ambos os modelos em toda a amostra. Por conveniência, reproduzimos abaixo as Equações \ref{eq:ecker_modelo_regressao_funcional} e \ref{eq:ecker_estimador_fate}:
 \begin{equation*}
     Y_i^{(a)}(t) = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t) + \epsilon_i^{(a)}(t), \quad \text{para } i \text{ tal que } A_i = a;
@@ -21,42 +20,40 @@ Assim como \citeonline{ecker_causal_2024}, também empregaremos um modelo linear
     \hat{\theta}(t) = \frac{1}{N}\sum\limits_{i = 1}^{N}\left(\mathbf{X}_i^{\mathsf{T}}\hat{\boldsymbol{\beta}}^{(1)}(t) - \mathbf{X}_i^{\mathsf{T}}\hat{\boldsymbol{\beta}}^{(0)}(t)\right)
     = \bar{\mathbf{X}}^{\mathsf{T}}\left(\hat{\boldsymbol{\beta}}^{(1)}(t) - \hat{\boldsymbol{\beta}}^{(0)}(t)\right).
 \end{equation*}
-
 Construímos nosso estimador a partir dos seguintes passos:
 
-\begin{itemize}
-    \item Pré-processamento dos sinais
+\begin{estimatorbox}[Pré-processamento dos sinais]
     \begin{enumerate}
         \item Obtemos o sinal temporal completo observado para cada unidade \(i = 1, \dots, N\). Reforçamos que o acesso ao vetor \((Y_i[0], \dots, Y_i[T-1])\) caracteriza a natureza \emph{offline} do estimador.
         \item Aplicamos a DWT (utilizamos o \emph{lifting scheme} por eficiência computacional, mas poderíamos ter empregado a MRA), considerando um total de \(J = \log_2(T)\) níveis de resolução.
-        \item Para lidar com eventuais efeitos de borda, recorremos à extensão simétrica (Seção \ref{sec-extensoes-borda}). Em seguida, limiarizamos os coeficientes de detalhe por meio de uma regra escolhida pelo analista (Seção \ref{sec-limiarizacao}). Por padrão, selecionamos a limiarização semissuave.
-        \item O limiar varia com o nível de resolução \(j\). Nossa implementação permite calcular \(\lambda_j\) de forma adaptativa, independentemente da regra de limiarização vigente. Fixamos os hiperparâmetros em \(\alpha = 0.3\) e \(\beta = 1.2\), em linha com o padrão de calibração de \citeonline{liu_improved_2014}.
+        \item Para lidar com eventuais efeitos de borda, recorremos à extensão simétrica (Seção \ref{sec-extensoes-borda}). Em seguida, limiarizamos os coeficientes de detalhe por meio de uma regra escolhida pelo analista (Seção \ref{sec-limiarizacao}). Por padrão, selecionamos a limiarização semissuave (como recomendado por \citeonline{liu_improved_2014}).
+        \item O limiar varia com o nível de resolução \(j\). Nossa implementação permite calcular \(\lambda_j\) de forma adaptativa, independentemente da regra de limiarização vigente. Fixamos os hiperparâmetros em \(\alpha = 0.3\) e \(\beta = 1.2\), também em linha com o padrão de calibração de \citeonline{liu_improved_2014}.
         \item Após a limiarização, aplicamos a transformada inversa (IDWT) via \emph{lifting} para reconstruir o sinal, obtendo a trajetória funcional estimada \(\hat{Y}_i(t)\) em toda a grade temporal.
     \end{enumerate}
-    
-    \item Estimação do efeito causal
-    \begin{enumerate}
+\end{estimatorbox}
 
+\begin{estimatorbox}[Estimação do efeito causal]
+    \begin{enumerate}
         \item De posse das trajetórias reconstruídas de todas as \(N\) unidades, dividimos a amostra entre tratados (\(a = 1\)) e não-tratados (\(a = 0\)).
 
-        \item Para cada grupo \(a \in \{0,1\}\) e para cada instante \(t\) da grade temporal, ajustamos modelos de regressão via mínimos quadrados ordinários\footnote{Na prática, adicionamos uma penalização Ridge com parâmetro \(\lambda_{\text{Ridge}} = 10^{-7}\) para garantir estabilidade numérico-computacional na inversão de \((\mathbf{X}^{\mathsf{T}}\mathbf{X})^{-1}\), prevenindo falhas em situações de multicolinearidade entre as covariáveis.}, obtendo \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\).
+        \item Para cada grupo \(a \in \{0,1\}\) e para cada instante \(t\) da grade temporal, ajustamos modelos de regressão via mínimos quadrados ordinários,\footnote{Na prática, adicionamos uma penalização Ridge com parâmetro \(\lambda_{\text{Ridge}} = 10^{-7}\) para garantir estabilidade numérico-computacional na inversão de \((\mathbf{X}^{\mathsf{T}}\mathbf{X})^{-1}\), prevenindo falhas em situações de multicolinearidade entre as covariáveis.} obtendo \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\).
 
         \item Definimos o perfil médio de covariáveis na amostra global, \(\bar{\mathbf{X}}\), e estimamos o \(\mathrm{FATE}\) por
 \[
             \hat{\theta}(t) = \bar{\mathbf{X}}^{\mathsf{T}}\left(\hat{\boldsymbol{\beta}}^{(1)}(t) - \hat{\boldsymbol{\beta}}^{(0)}(t)\right).
         \]
     \end{enumerate}
-
-\end{itemize}
+\end{estimatorbox}
 
 A estimação pontual, contudo, é apenas metade do problema. O leitor há de lembrar-se que as bandas de confiança propostas por \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}) pressupõem que o estimador \(\hat{\theta}(t)\) preserve a natureza gaussiana do processo gerador de dados, premissa que a limiarização de coeficientes em ondaletas viola. Para contornar essa limitação e atingir a cobertura nominal de \(100(1 - \alpha)\%\), estruturamos o procedimento separando a estimação pontual (com ondaletas) da quantificação de incerteza (sem pré-processamento), em linha com o que \citeonline{chatterjee_bootstrapping_2011} discutem para estimadores penalizados.
 
-\subsubsection{Estimação das bandas de confiança}
+\subsubsection{Estimação das bandas de confiança}\label{sec-bootstrap-ic}
 
 Quando aplicamos limiarização a um sinal que passou pela DWT, forçamos uma redução dos coeficientes de detalhe. A depender da regra de limiarização empregada, muitos desses coeficientes passam a valer zero. Consequentemente, ao utilizarmos técnicas de reamostragem tradicionais em diversas regiões da curva estimada (isto é, ao obtermos a amostra \emph{bootstrap} e, em seguida, reaplicarmos a DWT e o modelo de estimação), obtemos uma variância empírica artificialmente próxima de zero. Como resultado, as bandas de confiança tornam-se excessivamente estreitas e falham em atingir a cobertura nominal de \(100(1 - \alpha)\%\) (esse fenômeno ocorre também com outras técnicas de limiarização, como a penalização Lasso. Veja \citeonline{chatterjee_bootstrapping_2011} para mais detalhes).
 
 A solução escolhida para este problema consiste em usar as ondaletas apenas para a estimativa pontual, \(\hat{\theta}(t)\), e reajustar os modelos a amostras \emph{bootstrap} dos dados ruidosos, preservando, assim, a variabilidade empírica. O procedimento funciona da seguinte forma:
 
+\begin{estimatorbox}[Estimação das bandas de confiança via \emph{bootstrap}]
 \begin{enumerate}
     \item Obtemos a estimativa pontual da trajetória do \(\mathrm{FATE}\), \(\hat{\theta}(t)\), como descrito acima.
     \item Para \(b = 1, \dots, B\), com \(B \in \mathbb{N}\), sorteamos \(N\) unidades amostrais, com reposição, a partir da amostra original.
@@ -74,6 +71,7 @@ A solução escolhida para este problema consiste em usar as ondaletas apenas pa
             \label{eq:banda_bootstrap}
         \end{equation}
 \end{enumerate}
+\end{estimatorbox}
 
 Quando comparada com a proposta de \citeonline{ecker_causal_2024}, essa abordagem apresenta a vantagem de ser não paramétrica, podendo, portanto, ser aplicada em modelos mais complexos, que, por exemplo, não assumam linearidade funcional. Em contrapartida, é mais intensiva computacionalmente e pode produzir bandas de confiança desnecessariamente largas, a depender da verdadeira curva de efeito. Comparamos as duas abordagens em diferentes cenários na Seção \ref{sec-estudos-simulacao}.
 
@@ -81,6 +79,7 @@ Quando comparada com a proposta de \citeonline{ecker_causal_2024}, essa abordage
 
 Em comparação ao procedimento \emph{offline}, a abordagem \emph{online} modifica a etapa de pré-processamento para impor causalidade operacional. Sem perda de generalidade, assumimos que as trajetórias dos \(N\) indivíduos são observadas de forma sequencial, em uma malha discreta e regular.\footnote{Essa premissa facilita a aplicação do algoritmo e a comparação da nossa implementação via \emph{lifting} com metodologias clássicas de ondaletas e \emph{splines}. Ela pode ser relaxada, embora ao custo de maior latência computacional na suavização dos sinais.} Com isso, aplicamos o procedimento de processamento da Seção \ref{sec-processamento-tempo-real} instante a instante, intercalando no fluxo a suavização causal e a atualização do \(\mathrm{FATE}\):
 
+\begin{estimatorbox}[Estimador com pré-processamento \emph{online}]
 \begin{enumerate}
 	\item Definimos uma janela temporal de tamanho \(W = 2^{L}\), em que o parâmetro \(L \in \mathbb{N}\) determina simultaneamente o tamanho da janela e a resolução máxima da decomposição (\(J = L\)).
     \item Em vez de exigirmos todo o vetor \((Y_i[0], \dots, Y_i[T-1])\), a cada instante \(k\) impomos que o sistema enxergue puramente as observações \(Y_i[k']\), \(k' \leq k\) para todo \(i\).
@@ -94,25 +93,26 @@ Em comparação ao procedimento \emph{offline}, a abordagem \emph{online} modifi
     \]
     em que \(\mathbf{y}^{(a)}[k]\) é o vetor de desfechos suavizados no instante \(k\) para o grupo \(a\). 
     \item Por fim, incrementamos \(k\) e repetimos o procedimento até o fim da grade temporal.
-\end{enumerate}  
+\end{enumerate}
+\end{estimatorbox}  
 
 O processo acima descrito viabiliza a atualização em tempo real das estimativas pontuais do \(\mathrm{FATE}\) à medida que novas observações chegam ao sistema. A quantificação de incerteza via \emph{bootstrap}, por sua vez, esbarra em barreiras computacionais. A atualização das estimativas em tempo real impõe restrições de velocidade de processamento que as técnicas de reamostragem não conseguem cumprir. Apesar dessa limitação, defendemos que o processamento operacionalmente causal deve ser empregado sempre que possível, mesmo quando aplicado de forma retrospectiva a lotes de dados (cenários em que o \emph{bootstrap} volta a ser possível --- já que a velocidade computacional não mais é um problema --- e em que conseguiríamos aplicar o pré-processamento \emph{offline}). Nossa defesa é direta: o respeito à seta do tempo, garantida pela janela móvel, é sobretudo importante para processos de dados mais complexos, com múltiplas atribuições de tratamento e confundidoras variantes no tempo. Embora as premissas assumidas por \citeonline{ecker_causal_2024}, e adotadas aqui, inibam a contaminação das estimativas de efeito, a evolução da literatura para identificabilidade em tempo contínuo \cite{ying_causality_2024} exigirá, obrigatoriamente, metodologias de suavização causalmente coerentes.
 
 \section{\texttt{rLifting}}\label{sec-rlifting}
 
-Até aqui, defendemos o uso de ondaletas como alternativa aos métodos globais de suavização na etapa de pré-processamento em inferência causal funcional. Em suma, argumentamos que a combinação de ondaletas e janelas móveis nos permite prescindir da hipótese de suavidade do efeito de tratamento, respeitar a causalidade operacional, e, ao mesmo tempo, atualizar estimativas do \(\mathrm{FATE}\) de modo incremental. O pacote \texttt{rLifting}, implementado em \texttt{R}, fornece a infraestrutura computacional necessária para executar essas tarefas.
+Ao longo deste trabalho, defendemos o uso de ondaletas como alternativa aos métodos globais de suavização na etapa de pré-processamento em inferência causal funcional. Em suma, argumentamos que a combinação de ondaletas e janelas móveis nos permite prescindir da hipótese de suavidade do efeito de tratamento, respeitar a causalidade operacional, e, ao mesmo tempo, atualizar estimativas do \(\mathrm{FATE}\) de modo incremental. O pacote \texttt{rLifting}, implementado em \texttt{R}, fornece a infraestrutura computacional necessária para executar essas tarefas.
 
 Para situar o pacote, convém passar em revista as ferramentas já disponíveis no ecossistema \texttt{R}. Entre as implementações clássicas da DWT baseadas em MRA, destacamos \texttt{wavelets}, \texttt{waveslim} e \texttt{wavethresh} \cite{aldrich_wavelets_2005, brandon_whitcher_waveslim_2001, nason_wavethresh_1999}. Os dois primeiros oferecem acesso direto aos coeficientes de aproximação e de detalhe, mas não incluem rotinas de limiarização automática, fazendo-os menos acessíveis a usuários não especialistas. O \texttt{wavethresh}, em contrapartida, oferece múltiplas famílias de ondaletas e seletores de limiar (incluindo regras universais e critérios baseados em validação cruzada), além de combinar código \texttt{R} com rotinas internas em \texttt{C} para manter eficiência computacional.
 
 Dentre as implementações baseadas no \emph{lifting scheme}, os pacotes \texttt{adlift} e \texttt{nlt} \cite{nunes_adaptive_2006, knight_nlt_2008} são particularmente notáveis. O \texttt{adlift} utiliza preditores polinomiais locais adaptativos, que ajustam a base de ondaletas à estrutura dos dados em cada vizinhança; já o \texttt{nlt}, emprega uma reordenação via permutações para determinar o percurso de \emph{lifting} que minimiza o erro de predição. Em ambos, a limiarização é aplicada via \texttt{EbayesThresh} \cite{silverman_ebayesthresh_2004}, e, em diversos cenários, os autores reportam resultados de reconstrução superiores aos dos pacotes que adotam a MRA. Esse ganho estatístico, todavia, impõe um custo computacional mais elevado, tornando ambos os pacotes menos adequados a aplicações em grande escala ou com restrições de tempo.
 
-Nenhum dos pacotes mencionados se propõe realizar a DWT respeitando a causalidade operacional e, tampouco, a operar em tempo real. Assim, para empregar qualquer uma dessas bibliotecas em um contexto causal, o analista precisaria implementar manualmente o esquema de janelas móveis descrito na Seção \ref{sec-processamento-tempo-real}, reaplicando a transformada completa a cada nova observação. Se executado de forma ingênua, tal procedimento exigiria lentas e repetitivas cópias de dados e realocações a cada nova observação. O \texttt{rLifting} foi desenhado para preencher essa lacuna e oferecer, em um único pacote, tanto o processamento em lote (\emph{offline}) quanto o causal e em tempo (quase) real (\emph{online}), com desempenho estatístico competitivo.
+Nenhum dos pacotes mencionados se propõe realizar a DWT respeitando a causalidade operacional e, tampouco, a operar em tempo real. Assim, para empregar qualquer uma dessas bibliotecas em um contexto causal, o analista precisaria implementar manualmente o esquema de janelas móveis descrito na Seção \ref{sec-processamento-tempo-real}, reaplicando a transformada completa a cada nova observação. Se executado de forma ingênua, tal procedimento exigiria lentas e repetitivas cópias de dados e realocações a cada nova observação. O \texttt{rLifting} foi desenhado para preencher essa lacuna e oferecer, em um único pacote, tanto o processamento em lote (\emph{offline}) quanto o causal e em tempo quase real (\emph{online}), com desempenho estatístico competitivo.
 
 \subsection{Implementação}\label{sec-rlifting-implementacao}
 
 Projetamos o \texttt{rLifting} em torno de duas premissas: delegar os cálculos mais pesados a código nativo, minimizando as chamadas entre \texttt{R} e \texttt{C++}; e expor uma API ao usuário que seja simples o bastante para cobrir a maioria dos casos de uso com uma única chamada de função e que não sacrifique a flexibilidade para analistas mais avançados.
 
-Para garantir eficiência computacional, fizemos com que todas as rotinas numericamente intensivas fossem implementadas em \texttt{C++} e acessadas pelo \texttt{R} por meio do pacote \texttt{Rcpp} \cite{eddelbuettel_rcpp_2008}. Essas rotinas incluem a transformada direta por \emph{lifting} (LWT, de \emph{lifting wavelet transform}), sua inversa (ILWT), os operadores de limiarização descritos na Seção \ref{sec-processamento-tempo-real} e o cálculo do limiar adaptativo recursivo via MAD. Em essência, o modo \emph{offline} consiste em uma chamada direta a essas rotinas --- o vetor de dados é passado ao \texttt{C++}, decomposto, limiarizado e reconstruído integralmente; e o resultado é devolvido ao \texttt{R}.
+Para garantir eficiência computacional, fizemos com que todas as rotinas numericamente intensivas fossem implementadas em \texttt{C++} e acessadas pelo \texttt{R} por meio do pacote \texttt{Rcpp} \cite{eddelbuettel_rcpp_2008}. Essas rotinas incluem a transformada direta por \emph{lifting} (LWT, de \emph{lifting wavelet transform} --- isto é, a DWT via \emph{lifting scheme}), sua inversa (ILWT --- IDWT via \emph{lifting scheme}), os operadores de limiarização descritos na Seção \ref{sec-processamento-tempo-real} e o cálculo do limiar adaptativo recursivo via MAD. Em essência, o modo \emph{offline} consiste em uma chamada direta a essas rotinas --- o vetor de dados é passado ao \texttt{C++}, decomposto, limiarizado e reconstruído integralmente; e o resultado é devolvido ao \texttt{R}.
 
 O modo \emph{online}, por sua vez, exige uma estratégia diferente. Quando os dados chegam ponto a ponto, o procedimento ingênuo seria, a cada nova observação, extrair a janela dos \(W\) pontos mais recentes para um novo vetor e reaplicar a LWT do início. O \texttt{rLifting} evita isso ao manter uma estrutura contígua e de tamanho fixo (\(W\)) para a janela histórica. No momento em que a observação mais recente do fluxo é recebida, ela substitui o registro mais antigo da memória; o vetor, então, é transposto e linearizado na malha temporal correta. Essa abordagem torna as realocações a cada laço desnecessárias, e confere ao pacote boa velocidade de execução.
 
@@ -120,9 +120,9 @@ Do ponto de vista do usuário em \texttt{R}, o processador \emph{online} é uma 
 
 Na prática, a interface do pacote oferece ao analista dois modos de trabalho. O primeiro, mais imediato, cobre a maioria dos casos de uso com uma única chamada de função.
 
-A função \texttt{denoise\_signal\_offline} realiza a suavização global, aplicando a LWT ao sinal inteiro. Ela é adequada a contextos em que todos os dados já estão disponíveis, como análises retrospectivas ou pós-processamento de séries históricas. A função \texttt{denoise\_signal\_causal} realiza a suavização causal sobre um lote de dados (pode ser aplicada nas mesmas situações da \texttt{denoise\_signal\_offline}, mas garantindo o respeito à seta do tempo). Ela simula a chegada sequencial dos dados com janelas de tamanho \(W\) e deve ser utilizada quando o objetivo é garantir que a saída no instante \(t\) dependa exclusivamente das observações até \(t\). Casos de uso incluem simulações de estratégias financeiras ou de sistemas que operam em tempo real sobre dados passados. A seguir, apresentamos um exemplo de uso de ambas as funções:
+A função \texttt{denoise\_signal\_offline} realiza a suavização global, aplicando a LWT ao sinal inteiro. Ela é adequada a contextos em que todos os dados já estão disponíveis e o respeito à seta do tempo não é obrigatório, como análises retrospectivas ou pós-processamento de séries históricas. A função \texttt{denoise\_signal\_causal} realiza a suavização causal sobre um lote de dados (pode ser aplicada nas mesmas situações da \texttt{denoise\_signal\_offline}, mas garantindo o respeito à seta do tempo). Ela simula a chegada sequencial dos dados com janelas de tamanho \(W\) e deve ser utilizada quando o objetivo é garantir que a saída no instante \(t\) dependa exclusivamente das observações até \(t\). Casos de uso incluem simulações de estratégias financeiras ou de sistemas que operam em tempo real sobre dados passados. A seguir, apresentamos um exemplo de uso de ambas as funções:
 
-\begin{verbatim}
+\begin{Verbatim}
 # Instanciando ondaleta (Haar, para este exemplo)
 scheme = lifting_scheme("haar")
 
@@ -130,10 +130,8 @@ scheme = lifting_scheme("haar")
 offline_clean = denoise_signal_offline(
   signal = noisy_data,
   scheme = scheme,
-  
   # Utilizamos o nível de resolução máximo recomendado log_{2}(J).
   levels = floor(log2(length(noisy_data))), 
-  
   method = "semisoft"
 )
 
@@ -145,12 +143,12 @@ causal_clean = denoise_signal_causal(
   window_size = 256, # Esse é o valor de W.
   levels = floor(log2((W))), # Lembre-se que W = 2^L e J = L.
   method = "semisoft"
-)
-\end{verbatim}
+ )
+\end{Verbatim}
 
 A função \texttt{new\_wavelet\_stream} atende a propósito similar à anterior, mas é voltada a cenários em que os dados não estão armazenados em um vetor, e sim chegam de fontes externas como sensores ou sistemas de monitoramento (é com ela que podemos aplicar a filtragem \emph{online}, de fato):
 
-\begin{verbatim}
+\begin{Verbatim}
 # Inicializa o stream processor
 processor = new_wavelet_stream(
   scheme = scheme,
@@ -164,7 +162,7 @@ online_clean = numeric(length(noisy_data))
 for (i in seq_along(noisy_data)) {
   online_clean[i] = processor(noisy_data[i])
 }
-\end{verbatim}
+\end{Verbatim}
 
 Para as três funções, os parâmetros \(\alpha\) e \(\beta\) do limiar recursivo (Equação \ref{eq:recursive_threshold}) possuem valores padrão em linha com os propostos por \citeonline{liu_improved_2014}, permitindo que o analista obtenha resultados razoáveis sem ajuste manual.
 
@@ -175,44 +173,44 @@ Cada ondaleta no \texttt{rLifting} é representada por um objeto que encapsula a
 
 Além dessas famílias, o pacote permite que o usuário defina novas ondaletas sem modificar o código-fonte. As funções \texttt{lift\_step} e \texttt{custom\_wavelet} possibilitam, respectivamente, construir operadores individuais de predição ou atualização e agrupá-los em um novo objeto de ondaleta. Esse grau de extensibilidade é menos comum em outros pacotes do ecossistema \texttt{R}, nos quais a adição de novas famílias frequentemente requer modificações no código interno da biblioteca. Veja um exemplo a seguir:
 
-\begin{verbatim}
-	# Passo 1: Predicao (P) (usando, para fins de exemplo, interpolacao linear)
-	p_step = lift_step(
-		type = "predict", 
-		coeffs = c(0.5, 0.5), 
-		start_idx = 0
-	)
-	
-	# Passo 2: Atualizacao (U)
-	u_step = lift_step(
-		type = "update", 
-		coeffs = c(0.25, 0.25), 
-		start_idx = -1
-	)
-	
-	# Agrupa os operadores em um novo esquema de ondaleta
-	my_linear = custom_wavelet(
-		name = "LinearManual",
-		steps = list(p_step, u_step),
-		norm = c(sqrt(2), 1/sqrt(2)) 
-	)
-\end{verbatim}
+\begin{Verbatim}
+# Passo 1: Predicao (P) (usando, para fins de exemplo, interpolacao linear)
+p_step = lift_step(
+  type = "predict", 
+  coeffs = c(0.5, 0.5), 
+  start_idx = 0
+)
+
+# Passo 2: Atualizacao (U)
+u_step = lift_step(
+  type = "update", 
+  coeffs = c(0.25, 0.25), 
+  start_idx = -1
+)
+
+# Agrupa os operadores em um novo esquema de ondaleta
+my_linear = custom_wavelet(
+  name = "LinearManual",
+  steps = list(p_step, u_step),
+  norm = c(sqrt(2), 1/sqrt(2)) 
+)
+\end{Verbatim}
 
 Para verificar se uma ondaleta definida pelo usuário é matematicamente consistente, a função \texttt{diagnose\_wavelet} aplica uma bateria de testes, que inclui a verificação de reconstrução perfeita (isto é, se \(\text{ILWT}(\text{LWT}(x)) = x\)), o número de momentos nulos, a preservação de energia (desigualdade de Parseval) e o suporte compacto. Essa validação é particularmente útil ao experimentar com fatorações alternativas, pois permite identificar erros na especificação dos coeficientes antes que eles comprometam uma análise. Adiante, exemplificamos sua chamada:
 
-\begin{verbatim}
-	# Verifica consistencia matematica do esquema recem-criado
-	diag = diagnose_wavelet(
-		scheme = my_linear,
-		config = list(
-		is_ortho = FALSE, # Se TRUE, testa ortogonalidade
-		# Avalia momentos nulos para graus 0 e 1 
-		# Também poderíamos avaliar para graus maiores
-		vm_degrees = c(0, 1), 
-		max_taps  = 5
-		)
-	)
-\end{verbatim}
+\begin{Verbatim}
+# Verifica consistencia matematica do esquema recem-criado
+diag = diagnose_wavelet(
+  scheme = my_linear,
+  config = list(
+    is_ortho = FALSE, # Se TRUE, testa ortogonalidade
+    # Avalia momentos nulos para graus 0 e 1 
+    # Tambem poderiamos avaliar para graus maiores
+    vm_degrees = c(0, 1), 
+    max_taps  = 5
+  )
+)
+\end{Verbatim}
 
 
 \subsection{Desempenho em exemplos controlados}\label{sec-rlifting-evidencia}
@@ -264,14 +262,14 @@ Esses resultados reforçam que o \texttt{rLifting} ocupa um nicho distinto ao of
 
 \section{Limitações}
 
-Nesta seção, discutimos algumas das desvantagens e limitações da nossa proposta metodológica.
+Nesta seção, discutimos algumas das desvantagens e limitações imediatas da nossa proposta metodológica. Adiantamos que retomaremos este tópico no Capítulo \ref{sec-conclusao}.
 
 O primeiro ponto de ponderação para um analista no procedimento operacionalmente causal é a escolha do tamanho da janela móvel, \(W\). Janelas curtas irão reagir rapidamente a mudanças de regime no tempo real, mas limitam o nível de resolução máximo da DWT e podem inviabilizar a detecção de tendências de longo-termo. Uma janela excessivamente longa, todavia, faz com que a DWT \emph{online} aproxime-se de sua contraparte \emph{offline}, com a restrição, porém, de que as primeiras \(W\) observações do sinal retornado ainda estarão contaminadas pelo ruído. Como recomendação geral, é uma boa prática verificar informações disponíveis sobre o tamanho total do sinal, se possível, antes de determinar \(W\).
 
-Problema similar acomete as escolhas dos hiperparâmetros \(\alpha\) e \(\beta\). Mesmo que tenhamos definido valores padrão que funcionam bem para uma gama de funções (muito por conta do caráter adaptativo da nossa limiarização), como na escolha de quaisquer hiperparâmetros, nosso algoritmo pode desempenhar melhor/pior a depender da calibração de \(\alpha\) e \(\beta\). Por ora, preferimos evitar abordagens baseadas em validação cruzada, sobretudo pela natureza do nosso estimador em tempo real. Essas técnicas de otimização, no entanto, podem ser implementadas para análises causais nas quais atualizações sequenciais não são um requisito. 
+Problema similar acomete as escolhas dos hiperparâmetros \(\alpha\) e \(\beta\). Mesmo que tenhamos definido valores padrão que funcionam bem para uma gama de funções (muito por conta do caráter adaptativo da nossa limiarização), como na escolha de quaisquer hiperparâmetros, nosso algoritmo pode desempenhar melhor/pior a depender da calibração de \(\alpha\) e \(\beta\). Por ora, preferimos evitar abordagens baseadas em validação cruzada, sobretudo pela natureza do objetivo de nosso estimador em tempo real (velocidade). Essas técnicas de otimização, no entanto, podem ser implementadas para análises causais nas quais atualizações sequenciais não são um requisito. 
 
 Ainda em relação ao \texttt{rLifting}, métodos de pré-processamento \emph{online} invariavelmente apresentam atraso de borda. Não à toa os pacotes \texttt{adlift} e \texttt{nlt} fazem uso de regressões locais na borda, a fim de melhorar a qualidade de suas estimativas. Em especial, o desempenho do \texttt{rLifting} pode variar bastante a depender do tipo de ondaleta selecionado. Para procedimentos em que a causalidade operacional é necessária, recomendamos fortemente que filtros mais curtos (como Haar, e Daubechies 2) sejam utilizados em detrimento dos mais longos. Filtros como CDF 9/7 irão exigir que mais pontos sejam artificialmente inseridos pela extensão de borda, o que pode comprometer a qualidade de reconstrução da função subjacente. Este é um tópico especialmente relevante para a estimação do \(\mathrm{FATE}\), principalmente se consideramos que são precisamente os pontos de borda que entram na regressão via mínimos quadrados. Em nossas simulações (Seção \ref{sec-estudos-simulacao}), o leitor irá notar que fomos especialmente precavidos em relação a essa problemática.
 
-Finalmente, precisamos reforçar a impossibilidade computacional de obtenção das bandas de confiança \emph{bootstrap} para aplicações em tempo real. Cientes dessa falha metodológica, sugerimos soluções paliativas: como já mencionado, a construção das bandas de confiança é possível em problemas que não exijam a velocidade que as atualizações em tempo real requerem. Podemos, portanto, estimá-las periodicamente. Claro, teríamos um atraso em relação à estimativa pontual, mas que, a nosso ver, seria tolerável. Se temos uma atualização rápida de dados (sinais que chegam a quase todo tempo), não tardaria até termos dados suficientes para realizar os procedimentos de reamostragem. Neste caso, apesar do atraso em relação à estimação pontual, obteríamos uma estimativa intervalar que se atualiza com o tempo e que, rapidamente, poderia indicar falhas do modelo. Por outro lado, caso a atualização de dados seja lenta, teremos tempo o suficiente para executar o \emph{bootstrap}, de tal sorte que a latência entre as estimações pontual e intervalar seria mitigada.
+Finalmente, precisamos reforçar a impossibilidade computacional de obtenção das bandas de confiança \emph{bootstrap} para aplicações em tempo real. Cientes dessa falha metodológica, sugerimos soluções paliativas: como já mencionado, a construção das bandas de confiança é possível em problemas que não exijam a velocidade que as atualizações em tempo real requerem. Para estes casos, mais extremos, sugerimos estimá-las periodicamente. Claro, teríamos um atraso em relação à estimativa pontual, mas que, a nosso ver, a depender da aplicação, seria tolerável. Se temos uma atualização rápida de dados (sinais que chegam a quase todo tempo), não tardaria até termos dados suficientes para realizar os procedimentos de reamostragem. Neste caso, apesar do atraso em relação à estimação pontual, obteríamos uma estimativa intervalar que se atualiza com o tempo e que, rapidamente, poderia indicar falhas do modelo. Por outro lado, caso a atualização de dados seja lenta, teremos tempo o suficiente para executar o \emph{bootstrap}, de tal sorte que a latência entre as estimações pontual e intervalar seria mitigada.
 
-Discutiremos nossas decisões no que se refere ao processo gerador de dados na Seção \ref{sec-conclusao}, quando abordaremos sugestões para trabalhos futuros. 
+Como já pontuado, discutiremos outras limitações no Capítulo \ref{sec-conclusao}, em que daremos alguns direcionamentos para trabalhos futuros.
