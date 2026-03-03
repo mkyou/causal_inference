@@ -1,9 +1,0 @@
-Scenario,Method,N,Cov_Simul,NRMSE_mean,Width_mean
-Sigmoid,Wavelet,10,100,0.0084,0.173
-Sigmoid,Spline,10,100,0.0083,0.155
-Bumps,Wavelet,10,100,7e-04,0.784
-Bumps,Spline,10,0,0.0935,0.33
-Doppler,Wavelet,10,100,0.0164,1.344
-Doppler,Spline,10,0,0.1836,0.155
-Heavisine,Wavelet,10,100,0.001,0.594
-Heavisine,Spline,10,0,0.0553,0.519
