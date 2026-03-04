@@ -9,6 +9,8 @@ Em ambas as simulações cruzamos tamanhos de amostra \(N \in \{200, 500, 2000\}
 
 Obtemos as estimativas intervalares para os métodos baseados em ondaletas através do procedimento descrito na Seção \ref{sec-bootstrap-ic}. Para as \emph{splines}, utilizamos as derivações analíticas de \citeonline{ecker_causal_2024}. Vale salientar, no entanto, que introduzimos uma escolha deliberadamente conservadora na calibração do limiar de cobertura \(u_\alpha(t)\). Em vez de utilizar a estrutura variável original, baseada no pacote \texttt{ffscb} \cite{lieblFastFairSimultaneous2023}, fixamos um limiar escalar constante correspondente ao valor mais conservador do referido pacote. O objetivo desta modificação era assegurar que eventuais falhas de cobertura do método original em cenários irregulares não decorressem de bandas excessivamente estreitas localmente. Estratégia que nos permite uma avaliação mais isolada do impacto da falta de regularidade na estimativa pontual. Essa escolha, é claro, inviabiliza a comparação das larguras de banda resultantes de nosso \emph{bootstrap}, para com o método de \citeonline{ecker_causal_2024} (no fim das contas, mesmo com nossas precauções, a comparação seria inócua, tendo em vista que a metodologia original não se mostrou estatisticamente confiável para cenários irregulares mesmo com larguras de banda artificialmente maiores).
 
+Uma última observação se relaciona com o número de amostras \emph{bootstrap} escolhidas para o estimador intervalar dos métodos baseados em ondaletas. Por padrão, adotamos \(N_{\mathrm{boot}} = N\).
+
 \begin{table}[ht]
 	\centering
 	\caption{Especificação paramétrica do processo gerador de dados das simulações.}
@@ -40,7 +42,7 @@ Essas medidas permitem visualizar a evolução do erro e a estabilidade da estim
 \begin{description}
 	\item[Raíz quadrada do erro quadrático médio (RMSE)] quantifica a precisão global da trajetória estimada em cada réplica:
 	\begin{equation*}
-		\\mathrm{RMSE}^{(r)} = \sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}.
+		\mathrm{RMSE}^{(r)} = \sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}.
 	\end{equation*}
 	\item[Raíz quadrada do erro quadrático médio normalizado (NRMSE)] escalona o \text{RMSE} pela amplitude da trajetória verdadeira, facilitando a comparação entre cenários com diferentes magnitudes de efeito:
 	\begin{equation*}
@@ -58,105 +60,102 @@ Essas medidas permitem visualizar a evolução do erro e a estabilidade da estim
 	\begin{equation*}
 		\mathrm{CobSim}^{(r)} = \mathbb{I}\left( \forall k : \theta(t_k) \in [\hat{\theta}_{\text{low}}^{(r)}(t_k), \hat{\theta}_{\text{up}}^{(r)}(t_k)] \right).
 	\end{equation*}
-	\item[Largura média da banda de confiança], monitorada a fim de avaliar o custo informacional necessário para atingir o nível de confiança nominal.
+	\item[Largura média da banda de confiança] monitorada a fim de avaliar o custo informacional necessário para atingir o nível de confiança nominal.
 	\begin{equation*}
-		\(\mathrm{Largura}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}_{\text{up}}^{(r)}(t_k) - \hat{\theta}_{\text{low}}^{(r)}(t_k)\bigr)\)
+		\mathrm{Largura}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}_{\text{up}}^{(r)}(t_k) - \hat{\theta}_{\text{low}}^{(r)}(t_k)\bigr).
 	\end{equation*}
 
 \end{description}
 
-Deve-se observar, contudo, que a métrica de latência reportada representa a média de processamento por ponto na grade, obtida em ambiente controlado com hardware comercial padrão. Embora os valores absolutos possam variar conforme a infraestrutura, a estabilidade e a ordem de grandeza observada confirmam a viabilidade operacional do método para o regime sequencial pretendido.
-
-A seguir, apresentamos os resultados obtidos. Para fins de clareza e síntese no corpo principal deste trabalho, optamos por exibir uma seleção representativa dos cenários (Sigmoid, Doppler e Escada), contrastando os extremos de resolução temporal (\(T = 128\) e \(T = 512\)) sob diferentes tamanhos de amostra. Esta escolha permite observar os padrões de convergência e as vantagens competitivas da metodologia proposta sem sobrecarregar a leitura com a totalidade das combinações simuladas. Os resultados exaustivos para todos os cenários e resoluções encontram-se detalhados no Apêndice \ref{ap-simulacoes-completas}.
-
-Note que, para fins de clareza visual, as distribuições de erro (\(\mathrm{NRMSE}\)) e largura de banda nas figuras subsequentes são representadas pela mediana e pelos quartis de 25\% e 75\%, de modo a omitir valores atípicos que dificultariam a percepção visual do impacto das resoluções \(T\) e \(N\).
+Observamos que as métricas de latência reportadas, baseadas na expressão acima, podem variar de acordo com o \emph{hardware} utilizado na simulação. Em nossos estudos, utilizamos um equipamento comercial padrão, com um processador Intel Core i5-13420H, 16 GB de memória RAM DDR-4 e sistema operacional Windows 11 Home 25H2. Além disso, para fins de clareza e síntese no corpo principal deste trabalho, optamos por exibir uma seleção representativa dos cenários simulados. Esta escolha permite observar os padrões de convergência e as vantagens competitivas da metodologia proposta sem sobrecarregar a leitura. Os resultados exaustivos encontram-se detalhados no Apêndice \ref{ap-simulacoes-completas}. 
 
 \section{Resultados}
+Abaixo, apresentamos as tabelas gerenciais que sintetizam o desempenho dos métodos. Os resultados das simulações 1 e 2 guardam forte consistência entre si, evidenciando que as propriedades estatísticas observadas no regime \emph{offline} se traduzem adequadamente para a implementação \emph{online}. Em ambos os casos, nota-se uma convergência clara: o erro quadrático (\(\mathrm{RMSE}\) e \(\mathrm{NRMSE}\)) e o vício reduzem-se substancialmente conforme \(N\) e \(T\) crescem (o efeito do aumento \(T\) tende a se mostrar mais positivo para ondaletas a partir de tamanhos amostrais maiores). Na Tabela \ref{tab:resultados_sim1}, o cenário \emph{sigmoid} mostra paridade entre ondaletas e o estimador de \citeonline{ecker_causal_2024}. Já nos cenários de maior irregularidade (\emph{doppler} e \emph{escada}), as ondaletas dominam em precisão. Especificamente na função \emph{doppler}, o método \emph{online} apresenta um natural decréscimo de desempenho em relação ao \emph{offline}, uma consequência direta da menor disponibilidade de informação local para capturar oscilações de alta frequência em tempo real. Por fim, a Tabela \ref{tab:resultados_sim2} confirma que, apesar do processamento iterativo, a latência computacional manteve-se em níveis extremamente baixos, garantindo a viabilidade prática do algoritmo.
 
-Abaixo, apresentamos as tabelas gerenciais que condensam o desempenho dos métodos avaliados. No que tange à Simulação 1, focamos na comparação direta entre Ondaletas e Splines de Ecker para os cenários mais desafiadores.
+Gostaríamos de salientar ainda o percentual das coberturas simultâneas obtidas. Enquanto os \emph{splines} só atingiram nível nominal (neste caso, nível superior ao nominal, devido ao nosso conservadorismo na construção do estimador intervalar) no caso \emph{sigmoid}, o método baseado em reamostragem obteve resultados consistentes em todos os cenários com tamanho amostral a partir de \(N = 500\).
 
 \begin{table}[ht]
 	\centering
 	\caption{Desempenho estatístico comparado (Simulação 1) --- Resultados Selecionados.}
 	\label{tab:resultados_sim1}
 	\scriptsize
-	\begin{tabular}{llccrrrr}
+	\begin{tabular}{llccrrrrr}
 		\toprule
-		Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{CobSim}\) \\
+		Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
 \midrule
-\multirow{18}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 85,9\% \\
- & Ond. (Off) & 200 & 128 & 1,304 & 0,585 & 0,058 & 86,6\% \\
- & Ecker & 200 & 128 & 1,300 & 0,584 & 0,058 & 100,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 200 & 512 & 1,199 & 0,538 & 0,106 & 88,9\% \\
- & Ond. (Off) & 200 & 512 & 1,206 & 0,541 & 0,107 & 89,5\% \\
- & Ecker & 200 & 512 & 1,205 & 0,541 & 0,107 & 100,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 128 & 0,091 & 0,041 & 0,009 & 96,8\% \\
- & Ond. (Off) & 500 & 128 & 0,099 & 0,044 & 0,011 & 97,4\% \\
- & Ecker & 500 & 128 & 0,091 & 0,041 & 0,011 & 100,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 512 & 0,102 & 0,046 & 0,007 & 96,1\% \\
- & Ond. (Off) & 500 & 512 & 0,103 & 0,046 & 0,008 & 96,9\% \\
- & Ecker & 500 & 512 & 0,102 & 0,046 & 0,008 & 100,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 128 & 0,022 & 0,010 & -0,001 & 96,1\% \\
- & Ond. (Off) & 2000 & 128 & 0,034 & 0,015 & 0,001 & 94,7\% \\
- & Ecker & 2000 & 128 & 0,022 & 0,010 & 0,001 & 100,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 512 & 0,021 & 0,010 & -0,001 & 94,6\% \\
- & Ond. (Off) & 2000 & 512 & 0,023 & 0,010 & 0,000 & 95,0\% \\
- & Ecker & 2000 & 512 & 0,021 & 0,010 & 0,000 & 100,0\% \\
-\cmidrule{2-8}
-\midrule
-\multirow{18}{*}{Doppler} & Ond. (On) & 200 & 128 & 1,785 & 0,161 & 0,027 & 86,8\% \\
- & Ond. (Off) & 200 & 128 & 1,716 & 0,155 & 0,044 & 86,8\% \\
- & Ecker & 200 & 128 & 2,806 & 0,253 & 0,051 & 40,1\% \\
-\cmidrule{2-8}
- & Ond. (On) & 200 & 512 & 1,498 & 0,135 & 0,071 & 87,1\% \\
- & Ond. (Off) & 200 & 512 & 1,253 & 0,113 & 0,078 & 87,1\% \\
- & Ecker & 200 & 512 & 2,337 & 0,210 & 0,079 & 40,3\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 128 & 0,805 & 0,073 & -0,003 & 96,1\% \\
- & Ond. (Off) & 500 & 128 & 0,722 & 0,065 & 0,014 & 95,8\% \\
- & Ecker & 500 & 128 & 2,011 & 0,182 & 0,021 & 3,8\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 512 & 0,467 & 0,042 & -0,001 & 96,2\% \\
- & Ond. (Off) & 500 & 512 & 0,136 & 0,012 & 0,006 & 96,8\% \\
- & Ecker & 500 & 512 & 1,493 & 0,134 & 0,007 & 3,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 128 & 0,736 & 0,066 & -0,025 & 94,9\% \\
- & Ond. (Off) & 2000 & 128 & 0,650 & 0,059 & -0,008 & 94,8\% \\
- & Ecker & 2000 & 128 & 1,960 & 0,177 & -0,001 & 0,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 512 & 0,406 & 0,037 & -0,008 & 96,2\% \\
- & Ond. (Off) & 2000 & 512 & 0,060 & 0,005 & -0,001 & 95,2\% \\
- & Ecker & 2000 & 512 & 1,445 & 0,130 & 0,000 & 0,0\% \\
+\multirow{18}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 25,01 & 85,9\% \\
+ & Ond. (Off) & 200 & 128 & 1,304 & 0,585 & 0,058 & 25,02 & 86,6\% \\
+ & Ecker & 200 & 128 & 1,300 & 0,584 & 0,058 & 243,80 & 100,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 200 & 512 & 1,199 & 0,538 & 0,106 & 26,31 & 88,9\% \\
+ & Ond. (Off) & 200 & 512 & 1,206 & 0,541 & 0,107 & 26,32 & 89,5\% \\
+ & Ecker & 200 & 512 & 1,205 & 0,541 & 0,107 & 466,04 & 100,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 128 & 0,091 & 0,041 & 0,009 & 9,15 & 96,8\% \\
+ & Ond. (Off) & 500 & 128 & 0,099 & 0,044 & 0,011 & 9,23 & 97,4\% \\
+ & Ecker & 500 & 128 & 0,091 & 0,041 & 0,011 & 21,70 & 100,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 512 & 0,102 & 0,046 & 0,007 & 9,55 & 96,1\% \\
+ & Ond. (Off) & 500 & 512 & 0,103 & 0,046 & 0,008 & 9,57 & 96,9\% \\
+ & Ecker & 500 & 512 & 0,102 & 0,046 & 0,008 & 26,55 & 100,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 128 & 0,022 & 0,010 & -0,001 & 0,14 & 96,1\% \\
+ & Ond. (Off) & 2000 & 128 & 0,034 & 0,015 & 0,001 & 0,32 & 94,7\% \\
+ & Ecker & 2000 & 128 & 0,022 & 0,010 & 0,001 & 0,63 & 100,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 512 & 0,021 & 0,010 & -0,001 & 0,14 & 94,6\% \\
+ & Ond. (Off) & 2000 & 512 & 0,023 & 0,010 & 0,000 & 0,19 & 95,0\% \\
+ & Ecker & 2000 & 512 & 0,021 & 0,010 & 0,000 & 1,26 & 100,0\% \\
 \cmidrule{2-8}
 \midrule
-\multirow{18}{*}{Escada} & Ond. (On) & 200 & 128 & 1,235 & 0,046 & 0,084 & 87,2\% \\
- & Ond. (Off) & 200 & 128 & 1,257 & 0,047 & 0,077 & 88,0\% \\
- & Ecker & 200 & 128 & 2,283 & 0,086 & 0,077 & 40,8\% \\
+\multirow{18}{*}{Doppler} & Ond. (On) & 200 & 128 & 1,785 & 0,161 & 0,027 & 27,80 & 86,8\% \\
+ & Ond. (Off) & 200 & 128 & 1,716 & 0,155 & 0,044 & 28,25 & 86,8\% \\
+ & Ecker & 200 & 128 & 2,806 & 0,253 & 0,051 & 241,27 & 40,1\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 200 & 512 & 1,498 & 0,135 & 0,071 & 27,30 & 87,1\% \\
+ & Ond. (Off) & 200 & 512 & 1,253 & 0,113 & 0,078 & 26,73 & 87,1\% \\
+ & Ecker & 200 & 512 & 2,337 & 0,210 & 0,079 & 475,39 & 40,3\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 128 & 0,805 & 0,073 & -0,003 & 13,50 & 96,1\% \\
+ & Ond. (Off) & 500 & 128 & 0,722 & 0,065 & 0,014 & 12,11 & 95,8\% \\
+ & Ecker & 500 & 128 & 2,011 & 0,182 & 0,021 & 20,27 & 3,8\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 512 & 0,467 & 0,042 & -0,001 & 13,36 & 96,2\% \\
+ & Ond. (Off) & 500 & 512 & 0,136 & 0,012 & 0,006 & 9,69 & 96,8\% \\
+ & Ecker & 500 & 512 & 1,493 & 0,134 & 0,007 & 33,56 & 3,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 128 & 0,736 & 0,066 & -0,025 & 6,90 & 94,9\% \\
+ & Ond. (Off) & 2000 & 128 & 0,650 & 0,059 & -0,008 & 3,83 & 94,8\% \\
+ & Ecker & 2000 & 128 & 1,960 & 0,177 & -0,001 & 0,63 & 0,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 512 & 0,406 & 0,037 & -0,008 & 6,83 & 96,2\% \\
+ & Ond. (Off) & 2000 & 512 & 0,060 & 0,005 & -0,001 & 0,48 & 95,2\% \\
+ & Ecker & 2000 & 512 & 1,445 & 0,130 & 0,000 & 1,26 & 0,0\% \\
 \cmidrule{2-8}
- & Ond. (On) & 200 & 512 & 1,347 & 0,050 & 0,088 & 85,7\% \\
- & Ond. (Off) & 200 & 512 & 1,354 & 0,051 & 0,087 & 86,0\% \\
- & Ecker & 200 & 512 & 2,100 & 0,079 & 0,087 & 42,7\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 128 & 0,125 & 0,005 & 0,005 & 97,7\% \\
- & Ond. (Off) & 500 & 128 & 0,127 & 0,005 & -0,003 & 97,2\% \\
- & Ecker & 500 & 128 & 1,427 & 0,053 & -0,003 & 3,4\% \\
-\cmidrule{2-8}
- & Ond. (On) & 500 & 512 & 0,086 & 0,003 & 0,027 & 97,4\% \\
- & Ond. (Off) & 500 & 512 & 0,086 & 0,003 & 0,026 & 97,3\% \\
- & Ecker & 500 & 512 & 1,073 & 0,040 & 0,026 & 2,6\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 128 & 0,049 & 0,002 & 0,008 & 95,4\% \\
- & Ond. (Off) & 2000 & 128 & 0,050 & 0,002 & 0,000 & 95,9\% \\
- & Ecker & 2000 & 128 & 1,379 & 0,052 & 0,000 & 0,0\% \\
-\cmidrule{2-8}
- & Ond. (On) & 2000 & 512 & 0,022 & 0,001 & 0,001 & 95,5\% \\
- & Ond. (Off) & 2000 & 512 & 0,022 & 0,001 & 0,000 & 95,7\% \\
- & Ecker & 2000 & 512 & 1,040 & 0,039 & 0,000 & 0,0\% \\
+\midrule
+\multirow{18}{*}{Escada} & Ond. (On) & 200 & 128 & 1,235 & 0,046 & 0,084 & 25,89 & 87,2\% \\
+ & Ond. (Off) & 200 & 128 & 1,257 & 0,047 & 0,077 & 25,89 & 88,0\% \\
+ & Ecker & 200 & 128 & 2,283 & 0,086 & 0,077 & 239,70 & 40,8\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 200 & 512 & 1,347 & 0,050 & 0,088 & 25,59 & 85,7\% \\
+ & Ond. (Off) & 200 & 512 & 1,354 & 0,051 & 0,087 & 25,59 & 86,0\% \\
+ & Ecker & 200 & 512 & 2,100 & 0,079 & 0,087 & 512,31 & 42,7\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 128 & 0,125 & 0,005 & 0,005 & 9,51 & 97,7\% \\
+ & Ond. (Off) & 500 & 128 & 0,127 & 0,005 & -0,003 & 9,38 & 97,2\% \\
+ & Ecker & 500 & 128 & 1,427 & 0,053 & -0,003 & 18,91 & 3,4\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 500 & 512 & 0,086 & 0,003 & 0,027 & 9,52 & 97,4\% \\
+ & Ond. (Off) & 500 & 512 & 0,086 & 0,003 & 0,026 & 9,53 & 97,3\% \\
+ & Ecker & 500 & 512 & 1,073 & 0,040 & 0,026 & 29,34 & 2,6\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 128 & 0,049 & 0,002 & 0,008 & 0,76 & 95,4\% \\
+ & Ond. (Off) & 2000 & 128 & 0,050 & 0,002 & 0,000 & 0,56 & 95,9\% \\
+ & Ecker & 2000 & 128 & 1,379 & 0,052 & 0,000 & 0,63 & 0,0\% \\
+ \cmidrule{2-9}
+ & Ond. (On) & 2000 & 512 & 0,022 & 0,001 & 0,001 & 0,27 & 95,5\% \\
+ & Ond. (Off) & 2000 & 512 & 0,022 & 0,001 & 0,000 & 0,27 & 95,7\% \\
+ & Ecker & 2000 & 512 & 1,040 & 0,039 & 0,000 & 1,26 & 0,0\% \\
 \cmidrule{2-8}
 		\bottomrule
 	\end{tabular}
