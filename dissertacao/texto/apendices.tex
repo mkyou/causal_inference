@@ -1,52 +1,64 @@
 \chapter{Resultados Detalhados das Simulações}
 \label{ap-simulacoes-completas}
 
-Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação 1, cobrindo todos os cenários de sinal (Bumps, Doppler, Escada e Sigmoid), tamanhos de amostra (\(N = 200, 500, 2000\)) e resoluções temporais (\(T = 128, 256, 512\)).
+Neste Apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico (boxplots) que preservam a informação de \emph{outliers}.
 
-\begin{table}[ht]
-	\centering
-	\caption{Desempenho estatístico completo (Simulação 1) --- Resultados exaustivos.}
-	\label{tab:resultados_sim1_completo}
-	\scriptsize
-	\begin{tabular}{llccrrrrr}
-		\toprule
-		Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
-\midrule
+\section{Resultados Exaustivos: Simulação 1}
+
+A Tabela \ref{tab:resultados_sim1_completo} detalha o desempenho de todos os métodos para as 108 combinações de cenários, resoluções e tamanhos amostrais.
+
+\scriptsize
+\begin{longtable}{llccrrrrr}
+    \caption{Desempenho estatístico completo (Simulação 1) --- Resultados exaustivos.} \label{tab:resultados_sim1_completo} \\
+    \toprule
+    Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
+    \midrule
+    \endfirsthead
+    \multicolumn{9}{c}{{\bfseries \tablename\ \thetable{} -- Continuação}} \\
+    \toprule
+    Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
+    \midrule
+    \endhead
+    \midrule
+    \multicolumn{9}{r}{{Continua na próxima página...}} \\
+    \endfoot
+    \bottomrule
+    \endlastfoot
 \multirow{27}{*}{Bumps} & Ond. (On) & 200 & 128 & 1,334 & 0,021 & 0,131 & 26,82 & 86,0\% \\
  & Ond. (Off) & 200 & 128 & 1,298 & 0,021 & 0,148 & 26,73 & 86,1\% \\
- & Ecker & 200 & 128 & 7,007 & 0,113 & 0,147 & 251,67 & 40,8\% \\
+ & Splines & 200 & 128 & 7,007 & 0,113 & 0,147 & 251,67 & 40,8\% \\
 \cmidrule{2-9}
  & Ond. (On) & 200 & 256 & 1,349 & 0,020 & 0,067 & 25,91 & 86,0\% \\
  & Ond. (Off) & 200 & 256 & 1,303 & 0,019 & 0,088 & 25,72 & 86,0\% \\
- & Ecker & 200 & 256 & 5,270 & 0,078 & 0,087 & 342,78 & 42,3\% \\
+ & Splines & 200 & 256 & 5,270 & 0,078 & 0,087 & 342,78 & 42,3\% \\
 \cmidrule{2-9}
  & Ond. (On) & 200 & 512 & 1,294 & 0,019 & 0,182 & 26,12 & 86,5\% \\
  & Ond. (Off) & 200 & 512 & 1,290 & 0,019 & 0,183 & 26,10 & 86,7\% \\
- & Ecker & 200 & 512 & 5,308 & 0,079 & 0,183 & 515,89 & 42,7\% \\
+ & Splines & 200 & 512 & 5,308 & 0,079 & 0,183 & 515,89 & 42,7\% \\
 \cmidrule{2-9}
  & Ond. (On) & 500 & 128 & 0,203 & 0,003 & -0,012 & 10,06 & 96,2\% \\
  & Ond. (Off) & 500 & 128 & 0,149 & 0,002 & 0,005 & 9,53 & 96,3\% \\
- & Ecker & 500 & 128 & 6,569 & 0,106 & 0,004 & 22,58 & 3,9\% \\
+ & Splines & 500 & 128 & 6,569 & 0,106 & 0,004 & 22,58 & 3,9\% \\
 \cmidrule{2-9}
  & Ond. (On) & 500 & 256 & 0,199 & 0,003 & -0,040 & 10,68 & 96,9\% \\
  & Ond. (Off) & 500 & 256 & 0,130 & 0,002 & -0,019 & 9,85 & 96,3\% \\
- & Ecker & 500 & 256 & 4,728 & 0,070 & -0,019 & 33,26 & 3,9\% \\
+ & Splines & 500 & 256 & 4,728 & 0,070 & -0,019 & 33,26 & 3,9\% \\
 \cmidrule{2-9}
  & Ond. (On) & 500 & 512 & 0,138 & 0,002 & -0,009 & 10,01 & 95,3\% \\
  & Ond. (Off) & 500 & 512 & 0,131 & 0,002 & -0,007 & 9,92 & 96,3\% \\
- & Ecker & 500 & 512 & 4,770 & 0,071 & -0,007 & 29,50 & 3,1\% \\
+ & Splines & 500 & 512 & 4,770 & 0,071 & -0,007 & 29,50 & 3,1\% \\
 \cmidrule{2-9}
  & Ond. (On) & 2000 & 128 & 0,116 & 0,002 & -0,016 & 1,47 & 94,7\% \\
  & Ond. (Off) & 2000 & 128 & 0,056 & 0,001 & 0,001 & 0,56 & 94,8\% \\
- & Ecker & 2000 & 128 & 6,546 & 0,105 & -0,001 & 0,63 & 0,0\% \\
+ & Splines & 2000 & 128 & 6,546 & 0,105 & -0,001 & 0,63 & 0,0\% \\
 \cmidrule{2-9}
  & Ond. (On) & 2000 & 256 & 0,122 & 0,002 & -0,020 & 1,88 & 93,9\% \\
  & Ond. (Off) & 2000 & 256 & 0,045 & 0,001 & 0,001 & 0,43 & 93,7\% \\
- & Ecker & 2000 & 256 & 4,694 & 0,070 & 0,000 & 0,89 & 0,0\% \\
+ & Splines & 2000 & 256 & 4,694 & 0,070 & 0,000 & 0,89 & 0,0\% \\
 \cmidrule{2-9}
  & Ond. (On) & 2000 & 512 & 0,040 & 0,001 & -0,002 & 0,47 & 94,1\% \\
  & Ond. (Off) & 2000 & 512 & 0,030 & 0,000 & 0,000 & 0,29 & 96,0\% \\
- & Ecker & 2000 & 512 & 4,738 & 0,071 & 0,000 & 1,26 & 0,0\% \\
+ & Splines & 2000 & 512 & 4,738 & 0,071 & 0,000 & 1,26 & 0,0\% \\
 \cmidrule{2-9}
 \midrule
 \multirow{27}{*}{Doppler} & Ond. (On) & 200 & 128 & 1,785 & 0,161 & 0,027 & 27,80 & 86,8\% \\
@@ -100,7 +112,7 @@ Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação
 \cmidrule{2-9}
  & Ond. (On) & 500 & 128 & 0,125 & 0,005 & 0,005 & 9,51 & 97,7\% \\
  & Ond. (Off) & 500 & 128 & 0,127 & 0,005 & -0,003 & 9,38 & 97,2\% \\
- & Ecker & 500 & 128 & 1,427 & 0,053 & -0,003 & 18,91 & 3,4\% \\
+ & Splines & 500 & 128 & 1,427 & 0,053 & -0,003 & 18,91 & 3,4\% \\
 \cmidrule{2-9}
  & Ond. (On) & 500 & 256 & 0,106 & 0,004 & -0,017 & 10,02 & 96,2\% \\
  & Ond. (Off) & 500 & 256 & 0,104 & 0,004 & -0,021 & 9,82 & 96,4\% \\
@@ -108,7 +120,7 @@ Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação
 \cmidrule{2-9}
  & Ond. (On) & 500 & 512 & 0,086 & 0,003 & 0,027 & 9,52 & 97,4\% \\
  & Ond. (Off) & 500 & 512 & 0,086 & 0,003 & 0,026 & 9,53 & 97,3\% \\
- & Ecker & 500 & 512 & 1,073 & 0,040 & 0,026 & 29,34 & 2,6\% \\
+ & Splines & 500 & 512 & 1,073 & 0,040 & 0,026 & 29,34 & 2,6\% \\
 \cmidrule{2-9}
  & Ond. (On) & 2000 & 128 & 0,049 & 0,002 & 0,008 & 0,76 & 95,4\% \\
  & Ond. (Off) & 2000 & 128 & 0,050 & 0,002 & 0,000 & 0,56 & 95,9\% \\
@@ -123,9 +135,9 @@ Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação
  & Ecker & 2000 & 512 & 1,040 & 0,039 & 0,000 & 1,26 & 0,0\% \\
 \cmidrule{2-9}
 \midrule
-\multirow{27}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 25,01 & 85,9\% \\
+\multirow{27}{*}{Sigmoide} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 25,01 & 85,9\% \\
  & Ond. (Off) & 200 & 128 & 1,304 & 0,585 & 0,058 & 25,02 & 86,6\% \\
- & Ecker & 200 & 128 & 1,300 & 0,584 & 0,058 & 243,80 & 100,0\% \\
+ & Splines & 200 & 128 & 1,300 & 0,584 & 0,058 & 243,80 & 100,0\% \\
 \cmidrule{2-9}
  & Ond. (On) & 200 & 256 & 1,353 & 0,607 & -0,001 & 26,11 & 86,0\% \\
  & Ond. (Off) & 200 & 256 & 1,368 & 0,614 & 0,001 & 26,12 & 86,6\% \\
@@ -137,7 +149,7 @@ Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação
 \cmidrule{2-9}
  & Ond. (On) & 500 & 128 & 0,091 & 0,041 & 0,009 & 9,15 & 96,8\% \\
  & Ond. (Off) & 500 & 128 & 0,099 & 0,044 & 0,011 & 9,23 & 97,4\% \\
- & Ecker & 500 & 128 & 0,091 & 0,041 & 0,011 & 21,70 & 100,0\% \\
+ & Splines & 500 & 128 & 0,091 & 0,041 & 0,011 & 21,70 & 100,0\% \\
 \cmidrule{2-9}
  & Ond. (On) & 500 & 256 & 0,118 & 0,053 & 0,005 & 9,71 & 96,7\% \\
  & Ond. (Off) & 500 & 256 & 0,121 & 0,054 & 0,007 & 9,75 & 96,6\% \\
@@ -159,6 +171,91 @@ Neste Apêndice, apresentamos a totalidade dos resultados obtidos na Simulação
  & Ond. (Off) & 2000 & 512 & 0,023 & 0,010 & 0,000 & 0,19 & 95,0\% \\
  & Ecker & 2000 & 512 & 0,021 & 0,010 & 0,000 & 1,26 & 100,0\% \\
 \cmidrule{2-9}
-		\bottomrule
-	\end{tabular}
-\end{table}
+\end{longtable}
+
+\normalsize
+
+\subsection{Visualização de Diagnóstico: Simulação 1}
+
+Apresentamos a seguir os boxplots do \(\text{NRMSE}\) (Figura \ref{fig:box_nrmse_sim1}) e da \(\text{Largura}\) (Figura \ref{fig:box_width_sim1}) para todos os cenários da Simulação 1, permitindo a identificação visual da dispersão e presença de eventuais \emph{outliers}.
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Bumps.png}
+        \caption{Bumps}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Doppler.png}
+        \caption{Doppler}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Escada.png}
+        \caption{Escada}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Sigmoid.png}
+        \caption{Sigmoide}
+    \end{subfigure}
+    \caption{Diagnóstico de erro (NRMSE) com outliers - Simulação 1.}
+    \label{fig:box_nrmse_sim1}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Bumps.png}
+        \caption{Bumps}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Doppler.png}
+        \caption{Doppler}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Escada.png}
+        \caption{Escada}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Sigmoid.png}
+        \caption{Sigmoide}
+    \end{subfigure}
+    \caption{Diagnóstico de largura de banda com outliers - Simulação 1.}
+    \label{fig:box_width_sim1}
+\end{figure}
+
+\clearpage
+
+\section{Resultados de Diagnóstico: Simulação 2}
+
+Para a Simulação 2 (Online), apresentamos os boxplots de dispersão do erro (Figura \ref{fig:box_nrmse_sim2}).
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Bumps.png}
+        \caption{Bumps}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Doppler.png}
+        \caption{Doppler}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Escada.png}
+        \caption{Escada}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Sigmoid.png}
+        \caption{Sigmoid}
+    \end{subfigure}
+    \caption{Diagnóstico de erro (NRMSE) com outliers - Simulação 2.}
+    \label{fig:box_nrmse_sim2}
+\end{figure}
