@@ -7,8 +7,11 @@ library(ggplot2)
 # 1. SETUP DE DIRETÓRIOS E CORES
 # =============================================================================
 
-out_dir = "output/sim1_final/plots"
-if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
+out_dir_main = file.path("output/sim1_final/plots", "texto_principal")
+out_dir_app  = file.path("output/sim1_final/plots", "apendice")
+
+if (!dir.exists(out_dir_main)) dir.create(out_dir_main, recursive = TRUE)
+if (!dir.exists(out_dir_app))  dir.create(out_dir_app, recursive = TRUE)
 
 method_colors = c(
   "Ondaletas (Online)"  = "royalblue",
@@ -66,7 +69,9 @@ dt_curves[, Scenario := factor(Scenario, levels = scenarios, labels = c("Bumps",
 
 cat("Gerando tabela gerencial summary...\\n")
 
-# Calcular RMSE Global por Simulação a partir das curvas
+# Como não podemos alterar o sim_1.R e o RMSE bruto não está no sim1_raw.csv,
+# o recalculamos aqui a partir das curvas para compor a tabela gerencial.
+cat("Recalculando RMSE bruto das curvas...\\n")
 rmse_dt = dt_curves[, .(
   RMSE = sqrt(mean((Est - TrueCurve)^2))
 ), by = .(SimID, Scenario, Method, N, T_pts)]
@@ -97,25 +102,49 @@ cat("Gerando gráficos de caixas agregados...\\n")
 for (scen in levels(dt_raw$Scenario)) {
   scen_raw = dt_raw[Scenario == scen]
   
-  # a. Boxplot: NRMSE
-  p_nrmse = ggplot(scen_raw, aes(x = T_fac, y = NRMSE, fill = Method)) +
-    geom_boxplot(alpha = 0.8, outlier.size = 0.5) +
-    facet_wrap(~ N_fac, labeller = label_both) +
-    scale_fill_manual(values = method_colors) +
-    labs(x = "Pontos na grade (T)", y = "NRMSE global") +
+  # a. NRMSE
+  # Versão Texto Principal: Mediana e Quartis (sem outliers)
+  p_nrmse_main = ggplot(scen_raw, aes(x = T_fac, y = NRMSE, color = Method)) +
+    stat_summary(fun = median, geom = "point", position = position_dodge(0.5), size = 3) +
+    stat_summary(fun.min = function(x) quantile(x, 0.25), 
+                 fun.max = function(x) quantile(x, 0.75), 
+                 geom = "errorbar", position = position_dodge(0.5), width = 0.2) +
+    facet_wrap(~ N_fac, labeller = as_labeller(function(x) paste("Amostra (N) =", x))) +
+    scale_color_manual(values = method_colors) +
+    labs(x = "Pontos na grade (T)", y = "NRMSE global (Mediana e Quartis)") +
     base_theme
+  ggsave(sprintf("%s/nrmse_%s.png", out_dir_main, scen), p_nrmse_main, width = 9, height = 5, bg = "white", dpi = 300)
   
-  ggsave(sprintf("%s/boxplot_nrmse_%s.png", out_dir, scen), p_nrmse, width = 9, height = 5, bg = "white", dpi = 300)
-  
-  # b. Boxplot: Largura das Bandas (Width)
-  p_width = ggplot(scen_raw, aes(x = T_fac, y = Width, fill = Method)) +
+  # Versão Apêndice: Boxplot padrão (com outliers)
+  p_nrmse_app = ggplot(scen_raw, aes(x = T_fac, y = NRMSE, fill = Method)) +
     geom_boxplot(alpha = 0.8, outlier.size = 0.5) +
-    facet_wrap(~ N_fac, labeller = label_both) +
+    facet_wrap(~ N_fac, labeller = as_labeller(function(x) paste("Amostra (N) =", x))) +
     scale_fill_manual(values = method_colors) +
-    labs(x = "Pontos na grade (T)", y = "Largura média da banda") +
+    labs(x = "Pontos na grade (T)", y = "NRMSE global (Boxplot)") +
     base_theme
+  ggsave(sprintf("%s/boxplot_nrmse_%s.png", out_dir_app, scen), p_nrmse_app, width = 9, height = 5, bg = "white", dpi = 300)
+
+  # b. Largura das Bandas (Width)
+  # Versão Texto Principal: Mediana e Quartis
+  p_width_main = ggplot(scen_raw, aes(x = T_fac, y = Width, color = Method)) +
+    stat_summary(fun = median, geom = "point", position = position_dodge(0.5), size = 3) +
+    stat_summary(fun.min = function(x) quantile(x, 0.25), 
+                 fun.max = function(x) quantile(x, 0.75), 
+                 geom = "errorbar", position = position_dodge(0.5), width = 0.2) +
+    facet_wrap(~ N_fac, labeller = as_labeller(function(x) paste("Amostra (N) =", x))) +
+    scale_color_manual(values = method_colors) +
+    labs(x = "Pontos na grade (T)", y = "Largura média da banda (Mediana e Quartis)") +
+    base_theme
+  ggsave(sprintf("%s/width_%s.png", out_dir_main, scen), p_width_main, width = 9, height = 5, bg = "white", dpi = 300)
   
-  ggsave(sprintf("%s/boxplot_width_%s.png", out_dir, scen), p_width, width = 9, height = 5, bg = "white", dpi = 300)
+  # Versão Apêndice: Boxplot padrão
+  p_width_app = ggplot(scen_raw, aes(x = T_fac, y = Width, fill = Method)) +
+    geom_boxplot(alpha = 0.8, outlier.size = 0.5) +
+    facet_wrap(~ N_fac, labeller = as_labeller(function(x) paste("Amostra (N) =", x))) +
+    scale_fill_manual(values = method_colors) +
+    labs(x = "Pontos na grade (T)", y = "Largura média da banda (Boxplot)") +
+    base_theme
+  ggsave(sprintf("%s/boxplot_width_%s.png", out_dir_app, scen), p_width_app, width = 9, height = 5, bg = "white", dpi = 300)
   
 
   # c. Ponto/Barra: Cobertura Simultânea Média (Cov_Simul) - teórica 95%
@@ -123,13 +152,13 @@ for (scen in levels(dt_raw$Scenario)) {
     geom_hline(yintercept = 0.95, linetype = "dashed", color = "black", alpha = 0.6) +
     geom_line(linewidth = 1) +
     geom_point(size = 3) +
-    facet_wrap(~ N_fac, labeller = label_both) +
+    facet_wrap(~ N_fac, labeller = as_labeller(function(x) paste("Amostra (N) =", x))) + 
     scale_color_manual(values = method_colors) +
     scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
     labs(x = "Pontos na grade (T)", y = "Taxa empírica de cobertura simultânea") +
     base_theme
   
-  ggsave(sprintf("%s/lines_covsimul_%s.png", out_dir, scen), p_cov, width = 9, height = 5, bg = "white", dpi = 300)
+  ggsave(sprintf("%s/lines_covsimul_%s.png", out_dir_main, scen), p_cov, width = 9, height = 5, bg = "white", dpi = 300)
 }
 
 # =============================================================================
@@ -159,7 +188,7 @@ generate_pointwise_aggregates = function(case_label, condition) {
     scale_color_manual(values = method_colors) +
     labs(x = "Tempo (t)", y = "NRMSE pontual") +
     base_theme
-  ggsave(sprintf("%s/pointwise_nrmse_%s.png", out_dir, case_label), p1, width = 10, height = 6, bg = "white", dpi = 300)
+  ggsave(sprintf("%s/pointwise_nrmse_%s.png", out_dir_main, case_label), p1, width = 10, height = 6, bg = "white", dpi = 300)
 }
 
 generate_pointwise_aggregates("worst_case", dt_curves$N == worst_case$N & dt_curves$T_pts == worst_case$T_pts)
@@ -190,7 +219,7 @@ generate_exemplary_plot = function(case_label, condition) {
     base_theme +
     theme(legend.position = "none") # Já dividido por facetas, n precisa legenda por painel
   
-  ggsave(sprintf("%s/exemplary_run_%s.png", out_dir, case_label), p, width = 12, height = 9, bg = "white", dpi = 300)
+  ggsave(sprintf("%s/exemplary_run_%s.png", out_dir_main, case_label), p, width = 12, height = 9, bg = "white", dpi = 300)
 }
 
 generate_exemplary_plot("worst_case", dt_curves$N == worst_case$N & dt_curves$T_pts == worst_case$T_pts)

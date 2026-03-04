@@ -5,9 +5,11 @@ library(ggplot2)
 input_dir = "output/sim2_final"
 output_dir = "output/sim2_final/plots"
 
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE)
-}
+out_dir_main = file.path(output_dir, "texto_principal")
+out_dir_app  = file.path(output_dir, "apendice")
+
+if (!dir.exists(out_dir_main)) dir.create(out_dir_main, recursive = TRUE)
+if (!dir.exists(out_dir_app))  dir.create(out_dir_app, recursive = TRUE)
 
 # Tema base para todos os graficos harmonizado com LaTeX
 base_theme = theme_bw(base_size = 14) +
@@ -38,22 +40,31 @@ for(scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
     p_data[, T_factor := factor(T_pts, levels = sort(unique(T_pts)))]
     p_data[, Method := "Ondaletas (Online)"]
 
-    p = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, fill = Method)) +
+    # a. NRMSE
+    # Versão Texto Principal: Mediana e Quartis
+    p_main = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, color = Method)) +
+        stat_summary(fun.data = "median_hilow", geom = "pointrange", size = 0.8) +
+        facet_wrap(~ N_label, ncol = 3) +
+        scale_color_manual(values = c("Ondaletas (Online)" = "royalblue")) +
+        labs(x = "Pontos na grade (T)", y = "NRMSE online (Mediana e Quartis)") +
+        base_theme
+    
+    ggsave(
+        filename = file.path(out_dir_main, sprintf("nrmse_%s.png", scen_label)),
+        plot = p_main, width = 9, height = 5, dpi = 300
+    )
+
+    # Versão Apêndice: Boxplot padrão
+    p_app = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, fill = Method)) +
         geom_boxplot(color = "black", alpha = 0.8) +
         facet_wrap(~ N_label, ncol = 3) +
         scale_fill_manual(values = c("Ondaletas (Online)" = "royalblue")) +
-        labs(
-            x = "Pontos na grade (T)",
-            y = "NRMSE online"
-        ) +
+        labs(x = "Pontos na grade (T)", y = "NRMSE online (Boxplot)") +
         base_theme
 
     ggsave(
-        filename = file.path(output_dir, sprintf("boxplot_nrmse_%s.png", scen_label)),
-        plot = p,
-        width = 6.5,
-        height = 3.5,
-        dpi = 300
+        filename = file.path(out_dir_app, sprintf("boxplot_nrmse_%s.png", scen_label)),
+        plot = p_app, width = 9, height = 5, dpi = 300
     )
 }
 
@@ -92,10 +103,10 @@ for (scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
     base_theme
 
   ggsave(
-      filename = file.path(output_dir, sprintf("fate_curves_%s.png", scen_label)),
+      filename = file.path(out_dir_main, sprintf("fate_curves_%s.png", scen_label)),
       plot = p,
-      width = 5.5,
-      height = 3.5,
+      width = 9,
+      height = 5,
       dpi = 300
   )
 }
