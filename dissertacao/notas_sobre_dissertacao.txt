@@ -16,9 +16,9 @@ Novamente, na arquitetura atual.
 ## Construção de argumentos e lacunas
 ### Diretrizes Gerais:
 - Padronização Capítulo/Seção corrigida: "Capítulo" para \chapter, "Seção" para tudo abaixo. (X)
-- Estou padronizando as \footnotes para que apareçam após o "." nas frases: "{frase}.\footnote{}" em vez de "{frase}\footnote{}.".
+- Estou padronizando as \footnotes para que apareçam após o "." nas frases: "{frase}.\footnote{}" em vez de "{frase}\footnote{}.". (X)
 - Estou padronizando siglas/acrônimos para minúsculas quando apresentadas no texto: Análise de Dados Funcionais (FDA) -> análise de dados funcionais (FDA); 
-Desvio Absoluto Mediano (MAD) -> desvio absoluto mediano (MAD).
+Desvio Absoluto Mediano (MAD) -> desvio absoluto mediano (MAD). (X)
 
 ### Introdução
 -> Situa o interesse em FDA (X)
@@ -67,15 +67,19 @@ permite essa inserção de forma simples; ninguém estava se preocupando com iss
 -> Trocamos verbatim por fancyvrb (Verbatim com borda fina, fonte \small, preto/branco). Cabeçalhos mantidos dentro do bloco. (X)
 -> Apresentamos o rLifting, casando-o com nossa metodologia (X)
 
-Pontos menores: 
-- Seção sec-inferencia-causal-funcional-+ . t \in \mathcal{T} \in (?) \mathbb{R^+}.
-- Adicionada footnote explicando ignorabilidade média vs condicional (Seção 2.1.1, revisao.tex). (X)
 
+### Estudos de simulação
+-> Introduzimos o capítulo e as duas simulações de modo superficial (X)
+-> Descrevemos o PGD (X)
+-> Descrevemos quais os estimadores a serem comparados (X)
+-> Descrevemos a modificação no estimador intervalar de Ecker (X)
+-> 
+
+- TODO: precisamos refatorar o texto, onde necessário, para substituir o número de covariáveis \(p\) por \(P\) (maiúsculo). Assim podemos percorrer as covariáveis usando o índice \(p\).
 - TODO (Cap. Estudos de Simulação): Na abertura do capítulo de simulações, mencionar a metodologia de comparação entre os estimadores:
   o cenário de intervenção única permite avaliar tanto o offline quanto o online, estabelecendo o offline como teto de desempenho
   para o online e viabilizando uma comparação justa com os splines de Ecker et al.
 
-De resto, até aqui, estamos ok.
 
 
 
