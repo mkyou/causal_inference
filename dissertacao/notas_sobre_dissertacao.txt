@@ -3,6 +3,7 @@ TODO: Conclusão.
 - Ressaltar limitações da proposta: quais as limitações do rLifting e em que nível resolvê-las deixaria o trabalho mais robusto sem suposições adicionais para identificabilidade do FATE? Em quais delas o estimador em tempo real poderia ter latência maior?
 - Ressaltar limitações da proposta: quais das limitações de estrutura de dados (PGD) poderiam ser removidas facilmente, sem incorrer em suposições adicionais para identificabilidade? Linearidade funcional? O que mais? Em quais delas o estimador em tempo real poderia ter latência maior?
 - Ressaltar limitações da proposta: pontuar eventuais avanços tanto do método de pré-processamento quanto da estimação do FATE. Lembrar da seção de limitações da metodologia.
+- Ressaltar limitações da proposta: Reconhecer a ausência de aplicação em dados reais e os desafios de identificabilidade em fluxos contínuos sem controle experimental.
 - Sugerir tópicos para trabalhos futuros com base em nossas limitações.
 
 TODO: Resumo.
@@ -13,15 +14,5 @@ TODO: Abstract.
 
 TODO: Preenchimento de informações da dissertação. Trabalho completamente manual/humano.
 
-TODO: Importante! Demonstrações.
-- Em geral, o trabalho não apresenta demonstrações pois, bem, trata-se de uma colcha de retalhos. As demonstrações necessárias (para identificabilidade do FATE, funcionamento das ondaletas e afins)
-já foram feitas em trabalhos anteriores. 
-- Vale a pena adicionar tais demonstrações no apêndices? Talvez seja suficiente apenas fazer uma menção à existência das demonstrações nos trabalhos que já estão sendo citados (talvez seja até melhor).
-- Averiguar custo x benefício em fazer ambos os casos com auxílio de IA.
-
-TODO: Apêndices.
-- Algo mais para os apêndices? Não consigo ver nada adicional (talvez uma DAG simples reforçando a utilidade/importância da seta do tempo, mas não sei se saberia encaixar isso no texto).
-
-TODO: Importante! Descritivo, resumido, em tópicos, final do que cada capítulo apresenta.
-- Cruzamento de informações disponíveis nos capítulos, para assegurar que estão condizentes/coerentes e coesas.
-- Passo importantíssimo para finalização do trabalho.
+TODO: Apêndices. 
+- Revisar texto dos apêndices. Apenas refiná-los brevemente.
