@@ -111,6 +111,24 @@ for (scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
   )
 }
 
+# =============================================================================
+# 6. TABELA GERENCIAL SUMMARY
+# =============================================================================
+
+cat("Gerando tabela gerencial summary para Simulação 2...\\n")
+
+dt_summary = dt_raw[, .(
+  NRMSE_Mean = mean(NRMSE_online, na.rm = TRUE),
+  NRMSE_Median = median(NRMSE_online, na.rm = TRUE),
+  Latency_Mean_us = mean(Latency_mean_us, na.rm = TRUE),
+  Latency_Median_us = median(Latency_mean_us, na.rm = TRUE)
+), by = .(Scenario, N_label, T_factor)]
+
+setorder(dt_summary, Scenario, N_label, T_factor)
+fwrite(dt_summary, "output/sim2_final/sim2_summary.csv")
+
+cat("Artifact generation para a SIMULAÇÃO 2 concluída com sucesso.\\n")
+
 # -----------------------------------------------------------------------------
 # 3. Tabela Gerencial Summary
 # -----------------------------------------------------------------------------

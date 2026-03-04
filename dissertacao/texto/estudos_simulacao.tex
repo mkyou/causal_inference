@@ -39,28 +39,188 @@ Iniciamos pela avaliação da precisão em cada instante de tempo, calculando o 
 Essas medidas permitem visualizar a evolução do erro e a estabilidade da estimativa ao longo das trajetórias. Em seguida, definimos as métricas globais para cada réplica \(r\), agregadas sobre os \(T\) instantes de tempo:
 \begin{description}
 	\item[Raíz quadrada do erro quadrático médio (RMSE)] quantifica a precisão global da trajetória estimada em cada réplica:
-	\begin{equation}
+	\begin{equation*}
 		\\mathrm{RMSE}^{(r)} = \sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}.
-	\end{equation}
+	\end{equation*}
 	\item[Raíz quadrada do erro quadrático médio normalizado (NRMSE)] escalona o \text{RMSE} pela amplitude da trajetória verdadeira, facilitando a comparação entre cenários com diferentes magnitudes de efeito:
-	\begin{equation}
+	\begin{equation*}
 		\mathrm{NRMSE}^{(r)} = \frac{\text{RMSE}^{(r)}}{\max_{t_k} \theta(t_k) - \min_{t_k} \theta(t_k)}.
-	\end{equation}
+	\end{equation*}
 	\item[Viés global] avalia o erro sistemático médio ao longo de toda a curva:
-	\begin{equation}
+	\begin{equation*}
 		\text{Viés}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr).
-	\end{equation}
+	\end{equation*}
+	\item[Latência computacional] representa o tempo médio de processamento por ponto na grade temporal (exclusivo para a Simulação 2):
+	\begin{equation*}
+		\text{Latência}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \text{Tempo}(\text{Processamento ponto } k).
+	\end{equation*}
+	\item[Cobertura simultânea] é uma indicadora binária que assume \(1\) se, e somente se, a banda de confiança contém a trajetória verdadeira em todos os instantes \(t_k\), simultaneamente:
+	\begin{equation*}
+		\mathrm{CobSim}^{(r)} = \mathbb{I}\left( \forall k : \theta(t_k) \in [\hat{\theta}_{\text{low}}^{(r)}(t_k), \hat{\theta}_{\text{up}}^{(r)}(t_k)] \right).
+	\end{equation*}
+	\item[Largura média da banda de confiança], monitorada a fim de avaliar o custo informacional necessário para atingir o nível de confiança nominal.
+	\begin{equation*}
+		\(\mathrm{Largura}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}_{\text{up}}^{(r)}(t_k) - \hat{\theta}_{\text{low}}^{(r)}(t_k)\bigr)\)
+	\end{equation*}
+
 \end{description}
-A Cobertura Simultânea (\(\mathrm{CobSim}^{(r)}\)) é uma indicadora binária que assume valor 1 se, e somente se, a banda de confiança contém a trajetória verdadeira em todos os instantes \(t_k\) simultaneamente:
-\begin{equation}
-	\mathrm{CobSim}^{(r)} = \mathbb{I}\left( \forall k : \theta(t_k) \in [\hat{\theta}_{\text{low}}^{(r)}(t_k), \hat{\theta}_{\text{up}}^{(r)}(t_k)] \right).
-\end{equation}
 
-Monitoramos também a Largura Média da banda, \(\text{Largura}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}_{\text{up}}^{(r)}(t_k) - \hat{\theta}_{\text{low}}^{(r)}(t_k)\bigr)\), a fim de avaliar o custo informacional necessário para atingir o nível de confiança nominal. Por fim, para a Simulação 2, registramos a \textbf{Latência Computacional} (\(\text{Latência}^{(r)}\)), que representa o tempo médio de processamento por ponto na grade temporal:
-\begin{equation}
-	\text{Latência}^{(r)} = \frac{1}{T}\sum_{k=0}^{T-1} \text{Tempo}(\text{Ajuste ponto } k).
-\end{equation}
+Deve-se observar, contudo, que a métrica de latência reportada representa a média de processamento por ponto na grade, obtida em ambiente controlado com hardware comercial padrão. Embora os valores absolutos possam variar conforme a infraestrutura, a estabilidade e a ordem de grandeza observada confirmam a viabilidade operacional do método para o regime sequencial pretendido.
 
-A seguir, apresentamos os resultados obtidos. Note que, para fins de clareza visual, as distribuições de erro (\(\text{NRMSE}\)) e largura de banda nas figuras subsequentes são representadas pela mediana e pelos quartis de 25\% e 75\%, omitindo-se os valores atípicos (\emph{outliers}) que dificultariam a percepção visual do impacto das resoluções \(T\) e \(N\). A visualização completa das distribuições, incluindo todos os pontos, encontra-se documentada no Apêndice \ref{ap-simulacoes-completas}.
+A seguir, apresentamos os resultados obtidos. Para fins de clareza e síntese no corpo principal deste trabalho, optamos por exibir uma seleção representativa dos cenários (Sigmoid, Doppler e Escada), contrastando os extremos de resolução temporal (\(T = 128\) e \(T = 512\)) sob diferentes tamanhos de amostra. Esta escolha permite observar os padrões de convergência e as vantagens competitivas da metodologia proposta sem sobrecarregar a leitura com a totalidade das combinações simuladas. Os resultados exaustivos para todos os cenários e resoluções encontram-se detalhados no Apêndice \ref{ap-simulacoes-completas}.
+
+Note que, para fins de clareza visual, as distribuições de erro (\(\mathrm{NRMSE}\)) e largura de banda nas figuras subsequentes são representadas pela mediana e pelos quartis de 25\% e 75\%, de modo a omitir valores atípicos que dificultariam a percepção visual do impacto das resoluções \(T\) e \(N\).
 
 \section{Resultados}
+
+Abaixo, apresentamos as tabelas gerenciais que condensam o desempenho dos métodos avaliados. No que tange à Simulação 1, focamos na comparação direta entre Ondaletas e Splines de Ecker para os cenários mais desafiadores.
+
+\begin{table}[ht]
+	\centering
+	\caption{Desempenho estatístico comparado (Simulação 1) --- Resultados Selecionados.}
+	\label{tab:resultados_sim1}
+	\scriptsize
+	\begin{tabular}{llccrrrr}
+		\toprule
+		Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{CobSim}\) \\
+\midrule
+\multirow{18}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 85,9\% \\
+ & Ond. (Off) & 200 & 128 & 1,304 & 0,585 & 0,058 & 86,6\% \\
+ & Ecker & 200 & 128 & 1,300 & 0,584 & 0,058 & 100,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 200 & 512 & 1,199 & 0,538 & 0,106 & 88,9\% \\
+ & Ond. (Off) & 200 & 512 & 1,206 & 0,541 & 0,107 & 89,5\% \\
+ & Ecker & 200 & 512 & 1,205 & 0,541 & 0,107 & 100,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 128 & 0,091 & 0,041 & 0,009 & 96,8\% \\
+ & Ond. (Off) & 500 & 128 & 0,099 & 0,044 & 0,011 & 97,4\% \\
+ & Ecker & 500 & 128 & 0,091 & 0,041 & 0,011 & 100,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 512 & 0,102 & 0,046 & 0,007 & 96,1\% \\
+ & Ond. (Off) & 500 & 512 & 0,103 & 0,046 & 0,008 & 96,9\% \\
+ & Ecker & 500 & 512 & 0,102 & 0,046 & 0,008 & 100,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 128 & 0,022 & 0,010 & -0,001 & 96,1\% \\
+ & Ond. (Off) & 2000 & 128 & 0,034 & 0,015 & 0,001 & 94,7\% \\
+ & Ecker & 2000 & 128 & 0,022 & 0,010 & 0,001 & 100,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 512 & 0,021 & 0,010 & -0,001 & 94,6\% \\
+ & Ond. (Off) & 2000 & 512 & 0,023 & 0,010 & 0,000 & 95,0\% \\
+ & Ecker & 2000 & 512 & 0,021 & 0,010 & 0,000 & 100,0\% \\
+\cmidrule{2-8}
+\midrule
+\multirow{18}{*}{Doppler} & Ond. (On) & 200 & 128 & 1,785 & 0,161 & 0,027 & 86,8\% \\
+ & Ond. (Off) & 200 & 128 & 1,716 & 0,155 & 0,044 & 86,8\% \\
+ & Ecker & 200 & 128 & 2,806 & 0,253 & 0,051 & 40,1\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 200 & 512 & 1,498 & 0,135 & 0,071 & 87,1\% \\
+ & Ond. (Off) & 200 & 512 & 1,253 & 0,113 & 0,078 & 87,1\% \\
+ & Ecker & 200 & 512 & 2,337 & 0,210 & 0,079 & 40,3\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 128 & 0,805 & 0,073 & -0,003 & 96,1\% \\
+ & Ond. (Off) & 500 & 128 & 0,722 & 0,065 & 0,014 & 95,8\% \\
+ & Ecker & 500 & 128 & 2,011 & 0,182 & 0,021 & 3,8\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 512 & 0,467 & 0,042 & -0,001 & 96,2\% \\
+ & Ond. (Off) & 500 & 512 & 0,136 & 0,012 & 0,006 & 96,8\% \\
+ & Ecker & 500 & 512 & 1,493 & 0,134 & 0,007 & 3,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 128 & 0,736 & 0,066 & -0,025 & 94,9\% \\
+ & Ond. (Off) & 2000 & 128 & 0,650 & 0,059 & -0,008 & 94,8\% \\
+ & Ecker & 2000 & 128 & 1,960 & 0,177 & -0,001 & 0,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 512 & 0,406 & 0,037 & -0,008 & 96,2\% \\
+ & Ond. (Off) & 2000 & 512 & 0,060 & 0,005 & -0,001 & 95,2\% \\
+ & Ecker & 2000 & 512 & 1,445 & 0,130 & 0,000 & 0,0\% \\
+\cmidrule{2-8}
+\midrule
+\multirow{18}{*}{Escada} & Ond. (On) & 200 & 128 & 1,235 & 0,046 & 0,084 & 87,2\% \\
+ & Ond. (Off) & 200 & 128 & 1,257 & 0,047 & 0,077 & 88,0\% \\
+ & Ecker & 200 & 128 & 2,283 & 0,086 & 0,077 & 40,8\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 200 & 512 & 1,347 & 0,050 & 0,088 & 85,7\% \\
+ & Ond. (Off) & 200 & 512 & 1,354 & 0,051 & 0,087 & 86,0\% \\
+ & Ecker & 200 & 512 & 2,100 & 0,079 & 0,087 & 42,7\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 128 & 0,125 & 0,005 & 0,005 & 97,7\% \\
+ & Ond. (Off) & 500 & 128 & 0,127 & 0,005 & -0,003 & 97,2\% \\
+ & Ecker & 500 & 128 & 1,427 & 0,053 & -0,003 & 3,4\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 500 & 512 & 0,086 & 0,003 & 0,027 & 97,4\% \\
+ & Ond. (Off) & 500 & 512 & 0,086 & 0,003 & 0,026 & 97,3\% \\
+ & Ecker & 500 & 512 & 1,073 & 0,040 & 0,026 & 2,6\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 128 & 0,049 & 0,002 & 0,008 & 95,4\% \\
+ & Ond. (Off) & 2000 & 128 & 0,050 & 0,002 & 0,000 & 95,9\% \\
+ & Ecker & 2000 & 128 & 1,379 & 0,052 & 0,000 & 0,0\% \\
+\cmidrule{2-8}
+ & Ond. (On) & 2000 & 512 & 0,022 & 0,001 & 0,001 & 95,5\% \\
+ & Ond. (Off) & 2000 & 512 & 0,022 & 0,001 & 0,000 & 95,7\% \\
+ & Ecker & 2000 & 512 & 1,040 & 0,039 & 0,000 & 0,0\% \\
+\cmidrule{2-8}
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+	\centering
+	\caption{Eficiência computacional e confiabilidade (Simulação 2) --- Ondaletas Online.}
+	\label{tab:resultados_sim2}
+	\begin{tabular}{lcrrrrr}
+		\toprule
+		Cenário & \(T\) & \(N\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Latência (µs)}\) \\
+\midrule
+\multirow{9}{*}{Bumps} & 128 & 200 & 1,391 & 0,022 & 0,244 & 3,7 \\
+ & 128 & 500 & 0,180 & 0,003 & 0,009 & 3,9 \\
+ & 128 & 2000 & 0,116 & 0,002 & -0,015 & 4,1 \\
+\cmidrule{2-7}
+ & 256 & 200 & 1,323 & 0,020 & 0,041 & 4,2 \\
+ & 256 & 500 & 0,208 & 0,003 & 0,028 & 4,2 \\
+ & 256 & 2000 & 0,122 & 0,002 & -0,021 & 5,1 \\
+\cmidrule{2-7}
+ & 512 & 200 & 1,432 & 0,021 & -0,058 & 5,3 \\
+ & 512 & 500 & 0,101 & 0,002 & 0,017 & 5,4 \\
+ & 512 & 2000 & 0,040 & 0,001 & -0,002 & 6,9 \\
+\cmidrule{2-7}
+\midrule
+\multirow{9}{*}{Doppler} & 128 & 200 & 1,827 & 0,165 & 0,015 & 3,7 \\
+ & 128 & 500 & 0,771 & 0,070 & -0,024 & 3,8 \\
+ & 128 & 2000 & 0,736 & 0,066 & -0,024 & 4,1 \\
+\cmidrule{2-7}
+ & 256 & 200 & 1,937 & 0,175 & 0,048 & 4,2 \\
+ & 256 & 500 & 0,952 & 0,086 & -0,049 & 4,2 \\
+ & 256 & 2000 & 0,852 & 0,077 & -0,067 & 7,6 \\
+\cmidrule{2-7}
+ & 512 & 200 & 1,586 & 0,143 & 0,101 & 5,3 \\
+ & 512 & 500 & 0,480 & 0,043 & 0,001 & 5,5 \\
+ & 512 & 2000 & 0,405 & 0,036 & -0,008 & 8,7 \\
+\cmidrule{2-7}
+\midrule
+\multirow{9}{*}{Heavisine} & 128 & 200 & 1,245 & 0,047 & 0,041 & 3,5 \\
+ & 128 & 500 & 0,115 & 0,004 & 0,003 & 3,6 \\
+ & 128 & 2000 & 0,049 & 0,002 & 0,008 & 3,9 \\
+\cmidrule{2-7}
+ & 256 & 200 & 1,457 & 0,055 & 0,119 & 4,0 \\
+ & 256 & 500 & 0,114 & 0,004 & 0,001 & 4,0 \\
+ & 256 & 2000 & 0,031 & 0,001 & 0,004 & 4,3 \\
+\cmidrule{2-7}
+ & 512 & 200 & 1,106 & 0,041 & 0,061 & 4,7 \\
+ & 512 & 500 & 0,081 & 0,003 & 0,026 & 5,0 \\
+ & 512 & 2000 & 0,023 & 0,001 & 0,001 & 5,2 \\
+\cmidrule{2-7}
+\midrule
+\multirow{9}{*}{Sigmoid} & 128 & 200 & 1,315 & 0,591 & 0,046 & 3,6 \\
+ & 128 & 500 & 0,093 & 0,042 & 0,006 & 3,6 \\
+ & 128 & 2000 & 0,022 & 0,010 & -0,001 & 3,9 \\
+\cmidrule{2-7}
+ & 256 & 200 & 1,179 & 0,529 & 0,135 & 4,0 \\
+ & 256 & 500 & 0,085 & 0,038 & 0,008 & 4,0 \\
+ & 256 & 2000 & 0,022 & 0,010 & -0,002 & 4,7 \\
+\cmidrule{2-7}
+ & 512 & 200 & 1,295 & 0,582 & 0,083 & 4,7 \\
+ & 512 & 500 & 0,105 & 0,047 & 0,028 & 5,0 \\
+ & 512 & 2000 & 0,021 & 0,009 & 0,000 & 5,2 \\
+\cmidrule{2-7}
+		\bottomrule
+	\end{tabular}
+\end{table}
