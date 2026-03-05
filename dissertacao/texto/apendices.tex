@@ -1,6 +1,6 @@
 \chapter{Estrutura de causalidade e a seta do tempo}\label{ap-dag-causalidade}
 
-Neste apêndice, apresentamos a fundamentação visual para a exigência de causalidade operacional no pré-processamento de dados funcionais. A Figura \ref{fig:dag-vazamento-temporal} ilustra o contraste entre as abordagens \emph{online} e \emph{offline} sob a ótica da dependência temporal.
+Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade operacional no pré-processamento de dados funcionais. A Figura \ref{fig:dag-vazamento-temporal} ilustra o contraste entre as abordagens \emph{online} e \emph{offline} sob a ótica da dependência temporal.
 
 \begin{figure}[!ht]
     \centering
@@ -50,16 +50,16 @@ Neste apêndice, apresentamos a fundamentação visual para a exigência de caus
     \label{fig:dag-vazamento-temporal}
 \end{figure}
 
-Como discutido no Capítulo \ref{sec-metodologia}, a contaminação (representada pela seta vermelha na Figura \ref{fig:dag-vazamento-temporal}) faz com que o estimador $\hat{\theta}(t)$ utilize informações que ainda não ocorreram cronologicamente para suavizar a trajetória no instante $t$. Em contextos de monitoramento em tempo real, essa violação da seta do tempo invalidaria a detecção de anomalias ou a correta atribuição de causalidade, justificando o uso de métodos operacionalmente causais como a nossa proposta via \emph{lifting scheme}.
+Como discutido no Capítulo \ref{sec-metodologia}, a contaminação (representada pela seta vermelha na Figura \ref{fig:dag-vazamento-temporal}) faz com que o estimador \(\hat{\theta}(t)\) utilize informações que ainda não ocorreram cronologicamente para suavizar a trajetória no instante \(t\). Em contextos de monitoramento em tempo real, essa violação da seta do tempo invalidaria a detecção de anomalias ou a correta atribuição de causalidade, justificando o uso de métodos operacionalmente causais como a nossa proposta via \emph{lifting scheme}.
 
 \chapter{Resultados detalhados das simulações}
 \label{ap-simulacoes-completas}
 
-Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico (boxplots) que preservam a informação de \emph{outliers}.
+Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico (\emph{boxplots}) que preservam a informação de \emph{outliers}.
 
 \section{Resultados exaustivos: simulação 1}
 
-A Tabela \ref{tab:resultados_sim1_completo} detalha o desempenho de todos os métodos para as 108 combinações de cenários, resoluções e tamanhos amostrais.
+A Tabela \ref{tab:resultados_sim1_completo} detalha o desempenho de todos os métodos para as \(108\) combinações de cenários, resoluções e tamanhos amostrais.
 
 \scriptsize
 \begin{longtable}{llccrrrrr}
@@ -229,9 +229,8 @@ A Tabela \ref{tab:resultados_sim1_completo} detalha o desempenho de todos os mé
 
 \normalsize
 
-\subsection{Visualização de diagnóstico: simulação 1}
-
-Apresentamos a seguir os boxplots do \(\text{NRMSE}\) (Figura \ref{fig:box_nrmse_sim1}) e da largura de banda (Figura \ref{fig:box_width_sim1}) para todos os cenários da simulação 1, permitindo a identificação visual da dispersão e presença de eventuais \emph{outliers}.
+\section{Visualização de diagnóstico: simulação 1}
+A seguir, apresentamos os \emph{boxplots} do \(\text{NRMSE}\) (Figura \ref{fig:box_nrmse_sim1}) e da largura de banda (Figura \ref{fig:box_width_sim1}) para todos os cenários da simulação 1, permitindo a identificação visual da dispersão e presença de eventuais \emph{outliers}.
 
 \begin{figure}[ht]
     \centering
@@ -313,3 +312,5 @@ Para a simulação 2 (\emph{online}), apresentamos os boxplots de dispersão do 
     \caption{Diagnóstico de erro (NRMSE) com outliers - simulação 2.}
     \label{fig:box_nrmse_sim2}
 \end{figure}
+
+Como se tratava de uma simulação menor, já incluímos os resultados completos em formato tabular no Capítulo \ref{sec-estudos-simulacao} (Tabela \ref{tab:resultados_sim2}).
