@@ -14,7 +14,7 @@ Na inferência causal, uma forma particularmente útil de organizar o problema �
 
     Implica que, uma vez condicionada às covariáveis \(\mathbf{X}_i\), a atribuição de tratamento \(A_i\) é ``como se'' aleatória e, portanto, não carrega informação adicional sobre os desfechos potenciais.
 
-    \item Positividade (ou sobreposição): denotando por \(\pi_a(\mathbf{X}_i) = \mathbb{P}(A_i = a \mid \mathbf{X}_i)\) a propensão do i-ésimo indivíduo ao tratamento \(a \in \mathcal{A}\), requeremos \cite{rosenbaum_central_1983}
+    \item Positividade (ou sobreposição): denotando por \(\pi_a(\mathbf{X}_i) = \mathbb{P}(A_i = a \mid \mathbf{X}_i)\) a propensão do i-ésimo indivíduo ao tratamento \(a \in \mathcal{A}\), requeremos, conforme \citeonline{rosenbaum_central_1983}, 
 		\[
             0 < \pi_a(\mathbf{X}_i) < 1, \quad \forall a \in \mathcal{A}, \ \text{q.c.}
         \]
@@ -82,9 +82,9 @@ Cabe ressaltar que os autores também propuseram bandas simultâneas de confian�
     \hat{\theta}(t) \pm u_{\alpha}(t)\sqrt{C_{\theta}(t, t)},
     \label{eq:ecker_bandas_simultaneas}
 \end{equation}
-em que \(C_{\theta}(s, t) = \sigma_{1}(s, t)\mathbf{\bar{X}}\left(\mathbf{X}_{1}^{T}\mathbf{X}_{1}\right)^{-1}\mathbf{\bar{X}}^{T} + \sigma_{0}(s, t)\mathbf{\bar{X}}\left(\mathbf{X}_{0}^{T}\mathbf{X}_{0}\right)^{-1}\mathbf{\bar{X}}^{T}\), e \(u_{\alpha} = \{u_{\alpha}(t): t \in \mathcal{T}\}\) é uma função de limiarização tal que, para um dado nível \(\alpha\),
+em que \(C_{\theta}(s, t) = \sigma_{1}(s, t)\bar{\mathbf{X}}^{\mathsf{T}}\left(\mathbf{X}_{1}^{\mathsf{T}}\mathbf{X}_{1}\right)^{-1}\bar{\mathbf{X}} + \sigma_{0}(s, t)\bar{\mathbf{X}}^{\mathsf{T}}\left(\mathbf{X}_{0}^{\mathsf{T}}\mathbf{X}_{0}\right)^{-1}\bar{\mathbf{X}}\), e \(u_{\alpha} = \{u_{\alpha}(t): t \in \mathcal{T}\}\) é uma função de limiarização tal que, para um dado nível \(\alpha\),
 \[
-        \mathbb{P}\left(\theta(t) \in \hat{\theta}(t) \pm u_{\alpha}(t)\sqrt{C_{\theta}(t, t)} \quad \forall t \in \mathcal{T}\right) \geq 1 - \alpha. 
+        \mathbb{P}\left(\theta(t) \in \hat{\theta}(t) \pm u_{\alpha}(t)\sqrt{C_{\theta}(t, t)}, \quad \forall t \in \mathcal{T}\right) \geq 1 - \alpha. 
     \]
 
 O que dá validade às coberturas simultâneas da Equação \ref{eq:ecker_bandas_simultaneas} é a premissa de que o estimador \(\hat{\theta}(t)\) preserva a natureza gaussiana do processo gerador de dados. Dado que o ajuste via mínimos quadrados ordinários constitui uma operação linear nas observações, \(\hat{\theta}(t)\) converge para um processo gaussiano (pois assumimos que \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um \(\mathrm{MGP}\)). É com base nessa propriedade linear que resultados clássicos da teoria de campos aleatórios podem ser utilizados para calibrar o limiar \(u_{\alpha}(t)\). Tal garantia teórica, no entanto, perde-se quando o procedimento de estimação incorpora etapas não-lineares --- como a limiarização de coeficientes em ondaletas ou a seleção adaptativa de hiperparâmetros de suavização --- exigindo justificativas adicionais em abordagens que priorizam esparsidade ou adaptação a descontinuidades locais.
