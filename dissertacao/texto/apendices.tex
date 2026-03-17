@@ -46,7 +46,7 @@ Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade
     \draw[bias] (Ytp1) to[bend left=25] node[midway, right, xshift=3pt] {\footnotesize vazamento} (ThetaOff.east);
 
     \end{tikzpicture}
-    \caption{Diagrama de causalidade operacional: contraste entre o processamento estritamente causal (\emph{online}) e o vazamento de informação do futuro em abordagens globais (\emph{offline}).}
+    \caption{Diagrama esquemático da causalidade operacional, ilustrando a restrição de dependência exclusiva de dados passados no processamento \emph{online} (janelas móveis) em oposição ao vazamento de informação do futuro inerente às abordagens globais (\emph{offline}) baseadas em \emph{splines} ou DWT clássica.}
     \label{fig:dag-vazamento-temporal}
 \end{figure}
 
@@ -63,7 +63,7 @@ A Tabela \ref{tab:resultados_sim1_completo} detalha o desempenho de todos os mé
 
 \scriptsize
 \begin{longtable}{llccrrrrr}
-    \caption{Desempenho estatístico completo (simulação 1) --- Resultados exaustivos.} \label{tab:resultados_sim1_completo} \\
+    \caption{Desempenho estatístico exaustivo da Simulação 1, apresentando as métricas de precisão (RMSE, NRMSE, vício) e inferência (largura de banda e CobSim) para todos os cruzamentos de $N$, $T$ e cenários funcionais avaliados.} \label{tab:resultados_sim1_completo} \\
     \toprule
     Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
     \midrule
@@ -253,7 +253,7 @@ A seguir, apresentamos os \emph{boxplots} do \(\text{NRMSE}\) (Figura \ref{fig:b
         \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Sigmoid.png}
         \caption{Sigmoide}
     \end{subfigure}
-    \caption{Diagnóstico de erro (NRMSE) com outliers - simulação 1.}
+    \caption{Distribuição do erro quadrático médio normalizado (NRMSE) ao longo da Simulação 1 para todos os cenários funcionais, destacando a presença de \emph{outliers} e comparando a estabilidade da precisão entre os estimadores de ondaletas e o método de \emph{splines}.}
     \label{fig:box_nrmse_sim1}
 \end{figure}
 
@@ -278,7 +278,7 @@ A seguir, apresentamos os \emph{boxplots} do \(\text{NRMSE}\) (Figura \ref{fig:b
         \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Sigmoid.png}
         \caption{Sigmoide}
     \end{subfigure}
-    \caption{Diagnóstico de largura de banda com outliers - simulação 1.}
+    \caption{Comparação da largura média das bandas de confiança simultâneas na Simulação 1, evidenciando o custo informacional (precisão vs. cobertura) de cada método para os cenários \emph{bumps}, \emph{doppler}, \emph{escada} e \emph{sigmoide}.}
     \label{fig:box_width_sim1}
 \end{figure}
 
@@ -309,7 +309,7 @@ Para a simulação 2 (\emph{online}), apresentamos os boxplots de dispersão do 
         \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Sigmoid.png}
         \caption{Sigmoide}
     \end{subfigure}
-    \caption{Diagnóstico de erro (NRMSE) com outliers - simulação 2.}
+    \caption{Distribuição do erro quadrático médio normalizado (NRMSE) para o estimador \emph{online} na Simulação 2, demonstrando a robustez da precisão do rastreamento incremental mesmo na presença de ruído intenso e em diferentes níveis de resolução temporal $T$.}
     \label{fig:box_nrmse_sim2}
 \end{figure}
 

@@ -1,11 +1,11 @@
 \chapter[Estudos de simulação]{Estudos de simulação}\label{sec-estudos-simulacao}
-A fim de avaliar o comportamento empírico dos estimadores propostos, conduzimos dois estudos de simulação principais. O primeiro compara a nossa proposta baseada em ondaletas --- Seção \ref{sec-estimacao-fate} em suas versões \emph{offline} e \emph{online} --- com o estimador de \emph{splines} utilizado em \citeonline{ecker_causal_2024} (Seção \ref{sec-inferencia-causal-funcional}). Como já discutido, ao adotarmos o mesmo processo gerador de dados (PGD) e o cenário de intervenção única dos autores, tornamos a exigência de causalidade operacional (respeito à seta do tempo) optativa. Esse desenho nos permite comparar diretamente a eficiência da suavização e a identificação do efeito entre os métodos, estabelecendo o estimador \emph{offline} como um teto teórico de desempenho para a versão \emph{online}.\footnote{As simulações foram executadas em um ambiente computacional equipado com processador Intel Core i5 de 13ª geração, 16GB de RAM e sistema operacional Windows 11 (versão 25H2). Uma vez que o cenário não requer o respeito à causalidade operacional, o estimador \emph{offline} deve desempenhar melhor que o \emph{online} em virtude de ter acesso a uma quantidade maior de informação.} A segunda simulação, por sua vez, foca exclusivamente em nosso estimador \emph{online} (Seção \ref{sec-estimador-online}; tendo em vista que não encontramos abordagens alternativas para estimar o \(\mathrm{FATE}\) sequencialmente na literatura), mensurando a latência computacional do processamento ponto a ponto e a precisão da estimativa quando as observações de cada indivíduo são disponibilizadas em tempo real, sem que o estimador tenha acesso a informações futuras --- por óbvio, o desempenho estatístico do estimador \emph{online} não deve mudar significativamente de um desenho experimental para outro. A única diferença entre os estimadores \emph{online} empregados é que, na primeira simulação, utilizamos a função \texttt{denoise\_signal\_causal}, enquanto na segunda, emulamos os dados chegando sequencialmente com \texttt{new\_wavelet\_stream}. Ambas as funções estão disponíveis no ecossistema do \texttt{rLifting}.
+A fim de avaliar o comportamento empírico dos estimadores propostos, conduzimos dois estudos de simulação principais. O primeiro compara a nossa proposta baseada em ondaletas --- Seção \ref{sec-estimacao-fate} em suas versões \emph{offline} e \emph{online} --- com o estimador de \emph{splines} utilizado em \citeonline{ecker_causal_2024} (Seção \ref{sec-inferencia-causal-funcional}). Como já discutido, ao adotarmos o mesmo PGD (Processo Gerador de Dados) e o cenário de intervenção única dos autores, tornamos a exigência de causalidade operacional (respeito à seta do tempo) optativa. Esse desenho nos permite comparar diretamente a eficiência da suavização e a identificação do efeito entre os métodos, estabelecendo o estimador \emph{offline} como um teto teórico de desempenho para a versão \emph{online}.\footnote{As simulações foram executadas em um ambiente computacional equipado com processador Intel Core i5 de 13ª geração, 16GB de RAM e sistema operacional Windows 11 (versão 25H2). Uma vez que o cenário não requer o respeito à causalidade operacional, o estimador \emph{offline} deve desempenhar melhor que o \emph{online} em virtude de ter acesso a uma quantidade maior de informação.} A segunda simulação, por sua vez, foca exclusivamente em nosso estimador \emph{online} (Seção \ref{sec-estimador-online}; tendo em vista que não encontramos abordagens alternativas para estimar o \(\mathrm{FATE}\) sequencialmente na literatura), mensurando a latência computacional do processamento ponto a ponto e a precisão da estimativa quando as observações de cada indivíduo são disponibilizadas em tempo real, sem que o estimador tenha acesso a informações futuras. Por óbvio, o desempenho estatístico do estimador \emph{online} não deve mudar significativamente de um desenho experimental para outro. A única diferença entre os estimadores \emph{online} empregados é que, na primeira simulação, utilizamos a função \texttt{denoise\_signal\_causal}, enquanto na segunda, emulamos os dados chegando sequencialmente com \texttt{new\_wavelet\_stream}. Ambas as funções estão disponíveis no ecossistema do \texttt{rLifting}.
 
 Em nosso desenho, mimetizamos o PGD de \citeonline{ecker_causal_2024} para garantir uma base de comparação mais sólida. Geramos \(P = 9\) covariáveis pré-tratamento amostradas de distribuições Normal, Poisson e Binomial, cujos parâmetros foram calibrados com base nas estatísticas descritivas reportadas no trabalho original (Tabela \ref{tab:parametros_pgd}). A atribuição de tratamento segue um modelo logístico com viés de seleção induzido, e as propensões foram truncadas no intervalo \([0.001, 0.999]\) para assegurar a positividade condicional. O desfecho funcional é gerado a partir de um modelo concorrente no qual o efeito de tratamento é heterogêneo, dependendo das covariáveis observadas. Distribuímos o efeito total uniformemente entre o intercepto e as \(9\) covariáveis, de modo que cada componente contribua igualmente para o \(\mathrm{FATE}\) verdadeiro através da média populacional \(\bar{\mathbf{X}}\).
 
 A fim de exemplificar os ganhos de nossos estimadores, ampliamos o conjunto de formas funcionais avaliadas em nosso PGD. Em vez de considerarmos apenas uma função suave (como feito por \citeonline{ecker_causal_2024}), consideramos funções de efeito com os formatos: \emph{sigmoide}, \emph{bumps}, \emph{doppler} e \emph{escada}. Esperávamos, a priori, que o estimador original, baseado em \emph{splines}, desempenhasse mal nos últimos três cenários supracitados.
 
-Em ambas as simulações cruzamos tamanhos de amostra \(N \in \{200, 500, 2000\}\) com resoluções temporais \(T \in \{128, 256, 512\}\). Para o pré-processamento via ondaletas, a família mãe foi selecionada conforme o cenário (utilizamos filtros curtos para o caso \emph{online}, conforme nossa discussão metodológica, e para o caso \emph{offline}, por comparabilidade; e.g., Haar para o cenário \emph{escada} e Daubechies-2 para \emph{bumps}), enquanto para os \emph{splines} utilizamos o padrão de \(50\) funções de base em todos os casos (otimizamos o procedimento via validação cruzada generalizada --- o que é de praxe e, inclusive, é feito por \citeonline{ecker_causal_2024}, apesar de teoricamente afetar a normalidade esperada do estimador \(\hat{\theta}(t)\) resultante). Onde aplicável, a janela de processamento causal foi fixada em \(W = 64\) para resoluções menores e \(W = 128\) para \(T = 512\), permitindo um equilíbrio entre a estabilidade da reconstrução e o respeito à seta do tempo. 
+Em ambas as simulações cruzamos tamanhos de amostra \(N \in \{200, 500, 2000\}\) com resoluções temporais \(T \in \{128, 256, 512\}\). Para o pré-processamento via ondaletas, a família mãe foi selecionada conforme o cenário (utilizamos filtros curtos para o caso \emph{online}, conforme nossa discussão metodológica, e para o caso \emph{offline}, por comparabilidade; e.g., Haar para o cenário \emph{escada} e Daubechies-2 para \emph{bumps}), enquanto para os \emph{splines} utilizamos o padrão de \(50\) funções de base em todos os casos (otimizamos o procedimento via validação cruzada generalizada, o que é de praxe e, inclusive, é feito por \citeonline{ecker_causal_2024}, apesar de teoricamente afetar a normalidade esperada do estimador \(\hat{\theta}(t)\) resultante). Onde aplicável, a janela de processamento causal foi fixada em \(W = 64\) para resoluções menores e \(W = 128\) para \(T = 512\), permitindo um equilíbrio entre a estabilidade da reconstrução e o respeito à seta do tempo. 
 
 Obtemos as estimativas intervalares para os métodos baseados em ondaletas através do procedimento descrito na Seção \ref{sec-bootstrap-ic}. Para as \emph{splines}, utilizamos as derivações analíticas de \citeonline{ecker_causal_2024}. Vale salientar, no entanto, que introduzimos uma escolha deliberadamente conservadora na calibração do limiar de cobertura \(u_\alpha(t)\). Em vez de utilizar a estrutura variável original, baseada no pacote \texttt{ffscb} \cite{lieblFastFairSimultaneous2023}, fixamos um limiar escalar constante correspondente ao valor mais conservador do referido pacote. O objetivo desta modificação era assegurar que eventuais falhas de cobertura do método original em cenários irregulares não decorressem de bandas excessivamente estreitas localmente, estratégia que nos permitiu uma avaliação mais isolada do impacto da falta de regularidade na estimativa pontual. Essa escolha, é claro, inviabilizou a comparação das larguras de banda resultantes de nosso \emph{bootstrap}, para com o método de \citeonline{ecker_causal_2024} (no fim das contas, mesmo com nossas precauções, a comparação seria inócua tendo em vista que a metodologia original não se mostrou estatisticamente confiável para cenários irregulares mesmo com larguras de banda artificialmente maiores).
 
@@ -13,7 +13,7 @@ Uma última observação se relaciona com o número de amostras \emph{bootstrap}
 
 \begin{table}[ht]
 	\centering
-	\caption{Especificação paramétrica do processo gerador de dados das simulações.}
+	\caption{Especificação paramétrica do processo gerador de dados das simulações, detalhando as distribuições das covariáveis, as contribuições para o escore de propensão e a estrutura funcional do efeito de tratamento concorrente.}
 	\label{tab:parametros_pgd}
 	\begin{tabular}{llrr}
 		\toprule
@@ -72,92 +72,94 @@ Observamos que as métricas de latência reportadas, baseadas na expressão acim
 \section{Resultados}
 Apresentamos nas Tabelas \ref{tab:resultados_sim1} e \ref{tab:resultados_sim2} resultados que sintetizam o desempenho dos métodos propostos. Destacamos uma forte consistência entre as métricas obtidas para as simulações 1 e 2, evidenciando que, como esperado, as propriedades estatísticas observadas no regime \emph{offline} se traduzem adequadamente para a implementação \emph{online} (com um pouco menos de veemência para o cenário \emph{doppler}, possivelmente pela combinação da alta irregularidade temporal e da menor quantidade de informação disponível para o estimador \emph{online}). Em ambos os métodos e para todos os cenários, \(\mathrm{RMSE}\), \(\mathrm{NRMSE}\) e vício globais reduzem-se substancialmente conforme \(N\) e \(T\) crescem (com melhores resultados oriundos do aumento de \(T\) para tamanhos amostrais \(N \geq 500\)).
 
-Em relação à comparação com \emph{splines}, convém notar que exceto no cenário de maior regularidade temporal (\emph{sigmoid}), as ondaletas dominam em precisão. O percentual das coberturas simultâneas obtidas, em particular, mesmo com nossa abordagem conservadora para a metodologia proposta por \citeonline{ecker_causal_2024}, é revelador: enquanto nosso método alcançou os níveis de cobertura nominais a partir de \(N = 500\), os \emph{splines} só conseguiram resultados robustos no cenário suave. 
+Em relação à comparação com \emph{splines}, convém notar o comportamento bimodal de desempenho apresentado na Tabela \ref{tab:resultados_sim1}. No cenário \emph{sigmoid} (alta regularidade), os três métodos apresentam métricas equivalentes. Todavia, a vantagem das ondaletas torna-se predominante conforme a irregularidade temporal aumenta.
+
+Como destacado em negrito, no cenário \emph{doppler} com \(N=2000\) e \(T=512\), a versão \emph{offline} atingiu um \(\mathrm{NRMSE}\) de \(0.005\), um valor \(26\) vezes inferior ao obtido pelo método de Ecker (\(0.130\)). Esse ganho de precisão reflete-se na confiabilidade das bandas de confiança: enquanto nossas propostas mantêm coberturas simultâneas aderentes ao nível nominal (superiores a \(95\%\)), o método baseado em \emph{splines} apresenta coberturas nulas. Resultado similar é observado no cenário \emph{escada}, em que tanto a versão \emph{online} quanto a \emph{offline} das ondaletas sustetam erros baixíssimos (\(\mathrm{NRMSE}\) de \(0.001\)) e coberturas próximas das nominais (\(95.5\%\) e \(95.7\%\), respectivamente).
 
 Salientamos ainda que a Tabela \ref{tab:resultados_sim2} confirma que a latência computacional do procedimento em tempo real manteve-se em patamares reduzidos, garantindo a viabilidade operacional do algoritmo para fluxos de dados em tempo real.
 
 \begin{table}[H]
     \centering
-    \caption{Desempenho estatístico comparado (simulação 1) --- Resultados selecionados.}
+    \caption{Desempenho estatístico comparativo dos métodos baseados em ondaletas (\emph{online} e \emph{offline}) e o estimador de \emph{splines} (Ecker), utilizando as métricas RMSE, NRMSE, vício, largura de banda e cobertura simultânea (CobSim) na Simulação 1. Resultados selecionados.}
     \label{tab:resultados_sim1}
     \scriptsize
     \begin{tabular}{llccrrrrr}
         \toprule
         Cenário & Método & \(N\) & \(T\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Largura}\) & \(\text{CobSim}\) \\
 \midrule
-\multirow{18}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1,278 & 0,574 & 0,055 & 25,01 & 85,9\% \\
- & Ond. (Off) & 200 & 128 & 1,304 & 0,585 & 0,058 & 25,02 & 86,6\% \\
- & Ecker & 200 & 128 & 1,300 & 0,584 & 0,058 & 243,80 & 100,0\% \\
+\multirow{18}{*}{Sigmoid} & Ond. (On) & 200 & 128 & 1.278 & 0.574 & 0.055 & 25.01 & 85.9\% \\
+ & Ond. (Off) & 200 & 128 & 1.304 & 0.585 & 0.058 & 25.02 & 86.6\% \\
+ & Ecker & 200 & 128 & 1.300 & 0.584 & 0.058 & 243.80 & 100.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 200 & 512 & 1,199 & 0,538 & 0,106 & 26,31 & 88,9\% \\
- & Ond. (Off) & 200 & 512 & 1,206 & 0,541 & 0,107 & 26,32 & 89,5\% \\
- & Ecker & 200 & 512 & 1,205 & 0,541 & 0,107 & 466,04 & 100,0\% \\
+ & Ond. (On) & 200 & 512 & 1.199 & 0.538 & 0.106 & 26.31 & 88.9\% \\
+ & Ond. (Off) & 200 & 512 & 1.206 & 0.541 & 0.107 & 26.32 & 89.5\% \\
+ & Ecker & 200 & 512 & 1.205 & 0.541 & 0.107 & 466.04 & 100.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 128 & 0,091 & 0,041 & 0,009 & 9,15 & 96,8\% \\
- & Ond. (Off) & 500 & 128 & 0,099 & 0,044 & 0,011 & 9,23 & 97,4\% \\
- & Ecker & 500 & 128 & 0,091 & 0,041 & 0,011 & 21,70 & 100,0\% \\
+ & Ond. (On) & 500 & 128 & 0.091 & 0.041 & 0.009 & 9.15 & 96.8\% \\
+ & Ond. (Off) & 500 & 128 & 0.099 & 0.044 & 0.011 & 9.23 & 97.4\% \\
+ & Ecker & 500 & 128 & 0.091 & 0.041 & 0.011 & 21.70 & 100.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 512 & 0,102 & 0,046 & 0,007 & 9,55 & 96,1\% \\
- & Ond. (Off) & 500 & 512 & 0,103 & 0,046 & 0,008 & 9,57 & 96,9\% \\
- & Ecker & 500 & 512 & 0,102 & 0,046 & 0,008 & 26,55 & 100,0\% \\
+ & Ond. (On) & 500 & 512 & 0.102 & 0.046 & 0.007 & 9.55 & 96.1\% \\
+ & Ond. (Off) & 500 & 512 & 0.103 & 0.046 & 0.008 & 9.57 & 96.9\% \\
+ & Ecker & 500 & 512 & 0.102 & 0.046 & 0.008 & 26.55 & 100.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 128 & 0,022 & 0,010 & -0,001 & 0,14 & 96,1\% \\
- & Ond. (Off) & 2000 & 128 & 0,034 & 0,015 & 0,001 & 0,32 & 94,7\% \\
- & Ecker & 2000 & 128 & 0,022 & 0,010 & 0,001 & 0,63 & 100,0\% \\
+ & Ond. (On) & 2000 & 128 & 0.022 & 0.010 & -0.001 & 0.14 & 96.1\% \\
+ & Ond. (Off) & 2000 & 128 & 0.034 & 0.015 & 0.001 & 0.32 & 94.7\% \\
+ & Ecker & 2000 & 128 & 0.022 & 0.010 & 0.001 & 0.63 & 100.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 512 & 0,021 & 0,010 & -0,001 & 0,14 & 94,6\% \\
- & Ond. (Off) & 2000 & 512 & 0,023 & 0,010 & 0,000 & 0,19 & 95,0\% \\
- & Ecker & 2000 & 512 & 0,021 & 0,010 & 0,000 & 1,26 & 100,0\% \\
+ & Ond. (On) & 2000 & 512 & 0.021 & 0.010 & -0.001 & 0.14 & 94.6\% \\
+ & Ond. (Off) & 2000 & 512 & 0.023 & 0.010 & 0.000 & 0.19 & 95.0\% \\
+ & Ecker & 2000 & 512 & 0.021 & 0.010 & 0.000 & 1.26 & 100.0\% \\
 \cmidrule{2-8}
 \midrule
-\multirow{18}{*}{Doppler} & Ond. (On) & 200 & 128 & 1,785 & 0,161 & 0,027 & 27,80 & 86,8\% \\
- & Ond. (Off) & 200 & 128 & 1,716 & 0,155 & 0,044 & 28,25 & 86,8\% \\
- & Ecker & 200 & 128 & 2,806 & 0,253 & 0,051 & 241,27 & 40,1\% \\
+\multirow{18}{*}{Doppler} & Ond. (On) & 200 & 128 & 1.785 & 0.161 & 0.027 & 27.80 & 86.8\% \\
+ & Ond. (Off) & 200 & 128 & 1.716 & 0.155 & 0.044 & 28.25 & 86.8\% \\
+ & Ecker & 200 & 128 & 2.806 & 0.253 & 0.051 & 241.27 & 40.1\% \\
  \cmidrule{2-9}
- & Ond. (On) & 200 & 512 & 1,498 & 0,135 & 0,071 & 27,30 & 87,1\% \\
- & Ond. (Off) & 200 & 512 & 1,253 & 0,113 & 0,078 & 26,73 & 87,1\% \\
- & Ecker & 200 & 512 & 2,337 & 0,210 & 0,079 & 475,39 & 40,3\% \\
+ & Ond. (On) & 200 & 512 & 1.498 & 0.135 & 0.071 & 27.30 & 87.1\% \\
+ & Ond. (Off) & 200 & 512 & 1.253 & 0.113 & 0.078 & 26.73 & 87.1\% \\
+ & Ecker & 200 & 512 & 2.337 & 0.210 & 0.079 & 475.39 & 40.3\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 128 & 0,805 & 0,073 & -0,003 & 13,50 & 96,1\% \\
- & Ond. (Off) & 500 & 128 & 0,722 & 0,065 & 0,014 & 12,11 & 95,8\% \\
- & Ecker & 500 & 128 & 2,011 & 0,182 & 0,021 & 20,27 & 3,8\% \\
+ & Ond. (On) & 500 & 128 & 0.805 & 0.073 & -0.003 & 13.50 & 96.1\% \\
+ & Ond. (Off) & 500 & 128 & 0.722 & 0.065 & 0.014 & 12.11 & 95.8\% \\
+ & Ecker & 500 & 128 & 2.011 & 0.182 & 0.021 & 20.27 & 3.8\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 512 & 0,467 & 0,042 & -0,001 & 13,36 & 96,2\% \\
- & Ond. (Off) & 500 & 512 & 0,136 & 0,012 & 0,006 & 9,69 & 96,8\% \\
- & Ecker & 500 & 512 & 1,493 & 0,134 & 0,007 & 33,56 & 3,0\% \\
+ & Ond. (On) & 500 & 512 & 0.467 & 0.042 & -0.001 & 13.36 & 96.2\% \\
+ & Ond. (Off) & 500 & 512 & 0.136 & 0.012 & 0.006 & 9.69 & 96.8\% \\
+ & Ecker & 500 & 512 & 1.493 & 0.134 & 0.007 & 33.56 & 3.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 128 & 0,736 & 0,066 & -0,025 & 6,90 & 94,9\% \\
- & Ond. (Off) & 2000 & 128 & 0,650 & 0,059 & -0,008 & 3,83 & 94,8\% \\
- & Ecker & 2000 & 128 & 1,960 & 0,177 & -0,001 & 0,63 & 0,0\% \\
+ & Ond. (On) & 2000 & 128 & 0.736 & 0.066 & -0.025 & 6.90 & 94.9\% \\
+ & Ond. (Off) & 2000 & 128 & 0.650 & 0.059 & -0.008 & 3.83 & 94.8\% \\
+ & Ecker & 2000 & 128 & 1.960 & 0.177 & -0.001 & 0.63 & 0.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 512 & 0,406 & 0,037 & -0,008 & 6,83 & 96,2\% \\
- & Ond. (Off) & 2000 & 512 & 0,060 & 0,005 & -0,001 & 0,48 & 95,2\% \\
- & Ecker & 2000 & 512 & 1,445 & 0,130 & 0,000 & 1,26 & 0,0\% \\
+ & Ond. (On) & 2000 & 512 & 0.406 & 0.037 & -0.008 & 6.83 & \textbf{96.2\%} \\
+ & Ond. (Off) & 2000 & 512 & \textbf{0.060} & \textbf{0.005} & -0.001 & 0.48 & \textbf{95.2\%} \\
+ & Ecker & 2000 & 512 & 1.445 & 0.130 & 0.000 & 1.26 & 0.0\% \\
 \cmidrule{2-8}
 \midrule
-\multirow{18}{*}{Escada} & Ond. (On) & 200 & 128 & 1,235 & 0,046 & 0,084 & 25,89 & 87,2\% \\
- & Ond. (Off) & 200 & 128 & 1,257 & 0,047 & 0,077 & 25,89 & 88,0\% \\
- & Ecker & 200 & 128 & 2,283 & 0,086 & 0,077 & 239,70 & 40,8\% \\
+\multirow{18}{*}{Escada} & Ond. (On) & 200 & 128 & 1.235 & 0.046 & 0.084 & 25.89 & 87.2\% \\
+ & Ond. (Off) & 200 & 128 & 1.257 & 0.047 & 0.077 & 25.89 & 88.0\% \\
+ & Ecker & 200 & 128 & 2.283 & 0.086 & 0.077 & 239.70 & 40.8\% \\
  \cmidrule{2-9}
- & Ond. (On) & 200 & 512 & 1,347 & 0,050 & 0,088 & 25,59 & 85,7\% \\
- & Ond. (Off) & 200 & 512 & 1,354 & 0,051 & 0,087 & 25,59 & 86,0\% \\
- & Ecker & 200 & 512 & 2,100 & 0,079 & 0,087 & 512,31 & 42,7\% \\
+ & Ond. (On) & 200 & 512 & 1.347 & 0.050 & 0.088 & 25.59 & 85.7\% \\
+ & Ond. (Off) & 200 & 512 & 1.354 & 0.051 & 0.087 & 25.59 & 86.0\% \\
+ & Ecker & 200 & 512 & 2.100 & 0.079 & 0.087 & 512.31 & 42.7\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 128 & 0,125 & 0,005 & 0,005 & 9,51 & 97,7\% \\
- & Ond. (Off) & 500 & 128 & 0,127 & 0,005 & -0,003 & 9,38 & 97,2\% \\
- & Ecker & 500 & 128 & 1,427 & 0,053 & -0,003 & 18,91 & 3,4\% \\
+ & Ond. (On) & 500 & 128 & 0.125 & 0.005 & 0.005 & 9.51 & 97.7\% \\
+ & Ond. (Off) & 500 & 128 & 0.127 & 0.005 & -0.003 & 9.38 & 97.2\% \\
+ & Ecker & 500 & 128 & 1.427 & 0.053 & -0.003 & 18.91 & 3.4\% \\
  \cmidrule{2-9}
- & Ond. (On) & 500 & 512 & 0,086 & 0,003 & 0,027 & 9,52 & 97,4\% \\
- & Ond. (Off) & 500 & 512 & 0,086 & 0,003 & 0,026 & 9,53 & 97,3\% \\
- & Ecker & 500 & 512 & 1,073 & 0,040 & 0,026 & 29,34 & 2,6\% \\
+ & Ond. (On) & 500 & 512 & 0.086 & 0.003 & 0.027 & 9.52 & 97.4\% \\
+ & Ond. (Off) & 500 & 512 & 0.086 & 0.003 & 0.026 & 9.53 & 97.3\% \\
+ & Ecker & 500 & 512 & 1.073 & 0.040 & 0.026 & 29.34 & 2.6\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 128 & 0,049 & 0,002 & 0,008 & 0,76 & 95,4\% \\
- & Ond. (Off) & 2000 & 128 & 0,050 & 0,002 & 0,000 & 0,56 & 95,9\% \\
- & Ecker & 2000 & 128 & 1,379 & 0,052 & 0,000 & 0,63 & 0,0\% \\
+ & Ond. (On) & 2000 & 128 & 0.049 & 0.002 & 0.008 & 0.76 & 95.4\% \\
+ & Ond. (Off) & 2000 & 128 & 0.050 & 0.002 & 0.000 & 0.56 & 95.9\% \\
+ & Ecker & 2000 & 128 & 1.379 & 0.052 & 0.000 & 0.63 & 0.0\% \\
  \cmidrule{2-9}
- & Ond. (On) & 2000 & 512 & 0,022 & 0,001 & 0,001 & 0,27 & 95,5\% \\
- & Ond. (Off) & 2000 & 512 & 0,022 & 0,001 & 0,000 & 0,27 & 95,7\% \\
- & Ecker & 2000 & 512 & 1,040 & 0,039 & 0,000 & 1,26 & 0,0\% \\
+ & Ond. (On) & 2000 & 512 & \textbf{0.022} & \textbf{0.001} & 0.001 & 0.27 & \textbf{95.5\%} \\
+ & Ond. (Off) & 2000 & 512 & \textbf{0.022} & \textbf{0.001} & 0.000 & 0.27 & \textbf{95.7\%} \\
+ & Ecker & 2000 & 512 & 1.040 & 0.039 & 0.000 & 1.26 & 0.0\% \\
  \cmidrule{2-8}
         \bottomrule
     \end{tabular}
@@ -165,62 +167,62 @@ Salientamos ainda que a Tabela \ref{tab:resultados_sim2} confirma que a latênci
 
 \begin{table}[H]
 	\centering
-	\caption{Eficiência computacional e confiabilidade (simulação 2) --- Ondaletas \emph{online}.}
+	\caption{Desempenho estatístico e eficiência computacional do estimador de ondaletas \emph{online} na Simulação 2, apresentando as métricas RMSE, NRMSE, vício e latência de processamento em microssegundos para diferentes combinações de $N$, $T$ e cenários funcionais.}
 	\label{tab:resultados_sim2}
 	\begin{tabular}{lcrrrrr}
 		\toprule
 		Cenário & \(T\) & \(N\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Latência (µs)}\) \\
 		\midrule
-		\multirow{9}{*}{Bumps} & 128 & 200 & 1,391 & 0,022 & 0,244 & 3,7 \\
-		& 128 & 500 & 0,180 & 0,003 & 0,009 & 3,9 \\
-		& 128 & 2000 & 0,116 & 0,002 & -0,015 & 4,1 \\
+		\multirow{9}{*}{Bumps} & 128 & 200 & 1.391 & 0.022 & 0.244 & 3.7 \\
+		& 128 & 500 & 0.180 & 0.003 & 0.009 & 3.9 \\
+		& 128 & 2000 & 0.116 & 0.002 & -0.015 & 4.1 \\
 		\cmidrule{2-7}
-		& 256 & 200 & 1,323 & 0,020 & 0,041 & 4,2 \\
-		& 256 & 500 & 0,208 & 0,003 & 0,028 & 4,2 \\
-		& 256 & 2000 & 0,122 & 0,002 & -0,021 & 5,1 \\
+		& 256 & 200 & 1.323 & 0.020 & 0.041 & 4.2 \\
+		& 256 & 500 & 0.208 & 0.003 & 0.028 & 4.2 \\
+		& 256 & 2000 & 0.122 & 0.002 & -0.021 & 5.1 \\
 		\cmidrule{2-7}
-		& 512 & 200 & 1,432 & 0,021 & -0,058 & 5,3 \\
-		& 512 & 500 & 0,101 & 0,002 & 0,017 & 5,4 \\
-		& 512 & 2000 & 0,040 & 0,001 & -0,002 & 6,9 \\
-		\cmidrule{2-7}
-		\midrule
-		\multirow{9}{*}{Doppler} & 128 & 200 & 1,827 & 0,165 & 0,015 & 3,7 \\
-		& 128 & 500 & 0,771 & 0,070 & -0,024 & 3,8 \\
-		& 128 & 2000 & 0,736 & 0,066 & -0,024 & 4,1 \\
-		\cmidrule{2-7}
-		& 256 & 200 & 1,937 & 0,175 & 0,048 & 4,2 \\
-		& 256 & 500 & 0,952 & 0,086 & -0,049 & 4,2 \\
-		& 256 & 2000 & 0,852 & 0,077 & -0,067 & 7,6 \\
-		\cmidrule{2-7}
-		& 512 & 200 & 1,586 & 0,143 & 0,101 & 5,3 \\
-		& 512 & 500 & 0,480 & 0,043 & 0,001 & 5,5 \\
-		& 512 & 2000 & 0,405 & 0,036 & -0,008 & 8,7 \\
+		& 512 & 200 & 1.432 & 0.021 & -0.058 & 5.3 \\
+		& 512 & 500 & 0.101 & 0.002 & 0.017 & 5.4 \\
+		& 512 & 2000 & 0.040 & 0.001 & -0.002 & \textbf{6.9} \\
 		\cmidrule{2-7}
 		\midrule
-		\multirow{9}{*}{Escada} & 128 & 200 & 1,245 & 0,047 & 0,041 & 3,5 \\
-		& 128 & 500 & 0,115 & 0,004 & 0,003 & 3,6 \\
-		& 128 & 2000 & 0,049 & 0,002 & 0,008 & 3,9 \\
+		\multirow{9}{*}{Doppler} & 128 & 200 & 1.827 & 0.165 & 0.015 & 3.7 \\
+		& 128 & 500 & 0.771 & 0.070 & -0.024 & 3.8 \\
+		& 128 & 2000 & 0.736 & 0.066 & -0.024 & 4.1 \\
 		\cmidrule{2-7}
-		& 256 & 200 & 1,457 & 0,055 & 0,119 & 4,0 \\
-		& 256 & 500 & 0,114 & 0,004 & 0,001 & 4,0 \\
-		& 256 & 2000 & 0,031 & 0,001 & 0,004 & 4,3 \\
+		& 256 & 200 & 1.937 & 0.175 & 0.048 & 4.2 \\
+		& 256 & 500 & 0.952 & 0.086 & -0.049 & 4.2 \\
+		& 256 & 2000 & 0.852 & 0.077 & -0.067 & 7.6 \\
 		\cmidrule{2-7}
-		& 512 & 200 & 1,106 & 0,041 & 0,061 & 4,7 \\
-		& 512 & 500 & 0,081 & 0,003 & 0,026 & 5,0 \\
-		& 512 & 2000 & 0,023 & 0,001 & 0,001 & 5,2 \\
+		& 512 & 200 & 1.586 & 0.143 & 0.101 & 5.3 \\
+		& 512 & 500 & 0.480 & 0.043 & 0.001 & 5.5 \\
+		& 512 & 2000 & 0.405 & 0.036 & -0.008 & \textbf{8.7} \\
 		\cmidrule{2-7}
 		\midrule
-		\multirow{9}{*}{Sigmoide} & 128 & 200 & 1,315 & 0,591 & 0,046 & 3,6 \\
-		& 128 & 500 & 0,093 & 0,042 & 0,006 & 3,6 \\
-		& 128 & 2000 & 0,022 & 0,010 & -0,001 & 3,9 \\
+		\multirow{9}{*}{Escada} & 128 & 200 & 1.245 & 0.047 & 0.041 & 3.5 \\
+		& 128 & 500 & 0.115 & 0.004 & 0.003 & 3.6 \\
+		& 128 & 2000 & 0.049 & 0.002 & 0.008 & 3.9 \\
 		\cmidrule{2-7}
-		& 256 & 200 & 1,179 & 0,529 & 0,135 & 4,0 \\
-		& 256 & 500 & 0,085 & 0,038 & 0,008 & 4,0 \\
-		& 256 & 2000 & 0,022 & 0,010 & -0,002 & 4,7 \\
+		& 256 & 200 & 1.457 & 0.055 & 0.119 & 4.0 \\
+		& 256 & 500 & 0.114 & 0.004 & 0.001 & 4.0 \\
+		& 256 & 2000 & 0.031 & 0.001 & 0.004 & 4.3 \\
 		\cmidrule{2-7}
-		& 512 & 200 & 1,295 & 0,582 & 0,083 & 4,7 \\
-		& 512 & 500 & 0,105 & 0,047 & 0,028 & 5,0 \\
-		& 512 & 2000 & 0,021 & 0,009 & 0,000 & 5,2 \\
+		& 512 & 200 & 1.106 & 0.041 & 0.061 & 4.7 \\
+		& 512 & 500 & 0.081 & 0.003 & 0.026 & 5.0 \\
+		& 512 & 2000 & 0.023 & 0.001 & 0.001 & \textbf{5.2} \\
+		\cmidrule{2-7}
+		\midrule
+		\multirow{9}{*}{Sigmoide} & 128 & 200 & 1.315 & 0.591 & 0.046 & 3.6 \\
+		& 128 & 500 & 0.093 & 0.042 & 0.006 & 3.6 \\
+		& 128 & 2000 & 0.022 & 0.010 & -0.001 & 3.9 \\
+		\cmidrule{2-7}
+		& 256 & 200 & 1.179 & 0.529 & 0.135 & 4.0 \\
+		& 256 & 500 & 0.085 & 0.038 & 0.008 & 4.0 \\
+		& 256 & 2000 & 0.022 & 0.010 & -0.002 & 4.7 \\
+		\cmidrule{2-7}
+		& 512 & 200 & 1.295 & 0.582 & 0.083 & 4.7 \\
+		& 512 & 500 & 0.105 & 0.047 & 0.028 & 5.0 \\
+		& 512 & 2000 & 0.021 & 0.009 & 0.000 & \textbf{5.2} \\
 		\cmidrule{2-7}
 		\bottomrule
 	\end{tabular}
@@ -230,16 +232,16 @@ Para ilustrar o comportamento dinâmico dos estimadores, selecionamos execuçõe
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}{0.85\textwidth}
+    \begin{subfigure}{0.75\textwidth}
         \includegraphics[width=\textwidth]{figuras/sim1/texto_principal/exemplary_run_worst_case.png}
         \caption{Pior caso (N=200, T=128)}
     \end{subfigure}
     \vspace{0.3cm}
-    \begin{subfigure}{0.85\textwidth}
+    \begin{subfigure}{0.75\textwidth}
         \includegraphics[width=\textwidth]{figuras/sim1/texto_principal/exemplary_run_best_case.png}
         \caption{Melhor caso (N=2000, T=512)}
     \end{subfigure}
-    \caption{Trajetórias exemplares (Pior vs. Melhor) (simulação 1).}
+    \caption{Comparação de trajetórias estimadas em execuções individuais da Simulação 1, ilustrando o comportamento do estimador nos cenários de pior caso (\(N=200\), \(T=128\)) e melhor caso (\(N=2000\), \(T=512\)) em relação à curva teórica e às bandas de confiança simultâneas.}
     \label{fig:exemplos_sim1}
 \end{figure}
 
@@ -258,7 +260,7 @@ A Figura \ref{fig:fate_sim2} reforça essa percepção para a simulação 2, ilu
         \includegraphics[width=\textwidth]{figuras/sim2/texto_principal/fate_curves_Doppler.png}
         \caption{Cenário Doppler}
     \end{subfigure}
-    \caption{Rastreamento online de trajetórias (simulação 2) --- Resultados selecionados.}
+    \caption{Rastreamento dinâmico das trajetórias do \(\mathrm{FATE}\) na Simulação 2 para os cenários \emph{bumps} e \emph{doppler}, demonstrando a capacidade do estimador \emph{online} em acompanhar a evolução temporal do efeito à medida que novos dados são observados. Resultados selecionados.}
     \label{fig:fate_sim2}
 \end{figure}
 

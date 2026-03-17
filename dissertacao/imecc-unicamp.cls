@@ -27,13 +27,13 @@ Estadual de Campinas baseado em abnTeX2]
 }
 \ProcessOptions\relax
 \LoadClass{abntex2}
-
 % ----------------------------------------------------
 % INICIO DAS ALTERAÇÕES PARA O IMECC -- UNICAMP
 % ----------------------------------------------------
 % ---
 % Pacotes requeridos
 % ---
+
 \RequirePackage[utf8]{inputenc}
 \RequirePackage{tikz}
 % ---
