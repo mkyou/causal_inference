@@ -1,10 +1,18 @@
  \chapter[Referencial teórico]{Referencial teórico}\label{sec-revisao}
 
-Neste capítulo, revisamos a literatura, os conceitos e as ferramentas que fundamentam este trabalho. Primeiramente, passamos brevemente pela inferência causal tradicional (com covariáveis, indicadora de intervenção e desfecho escalares) no arcabouço de resultados potenciais. Introduzimos sua extensão para o contexto funcional-temporal, com ênfase no nosso estimando de interesse, o \(\mathrm{FATE}\); e falamos sobre propostas correlatas. Em seguida, discutimos ondaletas sob a ótica da análise multirresolução e do \emph{lifting scheme}, além de aludirmos a trabalhos que discorram sobre o processamento de funções por ondaletas em tempo real.
+Neste capítulo, revisamos a literatura, os conceitos e as ferramentas que fundamentam este trabalho. 
+Primeiramente, passamos brevemente pela inferência causal tradicional (com covariáveis, indicadora de intervenção e desfecho escalares) no arcabouço de resultados potenciais. 
+Introduzimos sua extensão para o contexto funcional-temporal, com ênfase no nosso estimando de interesse, o \(\mathrm{FATE}\); e falamos sobre propostas correlatas. 
+Em seguida, discutimos ondaletas sob a ótica da análise multirresolução e do \emph{lifting scheme}, além de aludirmos a trabalhos que discorram sobre o processamento de funções por ondaletas em tempo real.
 
 \section{Inferência causal}\label{sec-inferencia-causal}
 
-Na inferência causal, uma forma particularmente útil de organizar o problema é recorrer à estrutura de resultados potenciais, que explicita o caráter contrafactual do desfecho de interesse. Considere um estudo com \(i = 1, \dots, N\) participantes, em que cada indivíduo recebe uma atribuição de tratamento \(A_i \in \mathcal{A} \equiv \{0, 1\}\), apresenta um vetor de \(P\) covariáveis \(\mathbf{X}_i\) (com realização \(\mathbf{x}_i\)) e um desfecho mensurado \(Y_i\). No modelo tradicionalmente atribuído a Neyman e Rubin \cite{rubin_estimating_1974, holland_statistics_1986}, associamos a cada indivíduo dois resultados potenciais, \(Y_i^{(1)}\) e \(Y_i^{(0)}\). Esses resultados representam o que o i-ésimo indivíduo teria experienciado caso tivesse, respectivamente, recebido ou não o tratamento \((A_i = 1, A_i = 0)\). Para que o efeito causal seja identificável, precisamos fazer as seguintes suposições:
+Na inferência causal, uma forma particularmente útil de organizar o problema é recorrer à estrutura de resultados potenciais, que explicita o caráter contrafactual do desfecho de interesse. 
+Considere um estudo com \(i = 1, \dots, N\) participantes, em que cada indivíduo, a quem se atribui um tratamento \(A_i \in \mathcal{A} \equiv \{0, 1\}\), apresenta um vetor de \(P\) covariáveis \(\mathbf{X}_i\) (com realização \(\mathbf{x}_i\)) e um desfecho mensurado \(Y_i\). 
+No modelo tradicionalmente atribuído a Neyman e Rubin \cite{rubin_estimating_1974, holland_statistics_1986}, associamos a cada indivíduo dois resultados potenciais, \(Y_i^{(1)}\) e \(Y_i^{(0)}\). 
+Esses resultados representam o que o i-ésimo indivíduo teria experienciado caso tivesse, respectivamente, recebido ou não o tratamento \((A_i = 1, A_i = 0)\). 
+Como o efeito causal é definido a partir dessas quantidades contrafactuais, ele só é identificável se puder ser reescrito como um funcional da distribuição dos dados observados \((\mathbf{X}, A, Y)\). 
+As suposições a seguir viabilizam a passagem do contrafactual ao observável:
 
 \begin{enumerate}
     \item Ausência de confundimento não mensurado (também chamada de ignorabilidade condicional):
@@ -19,11 +27,15 @@ Na inferência causal, uma forma particularmente útil de organizar o problema �
             0 < \pi_a(\mathbf{X}_i) < 1, \quad \forall a \in \mathcal{A}, \ \text{q.c.}
         \]
 
-    Em palavras, para valores de \(\mathbf{X}_i\) que ocorrem com probabilidade positiva, deve haver chance não nula de observar cada nível de tratamento. Essa restrição garante que os grupos dos distintos níveis de intervenção sejam comparáveis.
+    Em palavras, para valores de \(\mathbf{X}_i\) que ocorrem com probabilidade positiva, deve haver chance não nula de observar cada nível de tratamento. 
+    Essa restrição garante que os grupos dos distintos níveis de intervenção sejam comparáveis.
 
-    \item Consistência: para cada resultado potencial, digamos, \(Y_i^{(a)}\), se, de fato, \(A_i = a\), então \(Y_i^{(A_i)} = Y_i^{(a)} = Y_i\). Apesar de parecer intuitiva, essa suposição assegura a não existência de múltiplas versões dum mesmo tratamento \(a\) que conduzam a diferentes desfechos potenciais. O que pode ser difícil de garantir em algumas aplicações \cite{hernan_causal_2023}.
+    \item Consistência: para cada resultado potencial, digamos, \(Y_i^{(a)}\), se, de fato, \(A_i = a\), então \(Y_i^{(A_i)} = Y_i^{(a)} = Y_i\); para tratamento binário, isso equivale a \(Y_i = A_i Y_i^{(1)} + (1 - A_i) Y_i^{(0)}\). 
+    Apesar de parecer intuitiva, essa suposição assegura a não existência de múltiplas versões dum mesmo tratamento \(a\) que conduzam a diferentes desfechos potenciais. 
+    O que pode ser difícil de garantir em algumas aplicações \cite{hernan_causal_2023}.
 
-    \item Ausência de interferência: postula que os desfechos potenciais do i-ésimo indivíduo dependem apenas do seu próprio tratamento. Em especial, para \(i \neq j\), a atribuição \(A_j\) não afeta \(Y_i^{(a)}\) (assumindo, ademais, uma única versão de tratamento).\footnote{As suposições (3) e (4) são, em conjunto, frequentemente chamadas de SUTVA (\emph{Stable Unit Treatment Value Assumption}, em português: Suposição de Valor de Tratamento de Unidade Estável).}  
+    \item Ausência de interferência: postula que os desfechos potenciais do i-ésimo indivíduo dependem apenas do seu próprio tratamento. 
+    Em especial, para \(i \neq j\), a atribuição \(A_j\) não afeta \(Y_i^{(a)}\) (assumindo, ademais, uma única versão de tratamento).\footnote{As suposições (3) e (4) são, em conjunto, chamadas de SUTVA (\emph{Stable Unit Treatment Value Assumption}, em português: Suposição de Valor de Tratamento de Unidade Estável).} Essa condição pode falhar, por exemplo, em estudos de vacinação, em que imunizar uma parcela considerável da população reduz o risco de infecção também entre os não vacinados (imunidade de rebanho).  
 \end{enumerate}
 
 Em experimentos aleatorizados, a aleatorização costuma tornar plausíveis as suposições de ignorabilidade condicional e de positividade; ainda assim, a consistência e a ausência de interferência dependem do desenho e da definição da intervenção. Em estudos observacionais, por sua vez, a consistência, a ausência de confundimento não mensurado e a ausência de interferência são tipicamente não testáveis a partir dos dados, ao passo que violações de positividade podem ser parcialmente diagnosticadas empiricamente (por exemplo, via distribuição do escore de propensão).
@@ -34,17 +46,26 @@ Conjuntamente, essas quatro condições asseguram a identificabilidade do efeito
     \label{eq:ate_def}
 \end{equation}
 
-Diferenças em diferenças, modelos de regressão, métodos baseados em pareamento, modelos marginais e, mais recentemente, métodos de aprendizado estatístico de máquina são algumas das abordagens propostas pela literatura para estimar o ATE e análogos, como o CATE (\emph{Conditional Average Treatment Effect}, em português: Efeito Médio Condicional de Tratamento) e o ATT (\emph{Average Treatment Effect on the Treated}, em português: Efeito Médio de Tratamento nos Tratados) \cite{rubin_estimating_1974, imbens_causal_2015, hernan_causal_2023, nogueira_methods_2022, yao_survey_2021, chernozhukov_doubledebiased_2018, athey_estimating_2019}. Em grande medida, esses métodos podem ser entendidos como estratégias para recuperar, sob diferentes suposições e desenhos, as quantidades \(\mathbb{E}[Y^{(1)}]\) e \(\mathbb{E}[Y^{(0)}]\).
+Diferenças em diferenças, modelos de regressão, métodos baseados em pareamento, modelos marginais e, mais recentemente, métodos de aprendizado de máquina adaptados à inferência causal são algumas das abordagens propostas pela literatura para estimar o ATE e análogos, como o CATE (\emph{Conditional Average Treatment Effect}, em português: Efeito Médio Condicional de Tratamento) e o ATT (\emph{Average Treatment Effect on the Treated}, em português: Efeito Médio de Tratamento nos Tratados) \cite{rubin_estimating_1974, imbens_causal_2015, hernan_causal_2023, nogueira_methods_2022, yao_survey_2021, chernozhukov_doubledebiased_2018, athey_estimating_2019}. 
+Em grande medida, esses métodos podem ser entendidos como estratégias para recuperar, sob diferentes suposições e desenhos, as quantidades \(\mathbb{E}[Y^{(1)}]\) e \(\mathbb{E}[Y^{(0)}]\).
 
-Em situações menos tradicionais (quando nos afastamos do cenário com uma única intervenção e variáveis escalares fixas, para considerar estruturas mais ricas de dados e intervenções), podemos ter covariáveis e desfecho, por exemplo, variando no tempo, além de múltiplas atribuições de tratamento. \citeonline{hernan_causal_2023} discutem extensivamente métodos de inferência causal para dados longitudinais, com ênfase em como a complexidade adicional do contexto longitudinal se reflete na necessidade de suposições mais fortes. 
+Em situações menos tradicionais (quando nos afastamos do cenário com uma única intervenção e variáveis escalares fixas, para considerar estruturas mais ricas de dados e intervenções), podemos ter covariáveis e desfecho, por exemplo, variando no tempo, além de múltiplas atribuições de tratamento. 
+\citeonline{hernan_causal_2023} discutem extensivamente métodos de inferência causal para dados longitudinais, com ênfase em como a complexidade adicional do contexto longitudinal se reflete na necessidade de suposições mais fortes. 
 
-No contexto funcional, a literatura ainda está em fase embrionária \cite{belloni_program_2017, ecker_causal_2024, wong_kernel-based_2018, colantuoni_statistical_2018, sparkes_functional_2024}. Apesar de o trabalho de \citeonline{ying_causality_2024} fornecer condições teóricas para uma análise causal longitudinal completamente funcional (covariáveis, indicadora de tratamento e desfecho), esse tipo de formulação ainda é, sobretudo, um referencial do que seria necessário para uma generalização plena do caso escalar. Na prática, é comum que os requisitos e objetos envolvidos sejam mais fortes do que usualmente conseguimos justificar ou aproximar empiricamente. Por essa razão, a literatura aplicada em inferência causal funcional, até então, tem privilegiado extensões parciais do caso escalar, nas quais apenas uma parte do tripé \((\mathbf{X}, A, Y)\) é funcional. \citeonline{ecker_causal_2024}, por exemplo, estenderam a estrutura de resultados potenciais assumindo apenas desfechos (incluindo os desfechos potenciais) funcionais.
+No contexto funcional, a literatura ainda está em fase embrionária \cite{belloni_program_2017, ecker_causal_2024, wong_kernel-based_2018, colantuoni_statistical_2018, sparkes_functional_2024}. 
+Apesar de o trabalho de \citeonline{ying_causality_2024} fornecer condições teóricas para uma análise causal longitudinal completamente funcional (covariáveis, indicadora de tratamento e desfecho), esse tipo de formulação ainda é, sobretudo, um referencial do que seria necessário para uma generalização plena do caso escalar. 
+Na prática, é comum que os requisitos e objetos envolvidos sejam mais fortes do que usualmente conseguimos justificar ou aproximar empiricamente. 
+Por essa razão, a literatura aplicada em inferência causal funcional, até então, tem privilegiado extensões parciais do caso escalar, nas quais apenas uma parte do tripé \((\mathbf{X}, A, Y)\) é funcional. 
+\citeonline{ecker_causal_2024}, por exemplo, estenderam a estrutura de resultados potenciais assumindo apenas desfechos (incluindo os desfechos potenciais) funcionais.
 
 \subsection{FATE e Inferência causal funcional}\label{sec-inferencia-causal-funcional}
 
-No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) a trajetória dos desfechos potenciais sob tratamento e controle, respectivamente. As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar, com exceção da ignorabilidade condicional, que os autores substituem pela ignorabilidade média.\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. A condição mais forte é desnecessária quando o estimando de interesse é a média (como no caso do \(\mathrm{FATE}\)).} Em suma, em vez de assumirmos uma independência em termos distribucionais, requeremos que, para todo \(t\),
+No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) a trajetória dos desfechos potenciais sob tratamento e controle, respectivamente. 
+As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar, com exceção da ignorabilidade condicional, que os autores substituem pela ignorabilidade média.\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
+A condição plena identifica qualquer funcional da distribuição dos desfechos potenciais (média, variância, quantis), ao passo que a ignorabilidade média identifica apenas a média de \(Y\). 
+Como o \(\mathrm{FATE}\) é uma média, a versão mais fraca é suficiente.} Em suma, em vez de assumirmos uma independência em termos distribucionais, requeremos que, para todo \(t\),
 \[
-    \mathbb{E}\{Y^{(a)}(t) \mid A, \mathbf{X}\} = \mathbb{E}\{Y^{(a)}(t) \mid \mathbf{X}\},
+    \mathbb{E}[Y^{(a)}(t) \mid A, \mathbf{X}] = \mathbb{E}[Y^{(a)}(t) \mid \mathbf{X}],
     \quad a \in \mathcal{A} \equiv \{0, 1\}.
 \]
 
@@ -52,16 +73,22 @@ Sob essas condições, a identificabilidade do parâmetro causal funcional, \(\t
 \begin{equation}
 \begin{aligned}
     \theta(t)
-    & = \mathbb{E}\big[Y^{(1)}(t)\big] - \mathbb{E}\big[Y^{(0)}(t)\big] \\
-    &= \mathbb{E}\big[Y^{(1)}(t) - Y^{(0)}(t)\big] \\
-    &= \mathbb{E}\Big[\mathbb{E}\left[Y(t) \mid A = 1, \mathbf{X}\right] - \mathbb{E}\left[Y(t) \mid A = 0, \mathbf{X}\right]\Big].
+    &= \mathbb{E}\big[Y^{(1)}(t)\big] - \mathbb{E}\big[Y^{(0)}(t)\big] \\
+    &\overset{\text{(i)}}{=} \mathbb{E}\Big[\mathbb{E}\big[Y^{(1)}(t) \mid \mathbf{X}\big] - \mathbb{E}\big[Y^{(0)}(t) \mid \mathbf{X}\big]\Big] \\
+    &\overset{\text{(ii)}}{=} \mathbb{E}\Big[\mathbb{E}\big[Y^{(1)}(t) \mid A = 1, \mathbf{X}\big] - \mathbb{E}\big[Y^{(0)}(t) \mid A = 0, \mathbf{X}\big]\Big] \\
+    &\overset{\text{(iii)}}{=} \mathbb{E}\Big[\mathbb{E}\big[Y(t) \mid A = 1, \mathbf{X}\big] - \mathbb{E}\big[Y(t) \mid A = 0, \mathbf{X}\big]\Big].
     \label{eq:fate_identificabilidade}
 \end{aligned}
 \end{equation}
 
-Ao assumir que apenas os desfechos variam no tempo, \citeonline{ecker_causal_2024} introduzem um modelo de regressão linear funcional \cite{ramsay_functional_2005} para estimar cada uma das esperanças condicionais em \ref{eq:fate_identificabilidade}. Os autores ajustam separadamente dois modelos; um utilizando apenas os indivíduos tratados (\(A = 1\)) e outro utilizando apenas os do grupo controle (\(A = 0\)). A abordagem assume que os parâmetros variam suavemente ao longo do tempo, viabilizando, consequentemente, sua representação via bases de expansão globais. 
+As igualdades decorrem, respectivamente, das esperanças iteradas e da linearidade da esperança (i), da ignorabilidade média (ii) e da consistência (iii); a positividade garante que as esperanças condicionais em \(A = a\) estejam bem definidas.
 
-Seja \(N_a\) o número de indivíduos no nível de tratamento \(a \in \{0, 1\}\), \(\boldsymbol{\beta}^{(a)}(t)\) o vetor de parâmetros funcionais que mensura a influência das covariáveis \(\mathbf{X}\) (para a população que recebeu a intervenção \(a\)), e \(\epsilon_i^{(a)}(t)\) um termo de erro estocástico. Supondo que \(\mathbf{X}_i \in \mathbb{R}^{P}\) inclui o intercepto, para cada nível de intervenção \(a \in \{0, 1\}\), temos:
+Ao assumir que apenas os desfechos variam no tempo, \citeonline{ecker_causal_2024} introduzem um modelo de regressão linear funcional \cite{ramsay_functional_2005} para estimar cada uma das esperanças condicionais em \ref{eq:fate_identificabilidade}. 
+Os autores ajustam separadamente dois modelos; um utilizando apenas os indivíduos tratados (\(A = 1\)) e outro utilizando apenas os do grupo controle (\(A = 0\)). 
+A abordagem assume que os parâmetros variam suavemente ao longo do tempo, viabilizando, consequentemente, sua representação via bases de expansão globais. 
+
+Seja \(N_a\) o número de indivíduos no nível de tratamento \(a \in \{0, 1\}\), \(\boldsymbol{\beta}^{(a)}(t)\) o vetor de parâmetros funcionais que mensura a influência das covariáveis \(\mathbf{X}\) (para a população que recebeu a intervenção \(a\)), e \(\epsilon_i^{(a)}(t)\) um termo de erro estocástico. 
+Supondo que \(\mathbf{X}_i \in \mathbb{R}^{P}\) inclui o intercepto, para cada nível de intervenção \(a \in \{0, 1\}\), temos:
 \begin{equation}
     Y_i^{(a)}(t) = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t) + \epsilon_i^{(a)}(t), \quad \text{para } i \text{ tal que } A_i = a.
     \label{eq:ecker_modelo_regressao_funcional}
