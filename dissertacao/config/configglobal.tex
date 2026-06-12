@@ -21,24 +21,24 @@
 
 % ----------------------------------------------------------
 % \theoremstyle{plain}
-\newtheorem{theorem}{Teorema}%[chapter]
-\newtheorem{lemma}{Lema}%[chapter]
+\newtheorem{theorem}{Teorema}[chapter]
+\newtheorem{lemma}{Lema}[chapter]
 \providecommand*{\lemmaautorefname}{Lema}
-\newtheorem{proposition}{Proposição}%[chapter]
+\newtheorem{proposition}{Proposição}[chapter]
 \providecommand*{\propositionautorefname}{Proposição}
-\newtheorem{corollary}{Corolário}%[chapter]
+\newtheorem{corollary}{Corolário}[chapter]
 \providecommand*{\corollaryautorefname}{Corolário}
-\newtheorem{conjecture}{Conjectura}%[chapter]
+\newtheorem{conjecture}{Conjectura}[chapter]
 \providecommand*{\conjectureautorefname}{Conjectura}
-\newtheorem{definition}{Definição}%[chapter]
+\newtheorem{definition}{Definição}[chapter]
 \providecommand*{\definitionautorefname}{Definição}
-\newtheorem{notation}{Notação}%[chapter]
+\newtheorem{notation}{Notação}[chapter]
 \providecommand*{\notationautorefname}{Notação}
-\newtheorem{remark}{Observação}%[chapter]
+\newtheorem{remark}{Observação}[chapter]
 \providecommand*{\remarkautorefname}{Observação}
-\newtheorem{example}{Exemplo}%[chapter]
+\newtheorem{example}{Exemplo}[chapter]
 \providecommand*{\exampleautorefname}{Exemplo}
-\newtheorem{note}{Nota}%[chapter]
+\newtheorem{note}{Nota}[chapter]
 \providecommand*{\noteautorefname}{Nota}
 % ----------------------------------------------------------
 
@@ -115,6 +115,11 @@
 \setlength{\parindent}{2.0cm}
 % Controle do espaçamento entre um parágrafo e outro:
 \setlength{\parskip}{0.2cm}  % tente também \onelineskip
+% ---
+% Notas de rodapé: mais respiro entre o texto principal e as notas
+\setlength{\skip\footins}{1.8em plus 2pt minus 2pt}  % espaço texto <-> notas
+\setlength{\footnotesep}{0.95em}                     % espaço acima/entre notas
+\renewcommand{\footnoterule}{\kern-3pt \hrule width 0.4\textwidth height 0.4pt \kern 5pt}
 % ---
 % Para que apareça o nome 'Capítulo X' antes do título de cada capítulo
 % \chapterstyle{default}

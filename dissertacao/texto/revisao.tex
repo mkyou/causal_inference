@@ -103,7 +103,8 @@ Uma consequência prática dessa construção é que a estimativa obtida ponto a
 
 Completamos nosso panorama da inferência causal funcional ao mencionar propostas que abordam estimandos distintos do \(\mathrm{FATE}\), ou lidam com estruturas de dados alternativas. \citeonline{wong_kernel-based_2018}, por exemplo, focam na estimação de um efeito escalar (\(\mathrm{ATE}\)) ajustado por covariáveis funcionais, utilizando balanceamento via \emph{kernel}. \citeonline{colantuoni_statistical_2018} tratam de desfechos funcionais sujeitos a censura informativa (como curvas de sobrevida ou qualidade de vida interrompidas por óbito). Já \citeonline{kikuchi_dynamic_2025} expande a definição de intervenção, investigando efeitos de trajetórias de exposição no espaço-tempo. Por fim, propostas como as de \citeonline{belloni_high-dimensional_2014} estabelecem o arcabouço teórico para a inferência em alta dimensão.
 
-Como já pontuado (Capítulo \ref{sec-introducao}), a estimação de efeitos causais funcionais se beneficiaria de um pré-processamento capaz de lidar com descontinuidades locais e ruído sem incorrer em vazamento temporal. Introduzimos, a seguir, o arcabouço teórico das transformadas por ondaletas; técnica de suavização/filtragem que utilizaremos para este fim.
+Como já pontuado (Capítulo \ref{sec-introducao}), a estimação de efeitos causais funcionais se beneficiaria de um pré-processamento capaz de lidar com descontinuidades locais e ruído sem recorrer a informação de instantes futuros. 
+Introduzimos, a seguir, o arcabouço teórico das transformadas por ondaletas; técnica de suavização/filtragem que utilizaremos para este fim.
 
 \section{Ondaletas}
 
@@ -117,7 +118,7 @@ Uma dada função \(\psi(t)\) é uma ondaleta se satisfizer:
 
 \end{enumerate}
 
-A Figura \ref{fig:onda_comparacao_seno_mexican_hat} exibe a ondaleta de Haar, definida por \(\psi_{\text{Haar}}(t) = \mathbb{I}_{[0, 1/2)}(t) - \mathbb{I}_{[1/2, 1)}(t)\), com \(\mathbb{I}\) denotando a função indicadora, e a ondaleta chapéu mexicano, \(\psi_{\text{Chapéu Mex.}}(t) = (1 - t^2) \exp\{-t^2/2\}\). Para fins de visualização, ambas estão representadas na figura transladadas para \(t=10\) e dilatadas. É fácil ver que funções como \(\sin(t)\) e \(\cos(t)\) respeitam somente a condição (1), enquanto as ondaletas, como as da Figura \ref{fig:onda_comparacao_seno_mexican_hat}, satisfazem, simultaneamente, as condições (1) e (2).
+A Figura \ref{fig:onda_comparacao_seno_mexican_hat} exibe a ondaleta de Haar, definida por \(\psi_{\text{Haar}}(t) = \mathbb{I}_{[0, 1/2)}(t) - \mathbb{I}_{[1/2, 1)}(t)\), com \(\mathbb{I}\) denotando a função indicadora, e a ondaleta chapéu mexicano, \(\psi_{\text{Chapéu Mex.}}(t) = (1 - t^2) \exp\{-t^2/2\}\). Para fins de visualização, ambas estão representadas na figura transladadas para \(t=10\) e dilatadas. É fácil ver que uma função como \(\sin(t)\) respeita somente a condição (1), enquanto as ondaletas, como as da Figura \ref{fig:onda_comparacao_seno_mexican_hat}, satisfazem, simultaneamente, as condições (1) e (2).
 
 \begin{figure}[!ht]
 	\centering
@@ -163,7 +164,24 @@ A Figura \ref{fig:onda_comparacao_seno_mexican_hat} exibe a ondaleta de Haar, de
 	\label{fig:onda_comparacao_seno_mexican_hat}
 \end{figure}
 
-As ondaletas apresentam vantagens interessantes frente a métodos globais de decomposição de funções, como os \emph{B-splines}. Além de uma melhor localização temporal, elas são eficientes na representação de descontinuidades e picos. Em um ajuste de \emph{splines}, por exemplo, é possível que uma perturbação local afete coeficientes de uma ampla vizinhança (problema de localização) para garantir que a representação seja regular (mesmo que a função original não o seja, caracterizando um problema de adaptabilidade a funções não suaves). As ondaletas, em contraste, isolariam tal perturbação em um pequeno número de coeficientes de detalhe, propriedade que ajuda na preservação da representação global.
+As ondaletas apresentam vantagens frente a métodos globais de decomposição de funções, como os \emph{B-splines}, sobretudo na representação de descontinuidades e picos.
+Para precisar essa vantagem, caracterizamos antes a noção de regularidade que empregaremos ao longo do texto.
+
+\begin{definition}[Regularidade de Hölder]\label{def:regularidade}
+    Seja \(t_0\) um ponto do domínio de \(f\) e seja \(\alpha \geq 0\). Dizemos que \(f\) é \(\alpha\)-regular em \(t_0\) se existirem uma constante \(C > 0\) e um polinômio \(P\) de grau \(\lfloor \alpha \rfloor\) tais que
+    \[
+        |f(t) - P(t - t_0)| \leq C\,|t - t_0|^{\alpha}
+    \]
+    em uma vizinhança de \(t_0\).
+    Se a desigualdade vale com o mesmo \(C\) para todo \(t_0\), dizemos que \(f\) é uniformemente \(\alpha\)-regular \cite{mallat_wavelet_2009}.
+\end{definition}
+
+O expoente \(\alpha\) quantifica a suavidade local de \(f\) em torno de \(t_0\) e pode variar de ponto a ponto, sendo alto onde a função se aproxima de um polinômio e baixo onde há picos ou descontinuidades (um salto corresponde a \(\alpha = 0\)).
+É quando essa regularidade varia ao longo do domínio que as ondaletas superam os \emph{B-splines}.
+Uma representação por \emph{B-splines} ajusta seus coeficientes a partir de toda a extensão do sinal e fixa de antemão a suavidade da estimativa, que se mostra adequada apenas quando o efeito subjacente é regular em todo o domínio.
+Reforça-se que, como pontuado na Seção \ref{sec-introducao}, supor tal regularidade é especialmente delicado em inferência causal, pois o efeito de tratamento não é observado e sua regularidade não pode ser conferida a partir dos dados, ainda que os desfechos observados pareçam regulares.
+Havendo trechos pouco regulares, uma resolução global única não os acomoda sem suavizar em excesso as demais regiões.
+A limiarização em ondaletas, por operar coeficiente a coeficiente, ajusta-se à regularidade local e concentra esses comportamentos em poucos coeficientes de detalhe, desempenho que estimadores lineares, como os \emph{B-splines}, não alcançam \cite{donoho_ideal_1994}.
 
 Para melhor entender como as ondaletas são utilizadas na decomposição de funções, é conveniente introduzir a série e a transformada de Fourier.
 
@@ -312,7 +330,7 @@ A Figura \ref{fig:fig_3_stft_wavelet_tiling} ilustra a diferença das janelas te
 \end{figure}
 
 \subsection{Transformada por ondaletas}
-Tal como a série e a transformada de Fourier, a análise por ondaletas também permite representar uma função \(f(t) \in \mathrm{L}^{2}(\mathbb{R})\) como uma combinação linear de funções mais simples. A diferença reside no uso de uma família de funções geradas a partir da ondaleta-mãe, \(\psi(t)\), em vez do uso de senoides. 
+Tal como a série e a transformada de Fourier, a análise por ondaletas representa uma função \(f(t) \in \mathrm{L}^{2}(\mathbb{R})\) como uma combinação linear de funções mais simples. A diferença consiste no fato de que essas funções não são senoides de frequências distintas, mas translações e dilatações de uma única função geradora, a ondaleta-mãe \(\psi(t)\). 
 
 A família de funções geradas por \(\psi(t)\) é composta por transformações de translação (ou deslocamento) e escala (ou dilatação). A operação de translação, controlada por um parâmetro \(b\) \((\psi(t-b))\), desloca a ondaleta ao longo do eixo do tempo, permitindo que a análise se concentre em diferentes momentos da função. Essa flexibilidade favorece a localização temporal. Por outro lado, a transformação de escala, controlada por um parâmetro \(a > 0\) \((\psi(t/a))\), dilata ou comprime a ondaleta. Na análise de ondaletas, as noções de escala e frequência estão inversamente relacionadas: escalas grandes (\(a > 1\)) correspondem a uma ondaleta dilatada, que oscila mais lentamente, e são utilizadas para capturar características de baixa frequência; escalas pequenas (\(a < 1\)), por sua vez, correspondem a uma ondaleta comprimida, que oscila rapidamente, e são utilizadas para detectar picos, descontinuidades e mudanças abruptas. Combinando essas duas operações, a família de ``ondaletas-filhas'', \(\psi_{a,b}(t)\), é gerada de acordo com:
 \begin{equation}
@@ -626,7 +644,20 @@ Estratégias de limiarização à parte, é importante pontuar que a eficácia d
 Note que após o primeiro nível de resolução, o procedimento depende somente do limiar do nível anterior e dos hiperparâmetros fixos. Desse modo, embora adaptativa, essa abordagem evita o recálculo da mediana e do desvio padrão para cada nível de decomposição, uma operação de ordenação cara computacionalmente. Ao estimar o ruído apenas uma vez (no primeiro nível) e propagar a estimativa algebricamente, reduzimos a complexidade do algoritmo, viabilizando a decomposição e suavização de funções em tempo real \cite{liu_improved_2014}. 
 
 \subsection{Pré-processamento de dados em tempo real}\label{sec-processamento-tempo-real}
-Até aqui, a DWT e a limiarização de coeficientes foram apresentadas em sua forma clássica, aplicável a contextos que disponham de toda a extensão do sinal temporal. Em nossa análise, essa base teórica servirá a um duplo propósito ao fundamentar a construção de um estimador de referência, com o objetivo de comparar o ganho de performance das ondaletas em relação aos \emph{splines}, e servirá de alicerce para a nossa proposta principal (estimação em tempo real). A abordagem a seguir introduz as adaptações necessárias para que o pré-processamento respeite estritamente a causalidade operacional (exigência de que os procedimentos de pré-processamento de dados funcionais respeitem a direcionalidade temporal/seta do tempo), viabilizando, de modo inerente, a decomposição contínua do sinal em tempo real.
+Até aqui, a DWT e a limiarização de coeficientes foram apresentadas em sua forma clássica, aplicável a contextos que disponham de toda a extensão do sinal temporal. 
+Em nossa análise, essa base teórica servirá a um duplo propósito ao fundamentar a construção de um estimador de referência, com o objetivo de comparar o ganho de performance das ondaletas em relação aos \emph{splines}, e servirá de alicerce para a nossa proposta principal (estimação em tempo real). 
+A abordagem a seguir introduz as adaptações necessárias para que o pré-processamento respeite a causalidade operacional, viabilizando a decomposição contínua do sinal em tempo real.
+Formalizamos essa exigência abaixo.
+
+\begin{definition}[Causalidade operacional e vazamento temporal]\label{def:vazamento}
+    Seja \(f[k]\), \(k \in \{0, 1, \dots, T-1\}\), um sinal discreto e seja \(\mathcal{F}_k = \sigma\!\left(\{f[s] : s \leq k\}\right)\) a informação disponível até o instante \(k\).
+    Um operador de pré-processamento \(\mathcal{T}\) é \emph{operacionalmente causal} (equivalentemente, \emph{não antecipativo}, na terminologia de filtros causais \cite{oppenheim_discrete-time_2010}) se a saída \(\mathcal{T}(f)[k]\) depende apenas de \(\{f[s] : s \leq k\}\) para todo \(k\).
+    Quando essa condição falha, há \emph{vazamento temporal}, e a informação vazada é a parte da saída em \(k\) que depende de observações futuras \(f[s]\), com \(s > k\).
+\end{definition}
+
+Se a regularidade da Definição \ref{def:regularidade} governa a qualidade estatística da representação, a causalidade operacional governa sua validade temporal.
+Exigi-la é, em última análise, impor a seta do tempo (Seção \ref{sec-introducao}) à etapa de pré-processamento.
+A estratégia de janelas móveis descrita a seguir satisfaz a Definição \ref{def:vazamento} por construção, pois reconstrói cada instante usando apenas observações já disponíveis.
 
 Seja \(W \in \mathbb{N}\) o comprimento de uma janela móvel, pré-fixado pelo analista (tipicamente uma potência de 2, \(W = 2^L\), para viabilizar uma decomposição completa em \(L\) níveis). Denote por \(f[k]\) a k-ésima observação discreta do sinal. O procedimento de janela móvel segue os passos abaixo:
 

@@ -20,7 +20,7 @@ Antes de prosseguir, convém uma nota terminológica e um esclarecimento informa
 Ao longo deste texto, o termo ``causal'' será empregado em duas acepções: a primeira, estatística, remete ao efeito de uma intervenção sobre o desfecho (como postulado pelo \(\mathrm{FATE}\), ancorado na estrutura de resultados potenciais \cite{holland_statistics_1986, rubin_estimating_1974}); a segunda, operacional, refere-se à exigência de que os procedimentos de pré-processamento respeitem a direção temporal. 
 À violação dessa acepção operacional, damos o nome de vazamento temporal, que ocorre quando a representação de um dado instante recorre a informação de instantes futuros, em desrespeito à causalidade operacional. 
 Os dois usos são conceitualmente distintos, mas tornam-se intimamente relacionados quando buscamos estimar efeitos causais ao longo do tempo. 
-Ora, se a etapa de representação funcional violar a seta do tempo, a informação vazada pode induzir dependências artificiais, comprometer a identificação e, consequentemente, a estimação do efeito causal de interesse. 
+Mais especificamente, se a etapa de representação funcional violar a seta do tempo, a informação vazada pode induzir dependências artificiais, comprometer a identificação e, consequentemente, a estimação do efeito causal de interesse. 
 Desse modo, para que a causalidade no sentido estatístico seja preservada, é necessário controlar, ao menos em algum nível, o viés de antecipação causado pelo vazamento temporal, ou seja, é preciso impor um certo nível de respeito à causalidade no sentido operacional.
 
 Com base nessa motivação, o presente trabalho propõe o uso de transformadas de ondaletas como etapa de pré-processamento em estudos de inferência causal funcional. 
