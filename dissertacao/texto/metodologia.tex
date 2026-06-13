@@ -45,7 +45,12 @@ Construímos nosso estimador a partir dos seguintes passos:
     \end{enumerate}
 \end{estimatorbox}
 
-A estimação pontual, contudo, é apenas metade do problema. O leitor há de lembrar-se que as bandas de confiança propostas por \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}) pressupõem que o estimador \(\hat{\theta}(t)\) preserve a natureza gaussiana do processo gerador de dados, premissa que a limiarização de coeficientes em ondaletas viola. Para contornar essa limitação e atingir a cobertura nominal de \(100(1 - \alpha)\%\), estruturamos o procedimento separando a estimação pontual (com ondaletas) da quantificação de incerteza (sem pré-processamento), em linha com o que \citeonline{chatterjee_bootstrapping_2011} discutem para estimadores penalizados.
+Mantemos a hipótese de ruído gaussiano (\(\boldsymbol{\epsilon}^{(a)}(t) \sim \mathrm{MGP}\), Seção \ref{sec-inferencia-causal-funcional}), apesar da identificação do \(\mathrm{FATE}\) exigir apenas a exogeneidade em média, porque a calibração da limiarização pressupõe ruído gaussiano.\footnote{Como o limiar se apoia no MAD, que é robusto, esperamos que desvios moderados da normalidade sejam bem acomodados na prática.} 
+Avaliamos a robustez a desvios dessa hipótese nos estudos de simulação (Capítulo \ref{sec-estudos-simulacao}), em contraste com as \emph{splines}.
+
+Essa gaussianidade do ruído, porém, não se transfere ao estimador. 
+O leitor há de lembrar-se que as bandas de confiança propostas por \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}) pressupõem que o estimador \(\hat{\theta}(t)\) preserve a natureza gaussiana do processo gerador de dados, premissa que a limiarização de coeficientes em ondaletas viola. 
+Para contornar essa limitação e atingir a cobertura nominal de \(100(1 - \alpha)\%\), estruturamos o procedimento separando a estimação pontual (com ondaletas) da quantificação de incerteza (sem pré-processamento), em linha com o que \citeonline{chatterjee_bootstrapping_2011} discutem para estimadores penalizados.
 
 \subsubsection{Estimação das bandas de confiança}\label{sec-bootstrap-ic}
 

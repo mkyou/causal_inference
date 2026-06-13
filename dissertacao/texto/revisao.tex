@@ -8,11 +8,11 @@ Em seguida, discutimos ondaletas sob a ótica da análise multirresolução e do
 \section{Inferência causal}\label{sec-inferencia-causal}
 
 Na inferência causal, uma forma particularmente útil de organizar o problema é recorrer à estrutura de resultados potenciais, que explicita o caráter contrafactual do desfecho de interesse. 
-Considere um estudo com \(i = 1, \dots, N\) participantes, em que cada indivíduo, a quem se atribui um tratamento \(A_i \in \mathcal{A} \equiv \{0, 1\}\), apresenta um vetor de \(P\) covariáveis \(\mathbf{X}_i\) (com realização \(\mathbf{x}_i\)) e um desfecho mensurado \(Y_i\). 
+Considere um estudo com \(i = 1, \dots, N\) participantes, em que cada indivíduo, a quem se atribui um tratamento \(A_i \in \mathcal{A} \equiv \{0, 1\}\), apresenta um vetor de \(P\) covariáveis pré-tratamento \(\mathbf{X}_i\) (com realização \(\mathbf{x}_i\)) e um desfecho mensurado \(Y_i\). 
 No modelo tradicionalmente atribuído a Neyman e Rubin \cite{rubin_estimating_1974, holland_statistics_1986}, associamos a cada indivíduo dois resultados potenciais, \(Y_i^{(1)}\) e \(Y_i^{(0)}\). 
 Esses resultados representam o que o i-ésimo indivíduo teria experienciado caso tivesse, respectivamente, recebido ou não o tratamento \((A_i = 1, A_i = 0)\). 
-Como o efeito causal é definido a partir dessas quantidades contrafactuais, ele só é identificável se puder ser reescrito como um funcional da distribuição dos dados observados \((\mathbf{X}, A, Y)\). 
-As suposições a seguir viabilizam a passagem do contrafactual ao observável:
+Como o efeito causal é definido a partir dessas quantidades contrafactuais, ele só é identificável (em sentido \emph{causal}; não confundir com a identificabilidade estatística usual, em que valores distintos do parâmetro geram distribuições distintas) se puder ser reescrito como um funcional da distribuição dos dados observados \((\mathbf{X}, A, Y)\). 
+As suposições a seguir são o que viabilizam a passagem do contrafactual ao observável:
 
 \begin{enumerate}
     \item Ausência de confundimento não mensurado (também chamada de ignorabilidade condicional):
@@ -20,7 +20,8 @@ As suposições a seguir viabilizam a passagem do contrafactual ao observável:
             \{Y_i^{(a)}: a \in \mathcal{A}\} \perp A_i \mid \mathbf{X}_i.
     \]
     
-    Implica que, uma vez condicionada às covariáveis \(\mathbf{X}_i\), a atribuição de tratamento \(A_i\) é ``como se'' aleatória e, portanto, não carrega informação adicional sobre os desfechos potenciais.
+    Implica que, uma vez condicionada às covariáveis \(\mathbf{X}_i\), a atribuição de tratamento \(A_i\) é ``como se'' aleatória e, portanto, não carrega informação adicional sobre os desfechos potenciais. 
+    Para tanto, \(\mathbf{X}_i\) deve conter as confundidoras, isto é, as variáveis que afetam tanto a atribuição do tratamento \(A_i\) quanto o desfecho \(Y_i\).
 
     \item Positividade (ou sobreposição): denotando por \(\pi_a(\mathbf{X}_i) = \mathbb{P}(A_i = a \mid \mathbf{X}_i)\) a propensão do i-ésimo indivíduo ao tratamento \(a \in \mathcal{A}\), requeremos, conforme \citeonline{rosenbaum_central_1983}, 
 		\[
@@ -40,7 +41,8 @@ As suposições a seguir viabilizam a passagem do contrafactual ao observável:
 
 Em experimentos aleatorizados, a aleatorização costuma tornar plausíveis as suposições de ignorabilidade condicional e de positividade; ainda assim, a consistência e a ausência de interferência dependem do desenho e da definição da intervenção. Em estudos observacionais, por sua vez, a consistência, a ausência de confundimento não mensurado e a ausência de interferência são tipicamente não testáveis a partir dos dados, ao passo que violações de positividade podem ser parcialmente diagnosticadas empiricamente (por exemplo, via distribuição do escore de propensão).
 
-Conjuntamente, essas quatro condições asseguram a identificabilidade do efeito causal médio de interesse. Em particular, definimos o ATE (\emph{Average Treatment Effect}, em português: Efeito Médio de Tratamento) como a esperança da diferença entre os resultados potenciais,
+Conjuntamente, essas quatro condições asseguram a identificabilidade do efeito causal médio de interesse. 
+Em particular, definimos o ATE (\emph{Average Treatment Effect}, em português: Efeito Médio de Tratamento) como a esperança da diferença entre os resultados potenciais,
 \begin{equation}
     \mathrm{ATE} = \mathbb{E}[Y^{(1)} - Y^{(0)}] = \mathbb{E}[Y^{(1)}] - \mathbb{E}[Y^{(0)}].
     \label{eq:ate_def}
@@ -94,7 +96,11 @@ Supondo que \(\mathbf{X}_i \in \mathbb{R}^{P}\) inclui o intercepto, para cada n
     \label{eq:ecker_modelo_regressao_funcional}
 \end{equation}
 
-Assumimos que o vetor de erros \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um MGP (\emph{Multivariate Gaussian Process}, em português: Processo Gaussiano Multivariado), denotado por \(\mathrm{MGP}(\mathbf{0}, \sigma_a, \mathcal{I}_{N_a})\), em que \(\mathcal{I}_{N_a}\) é a matriz identidade de dimensão \(N_a \times N_a\). Essa especificação implica independência entre indivíduos, mas modela explicitamente a correlação temporal para um mesmo sujeito através da função de covariância \(\sigma_a(s,t) = \mathrm{Cov}\left(\epsilon_i^{(a)}(s), \epsilon_i^{(a)}(t)\right)\), para \(s, t \in \mathcal{T}\).
+O superescrito \((a)\) indica que cada desfecho potencial carrega seu próprio erro, cuja distribuição pode diferir entre os grupos; não implica que o erro seja causado pela intervenção.
+Para a identificação, basta a exogeneidade em média, \(\mathbb{E}[\epsilon_i^{(a)}(t) \mid \mathbf{X}_i] = 0\), que garante \(\mathbb{E}[Y_i^{(a)}(t) \mid \mathbf{X}_i] = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t)\).
+
+Assumimos ainda que o vetor de erros \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um MGP (\emph{Multivariate Gaussian Process}, em português: Processo Gaussiano Multivariado), denotado por \(\mathrm{MGP}(\mathbf{0}, \sigma_a, \mathcal{I}_{N_a})\), em que \(\mathcal{I}_{N_a}\) é a matriz identidade de dimensão \(N_a \times N_a\). 
+Essa especificação implica independência entre indivíduos, mas modela explicitamente a correlação temporal para um mesmo sujeito através da função de covariância \(\sigma_a(s,t) = \mathrm{Cov}\left(\epsilon_i^{(a)}(s), \epsilon_i^{(a)}(t)\right)\), para \(s, t \in \mathcal{T}\).
 
 O efeito \(\theta(t)\) é, então, estimado em dois passos. Primeiro, calculamos, para cada indivíduo, as duas predições contrafactuais geradas pelos modelos ajustados nos grupos tratado e controle (usando \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\)). Em seguida, tomamos a diferença média dessas predições em toda a amostra, conforme a Equação \ref{eq:ecker_estimador_fate},
 \begin{equation}
@@ -706,7 +712,8 @@ Por fim, ressaltamos que, ao adotarmos a estratégia das janelas móveis, garant
 Nesta seção, falamos sobre a dívida técnica feita no fim da Seção \ref{sec-dwt-mra}, em que dissemos que o uso de ondaletas associadas a filtros passa-alta mais longos poderia gerar alguns problemas na representação das bordas de um sinal \(f[k]\) associado a uma função \(f(t)\). Essa questão torna-se particularmente relevante em procedimentos que precisam respeitar a causalidade operacional.
 
 
-Em termos gerais, filtros de ondaletas possuem comprimento finito; ao aplicá-los às extremidades de um vetor (como na janela móvel), as operações da MRA ou do \emph{lifting scheme} podem exigir valores fora do domínio temporal observado. Em problemas causais, esse ``vazamento'' é especialmente crítico na borda direita (o instante atual \(k\)), pois qualquer regra que requeira amostras além dessa borda demandaria, na prática, dados ``do futuro''.
+Em termos gerais, filtros de ondaletas possuem comprimento finito; ao aplicá-los às extremidades de um vetor (como na janela móvel), as operações da MRA ou do \emph{lifting scheme} podem exigir valores fora do domínio temporal observado. 
+Em problemas causais, esse efeito de borda é especialmente crítico na borda direita (o instante atual \(k\)), pois qualquer regra que requeira amostras além dela demandaria dados do futuro, incorrendo no vazamento temporal (Definição \ref{def:vazamento}).
 
 
 Em seu trabalho, \citeonline{liu_improved_2014} aludem a três estratégias que mitigam este problema: (i) imputação de zeros (\emph{zero padding}), em que preenchemos com zero os valores do filtro que estão fora do domínio da janela; (ii) extensão periódica, em que assumimos que o sinal se repete ciclicamente (se \(f[k] = [1, 2, 3]\), teremos, por exemplo, \(f_{ext}[k] = [1, 2, 3 | 1, 2]\)); (iii) extensão simétrica, que consiste em espelhar os dados em torno da borda (para a mesma \(f[k]\) do caso anterior, teríamos \(f_{ext}[k] = [1, 2, 3 | 3, 2]\)). Os autores defendem a alternativa (iii) como preferível, pois embora toda forma de imputação envolva riscos e seu desempenho dependa do contexto, tanto o \emph{zero padding} quanto a extensão periódica tendem a introduzir descontinuidades abruptas nas extremidades, problema evitado pela extensão simétrica, que é mais conservadora. Além disso, em processamento de sinais em tempo real, não dispomos de observações futuras; assim, em geral, é mais plausível supor que o dado imediatamente após a borda se comporte de maneira semelhante ao valor mais recente do que imputar zero ou reutilizar valores antigos. 
