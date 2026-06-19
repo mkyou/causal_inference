@@ -45,7 +45,7 @@ Construímos nosso estimador a partir dos seguintes passos:
     \end{enumerate}
 \end{estimatorbox}
 
-Mantemos a hipótese de ruído gaussiano (\(\boldsymbol{\epsilon}^{(a)}(t) \sim \mathrm{MGP}\), Seção \ref{sec-inferencia-causal-funcional}), apesar da identificação do \(\mathrm{FATE}\) exigir apenas a exogeneidade em média, porque a calibração da limiarização pressupõe ruído gaussiano.\footnote{Como o limiar se apoia no MAD, que é robusto, esperamos que desvios moderados da normalidade sejam bem acomodados na prática.} 
+Mantemos a hipótese de ruído gaussiano (\(\boldsymbol{\epsilon}^{(a)}(t) \sim \mathrm{MGP}\), Seção \ref{sec-inferencia-causal-funcional}), apesar da identificação do \(\mathrm{FATE}\) exigir apenas a exogeneidade em média (\(\mathbb{E}[\epsilon_i^{(a)}(t) \mid \mathbf{X}_i] = 0\)), porque a calibração da limiarização pressupõe tal suposição.\footnote{Como o limiar se apoia no MAD, que é robusto, esperamos que desvios moderados da normalidade sejam bem acomodados na prática.} 
 Avaliamos a robustez a desvios dessa hipótese nos estudos de simulação (Capítulo \ref{sec-estudos-simulacao}), em contraste com as \emph{splines}.
 
 Essa gaussianidade do ruído, porém, não se transfere ao estimador. 

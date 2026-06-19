@@ -7,11 +7,15 @@ Em seguida, discutimos ondaletas sob a ótica da análise multirresolução e do
 
 \section{Inferência causal}\label{sec-inferencia-causal}
 
-Na inferência causal, uma forma particularmente útil de organizar o problema é recorrer à estrutura de resultados potenciais, que explicita o caráter contrafactual do desfecho de interesse. 
+Estimar um efeito causal é, no fundo, comparar um cenário que efetivamente ocorreu, com um que teria ocorrido sob um curso de ação diferente.
+Esta seção apresenta o arcabouço que torna esse problema tratável e as suposições sob as quais um efeito causal pode ser recuperado a partir de dados puramente observados.
+Tratamos aqui do caso em que o desfecho do indivíduo é um valor escalar. A extensão para trajetórias funcionais é retomada na Seção \ref{sec-inferencia-causal-funcional}.
+
+Uma forma particularmente útil de organizar o problema causal é recorrer à estrutura de resultados potenciais, que explicita o caráter contrafactual do desfecho de interesse. 
 Considere um estudo com \(i = 1, \dots, N\) participantes, em que cada indivíduo, a quem se atribui um tratamento \(A_i \in \mathcal{A} \equiv \{0, 1\}\), apresenta um vetor de \(P\) covariáveis pré-tratamento \(\mathbf{X}_i\) (com realização \(\mathbf{x}_i\)) e um desfecho mensurado \(Y_i\). 
 No modelo tradicionalmente atribuído a Neyman e Rubin \cite{rubin_estimating_1974, holland_statistics_1986}, associamos a cada indivíduo dois resultados potenciais, \(Y_i^{(1)}\) e \(Y_i^{(0)}\). 
 Esses resultados representam o que o i-ésimo indivíduo teria experienciado caso tivesse, respectivamente, recebido ou não o tratamento \((A_i = 1, A_i = 0)\). 
-Como o efeito causal é definido a partir dessas quantidades contrafactuais, ele só é identificável (em sentido \emph{causal}; não confundir com a identificabilidade estatística usual, em que valores distintos do parâmetro geram distribuições distintas) se puder ser reescrito como um funcional da distribuição dos dados observados \((\mathbf{X}, A, Y)\). 
+Como o efeito causal é definido a partir dessas quantidades contrafactuais, ele só é identificável (em sentido causal; não confundir com a identificabilidade estatística usual, em que valores distintos do parâmetro geram distribuições distintas) se puder ser reescrito como uma função da distribuição dos dados observados \((\mathbf{X}, A, Y)\). 
 As suposições a seguir são o que viabilizam a passagem do contrafactual ao observável:
 
 \begin{enumerate}
@@ -41,15 +45,13 @@ As suposições a seguir são o que viabilizam a passagem do contrafactual ao ob
 
 Em experimentos aleatorizados, a aleatorização costuma tornar plausíveis as suposições de ignorabilidade condicional e de positividade; ainda assim, a consistência e a ausência de interferência dependem do desenho e da definição da intervenção. Em estudos observacionais, por sua vez, a consistência, a ausência de confundimento não mensurado e a ausência de interferência são tipicamente não testáveis a partir dos dados, ao passo que violações de positividade podem ser parcialmente diagnosticadas empiricamente (por exemplo, via distribuição do escore de propensão).
 
-Conjuntamente, essas quatro condições asseguram a identificabilidade do efeito causal médio de interesse. 
-Em particular, definimos o ATE (\emph{Average Treatment Effect}, em português: Efeito Médio de Tratamento) como a esperança da diferença entre os resultados potenciais,
+Garantidas essas quatro condições, podemos estimar, entre outros possíveis efeitos causais de interesse, o ATE (\emph{Average Treatment Effect}, em português: Efeito Médio de Tratamento):
 \begin{equation}
-    \mathrm{ATE} = \mathbb{E}[Y^{(1)} - Y^{(0)}] = \mathbb{E}[Y^{(1)}] - \mathbb{E}[Y^{(0)}].
+    \mathrm{ATE} = \mathbb{E}[Y^{(1)} - Y^{(0)}] = \mathbb{E}[Y^{(1)}] - \mathbb{E}[Y^{(0)}],
     \label{eq:ate_def}
 \end{equation}
-
+através de métodos que, em grande medida, buscam recuperar sob diferentes suposições e desenhos, as quantidades \(\mathbb{E}[Y^{(1)}]\) e \(\mathbb{E}[Y^{(0)}]\).
 Diferenças em diferenças, modelos de regressão, métodos baseados em pareamento, modelos marginais e, mais recentemente, métodos de aprendizado de máquina adaptados à inferência causal são algumas das abordagens propostas pela literatura para estimar o ATE e análogos, como o CATE (\emph{Conditional Average Treatment Effect}, em português: Efeito Médio Condicional de Tratamento) e o ATT (\emph{Average Treatment Effect on the Treated}, em português: Efeito Médio de Tratamento nos Tratados) \cite{rubin_estimating_1974, imbens_causal_2015, hernan_causal_2023, nogueira_methods_2022, yao_survey_2021, chernozhukov_doubledebiased_2018, athey_estimating_2019}. 
-Em grande medida, esses métodos podem ser entendidos como estratégias para recuperar, sob diferentes suposições e desenhos, as quantidades \(\mathbb{E}[Y^{(1)}]\) e \(\mathbb{E}[Y^{(0)}]\).
 
 Em situações menos tradicionais (quando nos afastamos do cenário com uma única intervenção e variáveis escalares fixas, para considerar estruturas mais ricas de dados e intervenções), podemos ter covariáveis e desfecho, por exemplo, variando no tempo, além de múltiplas atribuições de tratamento. 
 \citeonline{hernan_causal_2023} discutem extensivamente métodos de inferência causal para dados longitudinais, com ênfase em como a complexidade adicional do contexto longitudinal se reflete na necessidade de suposições mais fortes. 
@@ -62,10 +64,17 @@ Por essa razão, a literatura aplicada em inferência causal funcional, até ent
 
 \subsection{FATE e Inferência causal funcional}\label{sec-inferencia-causal-funcional}
 
-No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) a trajetória dos desfechos potenciais sob tratamento e controle, respectivamente. 
-As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar, com exceção da ignorabilidade condicional, que os autores substituem pela ignorabilidade média.\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
+No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) as curvas dos desfechos potenciais sob tratamento e controle, respectivamente.
+Considerando os exemplos que trouxemos no Capítulo \ref{sec-introducao}, no caso da rede elétrica, \(Y_i^{(1)}(t)\) representaria a curva de consumo do domicílio \(i\) caso este recebesse a tarifa dinâmica, e \(Y_i^{(0)}(t)\), a curva que este mesmo domicílio apresentaria caso recebesse a tarifa padrão. 
+\(A_i\) indicaria qual das duas tarifas foi efetivamente atribuída, enquanto \(\mathbf{X}_i\) representaria as características socioeconômicas do domicílio. 
+No problema da conduta clínica, por sua vez, \(Y_i^{(1)}(t)\) seria a trajetória do sinal vital do paciente \(i\) caso essa conduta fosse aplicada na admissão, enquanto \(Y_i^{(0)}(t)\) seria a trajetória em uma situação de não-aplicação da conduta.
+\(A_i\), neste cenário, indicaria se a conduta foi de fato aplicada e \(\mathbf{X}_i\) denotaria as características do paciente disponíveis na admissão.
+
+As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar, com exceção da ignorabilidade condicional, que os autores substituem pela ignorabilidade média.
+\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
 A condição plena identifica qualquer funcional da distribuição dos desfechos potenciais (média, variância, quantis), ao passo que a ignorabilidade média identifica apenas a média de \(Y\). 
-Como o \(\mathrm{FATE}\) é uma média, a versão mais fraca é suficiente.} Em suma, em vez de assumirmos uma independência em termos distribucionais, requeremos que, para todo \(t\),
+Como o \(\mathrm{FATE}\) é uma média, a versão mais fraca é suficiente.} 
+Em suma, em vez de assumirmos uma independência em termos distribucionais, requeremos que, para todo \(t\),
 \[
     \mathbb{E}[Y^{(a)}(t) \mid A, \mathbf{X}] = \mathbb{E}[Y^{(a)}(t) \mid \mathbf{X}],
     \quad a \in \mathcal{A} \equiv \{0, 1\}.
@@ -96,19 +105,22 @@ Supondo que \(\mathbf{X}_i \in \mathbb{R}^{P}\) inclui o intercepto, para cada n
     \label{eq:ecker_modelo_regressao_funcional}
 \end{equation}
 
-O superescrito \((a)\) indica que cada desfecho potencial carrega seu próprio erro, cuja distribuição pode diferir entre os grupos; não implica que o erro seja causado pela intervenção.
-Para a identificação, basta a exogeneidade em média, \(\mathbb{E}[\epsilon_i^{(a)}(t) \mid \mathbf{X}_i] = 0\), que garante \(\mathbb{E}[Y_i^{(a)}(t) \mid \mathbf{X}_i] = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t)\).
+Em \ref{eq:ecker_modelo_regressao_funcional}, vale dizer que o superescrito \((a)\) indica que cada desfecho potencial carrega seu próprio erro, cuja distribuição pode diferir entre os grupos; não implica que a intervenção seja a causa do erro. 
+Assumimos que o vetor de erros \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um MGP (\emph{Multivariate Gaussian Process}, em português: Processo Gaussiano Multivariado), denotado por \(\mathrm{MGP}(\mathbf{0}, \sigma_a, \mathcal{I}_{N_a})\), em que \(\mathcal{I}_{N_a}\) é a matriz identidade de dimensão \(N_a \times N_a\). 
+Essa especificação implica independência entre indivíduos, mas modela explicitamente a correlação temporal para um mesmo sujeito através da função de covariância \(\sigma_a(s,t) = \mathrm{Cov}\left(\epsilon_i^{(a)}(s), \epsilon_i^{(a)}(t)\right)\), para \(s, t \in \mathcal{T}\), garantindo que \(\mathbb{E}[Y_i^{(a)}(t) \mid \mathbf{X}_i] = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t)\), o que conecta o modelo às esperanças condicionais em \eqref{eq:fate_identificabilidade}.
 
-Assumimos ainda que o vetor de erros \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um MGP (\emph{Multivariate Gaussian Process}, em português: Processo Gaussiano Multivariado), denotado por \(\mathrm{MGP}(\mathbf{0}, \sigma_a, \mathcal{I}_{N_a})\), em que \(\mathcal{I}_{N_a}\) é a matriz identidade de dimensão \(N_a \times N_a\). 
-Essa especificação implica independência entre indivíduos, mas modela explicitamente a correlação temporal para um mesmo sujeito através da função de covariância \(\sigma_a(s,t) = \mathrm{Cov}\left(\epsilon_i^{(a)}(s), \epsilon_i^{(a)}(t)\right)\), para \(s, t \in \mathcal{T}\).
-
-O efeito \(\theta(t)\) é, então, estimado em dois passos. Primeiro, calculamos, para cada indivíduo, as duas predições contrafactuais geradas pelos modelos ajustados nos grupos tratado e controle (usando \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\)). Em seguida, tomamos a diferença média dessas predições em toda a amostra, conforme a Equação \ref{eq:ecker_estimador_fate},
+O efeito \(\theta(t)\) é, então, estimado em dois passos. Primeiro, calculamos, para cada indivíduo, as duas predições contrafactuais geradas pelos modelos ajustados nos grupos tratado e controle (usando \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\)). 
+Em seguida, tomamos a diferença média dessas predições em toda a amostra, conforme a Equação \ref{eq:ecker_estimador_fate},
 \begin{equation}
     \hat{\theta}(t) = \frac{1}{N}\sum\limits_{i = 1}^{N}\left(\mathbf{X}_i^{\mathsf{T}}\hat{\boldsymbol{\beta}}^{(1)}(t) - \mathbf{X}_i^{\mathsf{T}}\hat{\boldsymbol{\beta}}^{(0)}(t)\right) = \bar{\mathbf{X}}^{\mathsf{T}}\left(\hat{\boldsymbol{\beta}}^{(1)}(t) - \hat{\boldsymbol{\beta}}^{(0)}(t)\right).
     \label{eq:ecker_estimador_fate}
 \end{equation}
 
-Julgamos importante reforçar que o modelo definido na Equação \ref{eq:ecker_modelo_regressao_funcional} (e, consequentemente, o estimador em \ref{eq:ecker_estimador_fate}) pressupõe o acesso às trajetórias contínuas \(Y_i(t)\). Na prática, entretanto, é comum observarmos apenas dados discretos e ruidosos. Essa discrepância, como já adiantado no Capítulo \ref{sec-introducao}, impõe uma etapa de representação funcional geralmente anterior ao ajuste do modelo (embora menos comum, também é possível aplicar a suavização aos resultados do modelo ajustado \cite{testa_doubly-robust_2025}). Operacionalmente, \citeonline{ecker_causal_2024} primeiro suavizam as curvas observadas e depois ajustam os modelos via mínimos quadrados ordinários (ponto a ponto) sobre os objetos funcionais resultantes.
+Julgamos importante reforçar que o modelo definido na Equação \ref{eq:ecker_modelo_regressao_funcional} (e, consequentemente, o estimador em \ref{eq:ecker_estimador_fate}) pressupõe o acesso às trajetórias contínuas \(Y_i(t)\). 
+Na prática, entretanto, é comum observarmos apenas dados discretos e ruidosos. Essa discrepância, como já adiantado no Capítulo \ref{sec-introducao}, impõe uma etapa de representação funcional geralmente anterior ao ajuste do modelo (embora menos comum, também é possível aplicar a suavização aos resultados do modelo ajustado \cite{testa_doubly-robust_2025}). 
+Operacionalmente, \citeonline{ecker_causal_2024} primeiro suavizam as curvas observadas e depois ajustam os modelos via mínimos quadrados ordinários (ponto a ponto) sobre os objetos funcionais resultantes.
+
+Em nossa proposta, essa suavização será realizada por ondaletas, sendo cada curva \(Y_i[k]\) suavizada individualmente pela DWT com limiarização antes de alimentar o modelo de regressão funcional. No exemplo da rede elétrica, isso equivale a suavizar a série de consumo de cada domicílio separadamente; no da conduta clínica, a trajetória do sinal vital de cada paciente.
 
 Cabe ressaltar que os autores também propuseram bandas simultâneas de confiança de nível \((1 - \alpha)\%\) para \(\hat{\theta}(t)\), dadas por
 \begin{equation}
@@ -117,24 +129,46 @@ Cabe ressaltar que os autores também propuseram bandas simultâneas de confian�
 \end{equation}
 em que \(C_{\theta}(s, t) = \sigma_{1}(s, t)\bar{\mathbf{X}}^{\mathsf{T}}\left(\mathbf{X}_{1}^{\mathsf{T}}\mathbf{X}_{1}\right)^{-1}\bar{\mathbf{X}} + \sigma_{0}(s, t)\bar{\mathbf{X}}^{\mathsf{T}}\left(\mathbf{X}_{0}^{\mathsf{T}}\mathbf{X}_{0}\right)^{-1}\bar{\mathbf{X}}\), e \(u_{\alpha} = \{u_{\alpha}(t): t \in \mathcal{T}\}\) é uma função de limiarização tal que, para um dado nível \(\alpha\),
 \[
-        \mathbb{P}\left(\theta(t) \in \hat{\theta}(t) \pm u_{\alpha}(t)\sqrt{C_{\theta}(t, t)}, \quad \forall t \in \mathcal{T}\right) \geq 1 - \alpha. 
-    \]
+    \mathbb{P}\left(\theta(t) \in \hat{\theta}(t) \pm u_{\alpha}(t)\sqrt{C_{\theta}(t, t)}, \quad \forall t \in \mathcal{T}\right) \geq 1 - \alpha. 
+\]
 
-O que dá validade às coberturas simultâneas da Equação \ref{eq:ecker_bandas_simultaneas} é a premissa de que o estimador \(\hat{\theta}(t)\) preserva a natureza gaussiana do processo gerador de dados. Dado que o ajuste via mínimos quadrados ordinários constitui uma operação linear nas observações, \(\hat{\theta}(t)\) converge para um processo gaussiano (pois assumimos que \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um \(\mathrm{MGP}\)). É com base nessa propriedade linear que resultados clássicos da teoria de campos aleatórios podem ser utilizados para calibrar o limiar \(u_{\alpha}(t)\). Tal garantia teórica, no entanto, perde-se quando o procedimento de estimação incorpora etapas não lineares --- como a limiarização de coeficientes em ondaletas ou a seleção adaptativa de hiperparâmetros de suavização --- exigindo justificativas adicionais em abordagens que priorizam esparsidade ou adaptação a descontinuidades locais.
-
-
-Em uma vertente paralela que busca relaxar a dependência estrita de processos gaussianos, \citeonline{sparkes_functional_2024} também reivindicam a formalização do \(\mathrm{FATE}\). Eles, porém, trabalham com uma filosofia de estimação distinta, focada na robustez distributiva. Em sua proposta, os autores introduzem a ``classe \(\mathcal{U}\)''. 
-
-Tome \(Z\) como uma variável aleatória limitada, com suporte \(S_Z \subset \mathbb{R}\). Definimos a média funcional de \(Z\) por \(\mathrm{Av}(Z) \equiv |S_Z|^{-1} \int_{S_Z} z \, dz\), em que \(|S_Z|\) denota a medida de Lebesgue do suporte. Dizemos que \(Z\) pertence à classe \(\mathcal{U}\) se, e somente se, sua esperança coincide com sua média funcional. Isto é, \(\mathbb{E}[Z] = \mathrm{Av}(Z)\). A partir dessa definição, \citeonline{sparkes_functional_2024} propõem substituir as suposições clássicas pela premissa de que o desfecho potencial condicional, \(Y^{(a)}(t) \mid \mathbf{X}\), pertence à classe \(\mathcal{U}\) para todo \(a \in \{0,1\}\). Sob tais condições, os autores argumentam que a identificação do efeito causal funcional torna-se mais tolerante a desvios das premissas tradicionais.
-
-Em essência, a proposta de \citeonline{sparkes_functional_2024} desloca o papel de suposições de independência probabilística (como a ignorabilidade condicional) para hipóteses adicionais sobre a geometria e a distribuição dos dados. A condição de pertinência à classe \(\mathcal{U}\) é satisfeita, por exemplo, por distribuições simétricas (como uma Normal truncada simetricamente ou uma Uniforme), mas pode ser inadequada em aplicações nas quais os desfechos apresentam assimetria ou caudas mais pesadas, situação recorrente em contextos biológicos e econômicos. Somado a isso, a hipótese de que \(Y^{(a)}(t)\) pertence à classe \(\mathcal{U}\) não é diretamente verificável para o desfecho contrafactual não observado. Assim, embora a proposta forneça uma alternativa potencialmente útil em cenários com amostragem informativa ou confundimento residual, sua aplicação depende de uma regularidade distributiva tão difícil de se atestar quanto a das hipóteses causais clássicas de Neyman--Rubin.
+O que dá validade às coberturas simultâneas da Equação \ref{eq:ecker_bandas_simultaneas} é a premissa de que o estimador \(\hat{\theta}(t)\) preserva a natureza gaussiana do processo gerador de dados. 
+Dado que o ajuste via mínimos quadrados ordinários constitui uma operação linear nas observações, \(\hat{\theta}(t)\) converge para um processo gaussiano (pois assumimos que \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um \(\mathrm{MGP}\)). 
+É com base nessa propriedade linear que resultados clássicos da teoria de campos aleatórios podem ser utilizados para calibrar o limiar \(u_{\alpha}(t)\). 
+Tal garantia teórica, no entanto, perde-se quando o procedimento de estimação incorpora etapas não lineares --- como a limiarização de coeficientes em ondaletas ou a seleção adaptativa de hiperparâmetros de suavização --- exigindo justificativas adicionais em abordagens que priorizam esparsidade ou adaptação a descontinuidades locais.
 
 
-Em uma outra direção que também busca maior robustez, agora, focada na proteção contra a má especificação de modelos, \citeonline{testa_doubly-robust_2025} discutem uma alternativa fundamentada na teoria semiparamétrica. Em linhas gerais, a proposta estende a lógica de estimadores duplamente robustos, consolidada na inferência causal escalar \cite{imbens_causal_2015}, para o domínio funcional. O método combina um modelo para a atribuição de tratamento via escore de propensão, \(\pi(\mathbf{X}) = \mathbb{P}(A = 1\mid \mathbf{X})\), e um modelo de regressão para o desfecho funcional, \(\mu_a(\mathbf{X}, t) = \mathbb{E}[Y^{(a)}(t)\mid \mathbf{X}]\); e os utiliza conjuntamente para formar um pseudo desfecho que tem como objetivo a redução de viés.
+Em uma vertente paralela que busca relaxar a dependência estrita de processos gaussianos, \citeonline{sparkes_functional_2024} também reivindicam a formalização do \(\mathrm{FATE}\). 
+Eles, porém, trabalham com uma filosofia de estimação distinta, focada na robustez distributiva. 
+Em sua proposta, os autores introduzem a ``classe \(\mathcal{U}\)''. 
 
-Uma consequência prática dessa construção é que a estimativa obtida ponto a ponto ao longo de \(t \in \mathcal{T}\) tende a apresentar grande variabilidade, sobretudo quando os pesos associados ao escore de propensão se tornam instáveis (sintoma frequente de sobreposição limitada). Para contornar esse problema e recuperar a regularidade funcional, \citeonline{testa_doubly-robust_2025} aplicam a suavização diretamente sobre a trajetória desse pseudo desfecho robusto, contrastando com a prática usual de suavizar previamente os dados observados. Ainda que seja uma escolha natural do ponto de vista da construção do estimador, em aplicações práticas com dados brutos discretos, esparsos ou contaminados por ruído de medição, não empregar o pré-processamento antes de modelar pode ser uma estratégia perigosa. A recuperação prévia da trajetória latente \(Y_i(t)\) (pré-processamento) costuma ser importante para garantir a estabilidade numérica do ajuste de modelos funcionais, pois ruídos de medição não tratados podem se propagar para as fases de modelagem e inferência.
+Tome \(Z\) como uma variável aleatória limitada, com suporte \(S_Z \subset \mathbb{R}\). 
+Definimos a média funcional de \(Z\) por \(\mathrm{Av}(Z) \equiv |S_Z|^{-1} \int_{S_Z} z \, dz\), em que \(|S_Z|\) denota a medida de Lebesgue do suporte. 
+Dizemos que \(Z\) pertence à classe \(\mathcal{U}\) se, e somente se, sua esperança coincide com sua média funcional. 
+Isto é, \(\mathbb{E}[Z] = \mathrm{Av}(Z)\). 
+A partir dessa definição, \citeonline{sparkes_functional_2024} propõem substituir as suposições clássicas pela premissa de que o desfecho potencial condicional, \(Y^{(a)}(t) \mid \mathbf{X}\), pertence à classe \(\mathcal{U}\) para todo \(a \in \{0,1\}\). 
+Sob tais condições, os autores argumentam que a identificação do efeito causal funcional torna-se mais tolerante a desvios das premissas tradicionais.
 
-Completamos nosso panorama da inferência causal funcional ao mencionar propostas que abordam estimandos distintos do \(\mathrm{FATE}\), ou lidam com estruturas de dados alternativas. \citeonline{wong_kernel-based_2018}, por exemplo, focam na estimação de um efeito escalar (\(\mathrm{ATE}\)) ajustado por covariáveis funcionais, utilizando balanceamento via \emph{kernel}. \citeonline{colantuoni_statistical_2018} tratam de desfechos funcionais sujeitos a censura informativa (como curvas de sobrevida ou qualidade de vida interrompidas por óbito). Já \citeonline{kikuchi_dynamic_2025} expande a definição de intervenção, investigando efeitos de trajetórias de exposição no espaço-tempo. Por fim, propostas como as de \citeonline{belloni_high-dimensional_2014} estabelecem o arcabouço teórico para a inferência em alta dimensão.
+Em essência, a proposta de \citeonline{sparkes_functional_2024} desloca o papel de suposições de independência probabilística (como a ignorabilidade condicional) para hipóteses adicionais sobre a geometria e a distribuição dos dados. 
+A condição de pertinência à classe \(\mathcal{U}\) é satisfeita, por exemplo, por distribuições simétricas (como uma Normal truncada simetricamente ou uma Uniforme), mas pode ser inadequada em aplicações nas quais os desfechos apresentam assimetria ou caudas mais pesadas, situação recorrente em contextos biológicos e econômicos. 
+Somado a isso, a hipótese de que \(Y^{(a)}(t)\) pertence à classe \(\mathcal{U}\) não é diretamente verificável para o desfecho contrafactual não observado. 
+Assim, embora a proposta forneça uma alternativa potencialmente útil em cenários com amostragem informativa ou confundimento residual, sua aplicação depende de uma regularidade distributiva tão difícil de se atestar quanto a das hipóteses causais clássicas de Neyman--Rubin.
+
+
+Em uma outra direção que também busca maior robustez, agora, focada na proteção contra a má especificação de modelos, \citeonline{testa_doubly-robust_2025} discutem uma alternativa fundamentada na teoria semiparamétrica. 
+Em linhas gerais, a proposta estende a lógica de estimadores duplamente robustos, consolidada na inferência causal escalar \cite{imbens_causal_2015}, para o domínio funcional. 
+O método combina um modelo para a atribuição de tratamento via escore de propensão, \(\pi(\mathbf{X}) = \mathbb{P}(A = 1\mid \mathbf{X})\), e um modelo de regressão para o desfecho funcional, \(\mu_a(\mathbf{X}, t) = \mathbb{E}[Y^{(a)}(t)\mid \mathbf{X}]\); e os utiliza conjuntamente para formar um pseudo desfecho que tem como objetivo a redução de viés.
+
+Uma consequência prática dessa construção é que a estimativa obtida ponto a ponto ao longo de \(t \in \mathcal{T}\) tende a apresentar grande variabilidade, sobretudo quando os pesos associados ao escore de propensão se tornam instáveis (sintoma frequente de sobreposição limitada). 
+Para contornar esse problema e recuperar a regularidade funcional, \citeonline{testa_doubly-robust_2025} aplicam a suavização diretamente sobre a trajetória desse pseudo desfecho robusto, contrastando com a prática usual de suavizar previamente os dados observados. 
+Ainda que seja uma escolha natural do ponto de vista da construção do estimador, em aplicações práticas com dados brutos discretos, esparsos ou contaminados por ruído de medição, não empregar o pré-processamento antes de modelar pode ser uma estratégia perigosa. 
+A recuperação prévia da trajetória latente \(Y_i(t)\) (pré-processamento) costuma ser importante para garantir a estabilidade numérica do ajuste de modelos funcionais, pois ruídos de medição não tratados podem se propagar para as fases de modelagem e inferência.
+
+Completamos nosso panorama da inferência causal funcional ao mencionar propostas que abordam estimandos distintos do \(\mathrm{FATE}\), ou lidam com estruturas de dados alternativas. 
+\citeonline{wong_kernel-based_2018}, por exemplo, focam na estimação de um efeito escalar (\(\mathrm{ATE}\)) ajustado por covariáveis funcionais, utilizando balanceamento via \emph{kernel}. 
+\citeonline{colantuoni_statistical_2018} tratam de desfechos funcionais sujeitos a censura informativa (como curvas de sobrevida ou qualidade de vida interrompidas por óbito). 
+Já \citeonline{kikuchi_dynamic_2025} expande a definição de intervenção, investigando efeitos de trajetórias de exposição no espaço-tempo. 
+Por fim, propostas como as de \citeonline{belloni_high-dimensional_2014} estabelecem o arcabouço teórico para a inferência em alta dimensão.
 
 Como já pontuado (Capítulo \ref{sec-introducao}), a estimação de efeitos causais funcionais se beneficiaria de um pré-processamento capaz de lidar com descontinuidades locais e ruído sem recorrer a informação de instantes futuros. 
 Introduzimos, a seguir, o arcabouço teórico das transformadas por ondaletas; técnica de suavização/filtragem que utilizaremos para este fim.
@@ -215,6 +249,8 @@ Uma representação por \emph{B-splines} ajusta seus coeficientes a partir de to
 Reforça-se que, como pontuado na Seção \ref{sec-introducao}, supor tal regularidade é especialmente delicado em inferência causal, pois o efeito de tratamento não é observado e sua regularidade não pode ser conferida a partir dos dados, ainda que os desfechos observados pareçam regulares.
 Havendo trechos pouco regulares, uma resolução global única não os acomoda sem suavizar em excesso as demais regiões.
 A limiarização em ondaletas, por operar coeficiente a coeficiente, ajusta-se à regularidade local e concentra esses comportamentos em poucos coeficientes de detalhe, desempenho que estimadores lineares, como os \emph{B-splines}, não alcançam \cite{donoho_ideal_1994}.
+
+No exemplo da rede elétrica, a curva de consumo de cada domicílio tende a concentrar sua irregularidade em horários específicos de alta demanda, permanecendo estável nos demais períodos. É exatamente esse tipo de estrutura que as ondaletas capturam com naturalidade, adaptando a resolução local ao nível de irregularidade de cada trecho.
 
 Para melhor entender como as ondaletas são utilizadas na decomposição de funções, é conveniente introduzir a série e a transformada de Fourier.
 
@@ -698,7 +734,8 @@ Note que após o primeiro nível de resolução, o procedimento depende somente 
 
 \subsection{Pré-processamento de dados em tempo real}\label{sec-processamento-tempo-real}
 Até aqui, a DWT e a limiarização de coeficientes foram apresentadas em sua forma clássica, aplicável a contextos que disponham de toda a extensão do sinal temporal. 
-Em nossa análise, essa base teórica servirá a um duplo propósito ao fundamentar a construção de um estimador de referência, com o objetivo de comparar o ganho de performance das ondaletas em relação aos \emph{splines}, e servirá de alicerce para a nossa proposta principal (estimação em tempo real). 
+Em nossa análise, essa base teórica servirá a um duplo propósito ao fundamentar a construção de um estimador de referência, com o objetivo de comparar o ganho de performance das ondaletas em relação aos \emph{splines}, e servirá de alicerce para uma de nossas propostas, a estimação em tempo real.
+No contexto da rede elétrica, por exemplo, à medida que novas leituras de consumo chegam a cada meia hora, o pré-processamento incremental permitirá atualizar a estimativa do \(\mathrm{FATE}\) sem aguardar o fim do período de coleta (ao atualizarmos a curva \(Y_i(t)\) observada para cada domicílio, conseguimos reavaliar o \(\mathrm{FATE}\) ponto a ponto). O mesmo raciocínio se aplica ao contexto da conduta clínica, em que o \(\mathrm{FATE}\) pode ser reavaliado conforme novos registros do sinal vital chegam.
 A abordagem a seguir introduz as adaptações necessárias para que o pré-processamento respeite a causalidade operacional, viabilizando a decomposição contínua do sinal em tempo real.
 Formalizamos essa exigência abaixo.
 
