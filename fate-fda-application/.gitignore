@@ -1,0 +1,8 @@
+# Dados brutos e processados — não versionados
+low_carbon_energy/data/
+
+# Artefatos R
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj.user/
