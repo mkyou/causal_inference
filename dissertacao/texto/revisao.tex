@@ -694,7 +694,10 @@ Outras vantagens se referem à generalização do tipo de dado ao qual o algorit
 Os pacotes \texttt{adlift} e \texttt{nlt} \cite{nunes_adaptive_2006, knight_nlt_2008} (do \texttt{R}) são exemplos de implementações desse tipo, que generalizam a DWT para as chamadas ondaletas de segunda geração \cite{sweldens_lifting_1995}.
 
 \subsection{Limiarização de coeficientes}\label{sec-limiarizacao}
-Uma vez aplicada a DWT, seja via MRA ou via \emph{lifting scheme}, obtemos uma representação do sinal em múltiplas escalas de resolução. Usualmente, supõe-se que a série observada \(f[k]\) corresponde a uma componente determinística (a função de interesse, \(f(t)\)) contaminada por um ruído aditivo \(\eta_k\). Neste trabalho, adotamos o modelo clássico em que \(\eta_k\) é um ruído branco gaussiano, com média nula e variância finita e constante \(\sigma^{2}\) (a suposição de ruído independente costuma ser adequada, apesar de a correlação temporal de curto prazo presente em dados funcionais, pois a DWT tende a atuar como um decorrelacionador do sinal quando a dependência serial é fraca.) \cite{morettin_wavelets_2017}. Formalmente, consideramos:
+Uma vez aplicada a DWT, seja via MRA ou via \emph{lifting scheme}, obtemos uma representação do sinal em múltiplas escalas de resolução. 
+Usualmente, supõe-se que a série observada \(f[k]\) corresponde a uma componente determinística (a função de interesse, \(f(t)\)) contaminada por um ruído aditivo \(\eta_k\). 
+Neste trabalho, adotamos o modelo clássico em que \(\eta_k\) é um ruído branco gaussiano, com média nula e variância finita e constante \(\sigma^{2}\) (a suposição de ruído independente costuma ser adequada, apesar da correlação temporal de curto prazo presente em dados funcionais, pois a DWT tende a atuar como um decorrelacionador do sinal quando a dependência serial é fraca) \cite{morettin_wavelets_2017}. 
+Formalmente, consideramos:
 \begin{equation}
     f[k] = f(t_k) + \eta_k, \quad k = 0, \dots, T-1,\; T \in \mathbb{N}
     \label{eq:thresholding-model}
@@ -703,7 +706,8 @@ Uma vez aplicada a DWT, seja via MRA ou via \emph{lifting scheme}, obtemos uma r
 \noindent em que \(\eta_k \sim \mathrm{N}(0, \sigma^{2})\), \(\sigma > 0\) e \(t_k\) representa o instante do contínuo temporal em que ocorre a k-ésima observação discreta. 
 
 
-Sob esse modelo, os coeficientes \(d_{j}[\kappa]\) obtidos ao aplicarmos a DWT a \(f[k]\) são também contaminados por ruído. Denotando por \(D_j[\kappa]\) o verdadeiro coeficiente de ondaletas,\footnote{Aqui, assumimos implicitamente que a ondaleta utilizada está normalizada e é ortogonal. Ondaletas biortogonais (que podem ser implementadas via \emph{lifting}) são casos em que essa suposição é violada.} escrevemos os coeficientes de detalhes como:
+Sob esse modelo, os coeficientes \(d_{j}[\kappa]\) obtidos ao aplicarmos a DWT a \(f[k]\) são também contaminados por ruído. 
+Denotando por \(D_j[\kappa]\) o verdadeiro coeficiente de ondaletas,\footnote{Aqui, assumimos implicitamente que a ondaleta utilizada está normalizada e é ortogonal. Ondaletas biortogonais (que podem ser implementadas via \emph{lifting}) são casos em que essa suposição é violada.} escrevemos os coeficientes de detalhes como:
 \begin{equation}
     d_j[\kappa] = D_j[\kappa] + \rho_j[\kappa],
     \label{eq:thresholding-details}
@@ -712,9 +716,13 @@ Sob esse modelo, os coeficientes \(d_{j}[\kappa]\) obtidos ao aplicarmos a DWT a
 \noindent com \(\rho_j[\kappa] \sim \mathrm{N}(0, \sigma^{2})\). Em essência, o objetivo da limiarização é recuperar \(D_j[\kappa]\) mitigando a contaminação de \(d_j[\kappa]\) por \(\rho_j[\kappa]\). 
 
 
-Como as representações de funções em bases de ondaletas tendem a ser esparsas. Como a energia de \(f(t)\) costuma se concentrar em poucos coeficientes de grande magnitude, enquanto a energia de \(\rho_j[\kappa]\) se espalha de modo aproximadamente uniforme entre muitos coeficientes com magnitudes pequenas, é natural interpretar coeficientes com valor absoluto abaixo de um dado limiar como dominados pelo ruído e, portanto, passíveis de atenuação ou descarte.
+Como as representações de funções em bases de ondaletas tendem a ser esparsas, a energia de \(f(t)\) costuma se concentrar em poucos coeficientes de grande magnitude, enquanto a energia de \(\rho_j[\kappa]\) se espalha de modo aproximadamente uniforme entre muitos coeficientes com magnitudes pequenas. 
+É natural, portanto, interpretar coeficientes com valor absoluto abaixo de um dado limiar como dominados pelo ruído e passíveis de atenuação ou descarte.
 
-Dentre as diversas propostas para essa mitigação, as mais clássicas são a limiarização rígida (\emph{hard thresholding}) e a limiarização suave (\emph{soft thresholding}). Na primeira, zeramos todos os coeficientes \(d_j[\kappa]\) cujo valor absoluto seja inferior a um limiar \(\lambda \in \mathbb{R}^{+}\). Na segunda, por outro lado, encolhemos os coeficientes em direção a zero, sem necessariamente zerá-los. Matematicamente, as duas políticas de limiarização podem ser descritas por: 
+Dentre as diversas propostas para essa mitigação, as mais clássicas são a limiarização rígida (\emph{hard thresholding}) e a limiarização suave (\emph{soft thresholding}). 
+Na primeira, zeramos todos os coeficientes \(d_j[\kappa]\) cujo valor absoluto seja inferior a um limiar \(\lambda \in \mathbb{R}^{+}\). 
+Na segunda, por outro lado, encolhemos os coeficientes em direção a zero, sem necessariamente zerá-los. 
+Matematicamente, as duas políticas de limiarização podem ser descritas por: 
 \begin{equation}
     \hat{d}_j[\kappa] = 
     \begin{cases} 
@@ -727,7 +735,9 @@ Dentre as diversas propostas para essa mitigação, as mais clássicas são a li
 \noindent em que \(\mathrm{sgn}(x)\) denota a função sinal, definida por \(\mathrm{sgn}(x) = 1\) se \(x > 0\), \(\mathrm{sgn}(x) = -1\) se \(x < 0\), e \(\mathrm{sgn}(0)=0\).
 
 
-Tanto a limiarização rígida quanto a suave possuem limitações discutidas na literatura \cite{liu_improved_2014}. Enquanto a descontinuidade da limiarização rígida nos pontos \(\pm\lambda\) pode induzir oscilações artificiais na reconstrução de \(f(t)\), a limiarização suave pode distorcer a amplitude real do sinal, uma vez que impõe um viés constante ao atenuar todos os coeficientes de detalhe em \(\lambda\) unidades. Nesse contexto \citeonline{liu_improved_2014} propuseram o uso de uma limiarização semisuave (\emph{semisoft thresholding}), que visa ser um meio-termo entre as duas estratégias, atenuando os problemas de descontinuidade da abordagem rígida, sem imputar tanto viés quanto a regra suave. A expressão proposta é dada por:
+Tanto a limiarização rígida quanto a suave possuem limitações discutidas na literatura \cite{mallat_wavelet_2009, vidakovic_statistical_1999}.
+Enquanto a descontinuidade da limiarização rígida nos pontos \(\pm\lambda\) pode induzir oscilações artificiais na reconstrução de \(f(t)\), a limiarização suave pode distorcer a amplitude real do sinal, uma vez que impõe um viés constante ao atenuar todos os coeficientes de detalhe em \(\lambda\) unidades. 
+Diversas propostas buscam conciliar essas limitações; uma delas é a limiarização semisuave (\emph{semisoft thresholding}), proposta por \citeonline{liu_improved_2014}, cuja expressão é dada por:
 \begin{equation}
     \hat{d}_j[\kappa] = 
     \begin{cases} 
@@ -738,7 +748,7 @@ Tanto a limiarização rígida quanto a suave possuem limitações discutidas na
 \end{equation}
 
 
-Estratégias de limiarização à parte, é importante pontuar que a eficácia do procedimento depende, por óbvio, da escolha de \(\lambda\). Enquanto a literatura clássica propõe escolher um valor global para o limiar \cite{morettin_wavelets_2017}, por exemplo, via MAD (\emph{Median Absolute Deviation}, em português: Desvio Absoluto Mediano), (\(\lambda = \hat{\sigma}\sqrt{2\log T}\) com \(\hat{\sigma} = \mathrm{MAD}(|d_{J-1}[\kappa]|)/0.6745\)), ou validação cruzada, \citeonline{liu_improved_2014} propuseram o uso de um limiar recursivo que se adapta ao nível de decomposição da ondaleta. O cálculo do limiar adaptativo parte de dois hiperparâmetros, \(\alpha\) e \(\beta\), que devem ser calibrados através de experimentação com dados históricos ou baseados na experiência do analista. A partir de ambos, a técnica calcula o limiar do nível de detalhe mais fino (\(\lambda_{J-1}\)) utilizando a estimativa MAD usual e, para os níveis subsequentes (\(j < J - 1, j \in \mathbb{Z}\)), aplica uma regra recursiva. Tomando \(T_{J-1}\) como o número de coeficientes de detalhe na escala mais fina, o procedimento pode ser expresso como:
+Estratégias de limiarização à parte, é importante pontuar que a eficácia do procedimento depende, por óbvio, da escolha de \(\lambda\). Enquanto a literatura clássica propõe escolher um valor global para o limiar \cite{morettin_wavelets_2017}, por exemplo, via MAD (\emph{Median Absolute Deviation}, em português: Desvio Absoluto Mediano) (\(\lambda = \hat{\sigma}\sqrt{2\log T}\) com \(\hat{\sigma} = \mathrm{MAD}(|d_{J-1}[\kappa]|)/0.6745\)), ou validação cruzada, \citeonline{liu_improved_2014} propuseram o uso de um limiar recursivo que se adapta ao nível de decomposição da ondaleta. O cálculo do limiar adaptativo parte de dois hiperparâmetros, \(\alpha\) e \(\beta\), que devem ser calibrados através de experimentação com dados históricos ou baseados na experiência do analista. A partir de ambos, a técnica calcula o limiar do nível de detalhe mais fino (\(\lambda_{J-1}\)) utilizando a estimativa MAD usual e, para os níveis subsequentes (\(j < J - 1, j \in \mathbb{Z}\)), aplica uma regra recursiva. Tomando \(T_{J-1}\) como o número de coeficientes de detalhe na escala mais fina, o procedimento pode ser expresso como:
 \begin{equation}
     \lambda_j = 
     \begin{cases} 
@@ -751,23 +761,22 @@ Estratégias de limiarização à parte, é importante pontuar que a eficácia d
 Note que após o primeiro nível de resolução, o procedimento depende somente do limiar do nível anterior e dos hiperparâmetros fixos. Desse modo, embora adaptativa, essa abordagem evita o recálculo da mediana e do desvio padrão para cada nível de decomposição, uma operação de ordenação cara computacionalmente. Ao estimar o ruído apenas uma vez (no primeiro nível) e propagar a estimativa algebricamente, reduzimos a complexidade do algoritmo, viabilizando a decomposição e suavização de funções em tempo real \cite{liu_improved_2014}. 
 
 \subsection{Pré-processamento de dados em tempo real}\label{sec-processamento-tempo-real}
-Até aqui, a DWT e a limiarização de coeficientes foram apresentadas em sua forma clássica, aplicável a contextos que disponham de toda a extensão do sinal temporal. 
-Em nossa análise, essa base teórica servirá a um duplo propósito ao fundamentar a construção de um estimador de referência, com o objetivo de comparar o ganho de performance das ondaletas em relação aos \emph{splines}, e servirá de alicerce para uma de nossas propostas, a estimação em tempo real.
-No contexto da rede elétrica, por exemplo, à medida que novas leituras de consumo chegam a cada meia hora, o pré-processamento incremental permitirá atualizar a estimativa do \(\mathrm{FATE}\) sem aguardar o fim do período de coleta (ao atualizarmos a curva \(Y_i(t)\) observada para cada domicílio, conseguimos reavaliar o \(\mathrm{FATE}\) ponto a ponto). O mesmo raciocínio se aplica ao contexto da conduta clínica, em que o \(\mathrm{FATE}\) pode ser reavaliado conforme novos registros do sinal vital chegam.
-A abordagem a seguir introduz as adaptações necessárias para que o pré-processamento respeite a causalidade operacional, viabilizando a decomposição contínua do sinal em tempo real.
-Formalizamos essa exigência abaixo.
+Até aqui, a DWT e a limiarização de coeficientes foram apresentadas em sua forma clássica, aplicável a contextos que disponham de toda a extensão do sinal temporal.
+Em nossa análise, essa base teórica servirá a um duplo propósito, fundamentando tanto a construção de um estimador de referência para comparar o desempenho das ondaletas em relação aos \emph{splines}, quanto a estimação em tempo real introduzida no Capítulo \ref{sec-introducao}.
+Nesta seção, apresentaremos as adaptações necessárias para que o pré-processamento respeite a causalidade operacional, viabilizando a decomposição contínua do sinal à medida que novos dados chegam.
+Formalizamos essa exigência adiante:
 
 \begin{definition}[Causalidade operacional e vazamento temporal]\label{def:vazamento}
     Seja \(f[k]\), \(k \in \{0, 1, \dots, T-1\}\), um sinal discreto e seja \(\mathcal{F}_k = \sigma\!\left(\{f[s] : s \leq k\}\right)\) a informação disponível até o instante \(k\).
     Um operador de pré-processamento \(\mathcal{T}\) é \emph{operacionalmente causal} (equivalentemente, \emph{não antecipativo}, na terminologia de filtros causais \cite{oppenheim_discrete-time_2010}) se a saída \(\mathcal{T}(f)[k]\) depende apenas de \(\{f[s] : s \leq k\}\) para todo \(k\).
-    Quando essa condição falha, há \emph{vazamento temporal}, e a informação vazada é a parte da saída em \(k\) que depende de observações futuras \(f[s]\), com \(s > k\).
+    Quando essa condição falha, há vazamento temporal, e a informação vazada é a parte da saída em \(k\) que depende de observações futuras \(f[s]\), com \(s > k\).
 \end{definition}
 
 Se a regularidade da Definição \ref{def:regularidade} governa a qualidade estatística da representação, a causalidade operacional governa sua validade temporal.
 Exigi-la é, em última análise, impor a seta do tempo (Seção \ref{sec-introducao}) à etapa de pré-processamento.
 A estratégia de janelas móveis descrita a seguir satisfaz a Definição \ref{def:vazamento} por construção, pois reconstrói cada instante usando apenas observações já disponíveis.
 
-Seja \(W \in \mathbb{N}\) o comprimento de uma janela móvel, pré-fixado pelo analista (tipicamente uma potência de 2, \(W = 2^L\), para viabilizar uma decomposição completa em \(L\) níveis). Denote por \(f[k]\) a k-ésima observação discreta do sinal. O procedimento de janela móvel segue os passos abaixo:
+Seja \(W \in \mathbb{N}\) o comprimento de uma janela móvel, pré-fixado pelo analista. Denote por \(f[k]\) a k-ésima observação discreta do sinal. O procedimento de janela móvel segue os passos abaixo:
 
 \begin{enumerate}
     \item Se \(k < W - 1\). O número de pontos observados \(f[0], f[1], \dots, f[k]\) ainda é insuficiente para preencher a janela móvel. Nesse caso, não aplicamos a DWT, e retornamos o valor original (ruidoso) \(f[k]\).
@@ -779,9 +788,10 @@ Seja \(W \in \mathbb{N}\) o comprimento de uma janela móvel, pré-fixado pelo a
     \item Ao final do procedimento, as primeiras \(W - 1\) observações do sinal permanecem como os valores ruidosos originais, enquanto os \(T - W + 1\) pontos restantes passam pela DWT e compõem nossa estimativa para \(f(t)\).
 \end{enumerate}
 
-Note que, nessa abordagem, cada janela de dados apresenta seus próprios coeficientes de limiarização (\(\lambda_j\)). Assim, a suposição de homocedasticidade global adotada na Equação \ref{eq:thresholding-model} (que já era plausível para dados funcionais por conta das propriedades da DWT) pode ser relaxada: basta que o ruído seja aproximadamente homocedástico localmente (isto é, em cada janela), e não necessariamente em toda a série.
+Note que, nessa abordagem, cada janela de dados apresenta seus próprios coeficientes de limiarização (\(\lambda_j\)). 
+Assim, a suposição de homocedasticidade global adotada na Equação \ref{eq:thresholding-model} (em algum nível plausível para dados funcionais, por conta das propriedades da DWT) pode ser relaxada: basta que o ruído seja aproximadamente homocedástico localmente (isto é, em cada janela), e não necessariamente em toda a série.
 
-Por fim, ressaltamos que, ao adotarmos a estratégia das janelas móveis, garantimos a causalidade operacional, pois ela permite que recebamos o sinal e disparemos seu processamento imediatamente, sem a necessidade de uso de dados do futuro (que, neste cenário, ainda não existiriam). Mais do que isso, embora as janelas móveis possam ser (e, de fato, já tenham sido) empregadas utilizando a DWT via MRA \cite{xia_online_2007}, utilizar o \emph{lifting scheme} permite uma maior velocidade de processamento \cite{liu_improved_2014}, vantagem que viabiliza o pré-processamento de dados funcionais em tempo real; um dos requisitos para os objetivos deste trabalho.
+Por fim, ressaltamos que embora as janelas móveis possam ser (e, de fato, já tenham sido) empregadas utilizando a DWT via MRA \cite{xia_online_2007}, utilizar o \emph{lifting scheme} permite uma maior velocidade de execução da DWT \cite{liu_improved_2014}, vantagem que viabiliza o pré-processamento de dados funcionais em tempo real; um dos requisitos para os objetivos deste trabalho.
 
 \subsubsection{Extensão de bordas na DWT}\label{sec-extensoes-borda}
 Nesta seção, falamos sobre a dívida técnica feita no fim da Seção \ref{sec-dwt-mra}, em que dissemos que o uso de ondaletas associadas a filtros passa-alta mais longos poderia gerar alguns problemas na representação das bordas de um sinal \(f[k]\) associado a uma função \(f(t)\). Essa questão torna-se particularmente relevante em procedimentos que precisam respeitar a causalidade operacional.
@@ -791,8 +801,16 @@ Em termos gerais, filtros de ondaletas possuem comprimento finito; ao aplicá-lo
 Em problemas causais, esse efeito de borda é especialmente crítico na borda direita (o instante atual \(k\)), pois qualquer regra que requeira amostras além dela demandaria dados do futuro, incorrendo no vazamento temporal (Definição \ref{def:vazamento}).
 
 
-Em seu trabalho, \citeonline{liu_improved_2014} aludem a três estratégias que mitigam este problema: (i) imputação de zeros (\emph{zero padding}), em que preenchemos com zero os valores do filtro que estão fora do domínio da janela; (ii) extensão periódica, em que assumimos que o sinal se repete ciclicamente (se \(f[k] = [1, 2, 3]\), teremos, por exemplo, \(f_{ext}[k] = [1, 2, 3 | 1, 2]\)); (iii) extensão simétrica, que consiste em espelhar os dados em torno da borda (para a mesma \(f[k]\) do caso anterior, teríamos \(f_{ext}[k] = [1, 2, 3 | 3, 2]\)). Os autores defendem a alternativa (iii) como preferível, pois embora toda forma de imputação envolva riscos e seu desempenho dependa do contexto, tanto o \emph{zero padding} quanto a extensão periódica tendem a introduzir descontinuidades abruptas nas extremidades, problema evitado pela extensão simétrica, que é mais conservadora. Além disso, em processamento de sinais em tempo real, não dispomos de observações futuras; assim, em geral, é mais plausível supor que o dado imediatamente após a borda se comporte de maneira semelhante ao valor mais recente do que imputar zero ou reutilizar valores antigos. 
+Em seu trabalho, \citeonline{liu_improved_2014} aludem a três estratégias que mitigam este problema: (i) imputação de zeros (\emph{zero padding}), em que preenchemos com zero os valores do filtro que estão fora do domínio da janela; (ii) extensão periódica, em que assumimos que o sinal se repete ciclicamente (se \(f[k] = [1, 2, 3]\), teremos, por exemplo, \(f_{ext}[k] = [1, 2, 3 | 1, 2]\)); (iii) extensão simétrica, que consiste em espelhar os dados em torno da borda (para a mesma \(f[k]\) do caso anterior, teríamos \(f_{ext}[k] = [1, 2, 3 | 3, 2]\)). 
+Dentre as discutidas, os autores defendem a alternativa (iii) como preferível, pois embora toda forma de imputação envolva riscos e seu desempenho dependa do contexto, tanto o \emph{zero padding} quanto a extensão periódica tendem a introduzir descontinuidades abruptas nas extremidades, problema evitado pela extensão simétrica, que é mais conservadora.
+Em todo caso, a escolha mais adequada depende das características do sinal e deve ser avaliada com cuidado para cada aplicação. 
+O pacote \texttt{rLifting} \cite{dasilvaRLiftingHighPerformanceWavelet2026} implementa os modos de limiarização e extensão de borda apresentados neste capítulo, além de variantes adicionais de ambos. 
+Falamos mais sobre o pacote no Capítulo \ref{sec-metodologia}.
 
-Além da decomposição por ondaletas, existem outras técnicas clássicas de pré-processamento para sinais observados sequencialmente, como EWMA (\emph{Exponentially Weighted Moving Average}, em português: Médias Móveis e Suavizações Exponenciais), que também poderiam ser empregadas em cenários de processamento em tempo real como o discutido por \citeonline{liu_improved_2014}. Em geral, contudo, tais abordagens tendem a ter menor capacidade de adaptação a mudanças abruptas do que métodos baseados em ondaletas. Por outro lado, técnicas mais recentes, como o suavizador de variação total (\emph{TV smoothing}), podem ser computacionalmente custosas. Esse fator pode dificultar sua implementação em tempo real sem infraestrutura de \emph{hardware} mais robusta. 
+Além da decomposição por ondaletas, existem outras técnicas clássicas de pré-processamento para sinais observados sequencialmente, como EWMA (\emph{Exponentially Weighted Moving Average}, em português: Médias Móveis e Suavizações Exponenciais). 
+Em geral, contudo, tais abordagens tendem a ter menor capacidade de adaptação a mudanças abruptas do que métodos baseados em ondaletas. 
+Por outro lado, técnicas mais recentes, como o suavizador de variação total (\emph{TV smoothing}), podem ser computacionalmente custosas. 
+Esse fator pode dificultar sua implementação em tempo real sem infraestrutura de \emph{hardware} mais robusta. 
 
-Estabelecidos os desafios da inferência causal funcional e as ferramentas de ondaletas como alternativa computacional causalmente segura para o pré-processamento de sinais, o alicerce teórico deste trabalho está consolidado. No capítulo seguinte, discutiremos a lacuna operacional deixada pelas abordagens existentes no \emph{software} \texttt{R} e detalharemos a nossa proposta metodológica.
+Estabelecidos os desafios da inferência causal funcional e as ferramentas de ondaletas como alternativa computacional causalmente segura para o pré-processamento de sinais, o alicerce teórico deste trabalho está consolidado. 
+No capítulo seguinte, discutiremos a lacuna operacional deixada pelas abordagens existentes para processamento de ondaletas no \emph{software} \texttt{R} e detalharemos a nossa proposta metodológica.
