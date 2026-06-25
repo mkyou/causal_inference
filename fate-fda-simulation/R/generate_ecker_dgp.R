@@ -24,9 +24,17 @@ make_mgp_chol = function(time_grid, sigma = 0.5, rho = 0.8) {
 #' @param T_pts Número de pontos no tempo
 #' @param L_chol Decomposição de Cholesky (output de make_mgp_chol)
 #' @return Matriz N x T_pts de erros
-generate_mgp_errors = function(N, T_pts, L_chol) {
+generate_mgp_errors = function(
+  N, T_pts, L_chol,
+  error_dist = "gaussian", df_t = 5
+) {
   Z = matrix(rnorm(N * T_pts), nrow = N, ncol = T_pts)
-  Z %*% L_chol  # N x T
+  eps = Z %*% L_chol
+  if (error_dist == "t") {
+    scale = sqrt(rchisq(N, df_t) / df_t)
+    eps = sweep(eps, 1, scale, "/")
+  }
+  eps
 }
 
 # --- DGP principal ---
@@ -34,7 +42,7 @@ generate_mgp_errors = function(N, T_pts, L_chol) {
 #' Gera dataset completo com DGP heterogêneo de Ecker
 #'
 #' Y_i(t) = mu_Y(t) + X_i^T beta^(A_i)(t) + eps_i(t)
-#' onde beta^(1)(t) - beta^(0)(t) = delta(t) distribui o efeito pelas covariáveis,
+#' onde beta^(1)(t) - beta^(0)(t) = delta(t) distribui o efeito,
 #' e eps_i(t) ~ MGP(0, sigma, I_N).
 #'
 #' @param scen Lista com: name, func, mag, family
@@ -46,9 +54,10 @@ generate_mgp_errors = function(N, T_pts, L_chol) {
 #' @param t_start,t_end,t_treat Limites temporais
 #' @return Lista com Y_wide, X_mat, A_vec, time_grid, true_curve
 generate_ecker_dataset = function(
-    scen, N, T_pts, time_grid, L_chol,
-    config = NULL,
-    t_start = 20.0, t_end = 63.0, t_treat = 20.0
+  scen, N, T_pts, time_grid, L_chol,
+  config = NULL,
+  t_start = 20.0, t_end = 80.0, t_treat = 50.0,
+  error_dist = "gaussian", df_t = 5
 ) {
   # Config Ecker (gera covariáveis e propensity)
   if (is.null(config)) config = get_ecker_configuration(N, T_pts)
@@ -84,12 +93,12 @@ generate_ecker_dataset = function(
   # --- Efeitos concorrentes base: beta^(0)_k(t) ---
   concurrent_fns = config$concurrent_effect_funcs
 
-  # Efeito heterogêneo: beta^(1) - beta^(0) = delta(t) / (K+1) em cada componente
+  # Efeito heterogêneo: beta^(1) - beta^(0) = delta(t) / (K+1) p/ componente
   # Isso torna o FATE = X_bar^T * delta(t)
   beta_diff_func = function(t) rep(effect_func(t) / K1, K1)
 
   # --- Monta matrizes de contribuição ---
-  # Em vez de misturar com interceptos não centrádos, vamos fazer exatamente como o modelo OLS assume:
+  # Como o modelo OLS assume:
   # E[Y(0) | X] = mu_Y(t) + X_mat * beta^(0)(t)
   # E[Y(1) | X] = mu_Y(t) + X_mat * beta^(1)(t) + intercepto_extra
 
@@ -128,7 +137,7 @@ generate_ecker_dataset = function(
 
   # 5. Erros MGP
   if (!is.null(L_chol)) {
-    eps_mat = generate_mgp_errors(N, T_pts, L_chol)
+    eps_mat = generate_mgp_errors(N, T_pts, L_chol, error_dist, df_t)
   } else {
     eps_mat = matrix(rnorm(N * T_pts, 0, 0.5), nrow = N, ncol = T_pts)
   }
@@ -137,14 +146,19 @@ generate_ecker_dataset = function(
   Y_wide = sweep(cov_eff + eps_mat, 2, mu_vec, "+")
 
   # Limpeza
-  rm(beta0_mat, delta_mat, mu_0_mat, mu_1_mat, intercept_effect_1, slope_effect_1, cov_eff, eps_mat); gc(verbose = FALSE)
+  rm(
+    beta0_mat, delta_mat, mu_0_mat, 
+    mu_1_mat, intercept_effect_1, slope_effect_1, 
+    cov_eff, eps_mat
+  )
+  gc(verbose = FALSE)
 
   list(
-    Y_wide = Y_wide,      # N x T
-    X_mat = X_mat,        # N x 9 (sem intercepto, para compatibilidade)
-    X_reg = X_reg,        # N x 10 (com intercepto)
-    A_vec = A_vec,        # N
-    time_grid = time_grid,    # T
-    true_curve = true_curve    # T
+    Y_wide = Y_wide, # N x T
+    X_mat = X_mat, # N x 9 (sem intercepto, para compatibilidade)
+    X_reg = X_reg, # N x 10 (com intercepto)
+    A_vec = A_vec, # N
+    time_grid = time_grid, # T
+    true_curve = true_curve # T
   )
 }

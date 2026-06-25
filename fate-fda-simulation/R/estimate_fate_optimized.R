@@ -50,13 +50,13 @@ precompute_projection = function(X_reg, A_vec, ridge_lambda = 1e-7) {
 #' @param proj Output de precompute_projection
 #' @return Lista com fate_est (vetor T)
 estimate_fate_fast = function(Y_wide, proj) {
-  Y1 = Y_wide[proj$idx_1, , drop = FALSE]  # N1 x T
-  Y0 = Y_wide[proj$idx_0, , drop = FALSE]  # N0 x T
+  Y1 = Y_wide[proj$idx_1, , drop = FALSE] # N1 x T
+  Y0 = Y_wide[proj$idx_0, , drop = FALSE] # N0 x T
 
-  beta1 = proj$H1 %*% Y1  # p x T
-  beta0 = proj$H0 %*% Y0  # p x T
+  beta1 = proj$H1 %*% Y1 # p x T
+  beta0 = proj$H0 %*% Y0 # p x T
 
-  fate_est = as.numeric(proj$x_bar %*% (beta1 - beta0))  # vetor T
+  fate_est = as.numeric(proj$x_bar %*% (beta1 - beta0)) # vetor T
 
   list(fate_est = fate_est)
 }
@@ -72,7 +72,10 @@ estimate_fate_fast = function(Y_wide, proj) {
 #' @param n_boot Número de amostras bootstrap
 #' @param ridge_lambda Penalidade Ridge
 #' @return Matriz n_boot x T de curvas bootstrap
-run_bootstrap_raw = function(Y_wide, X_reg, A_vec, n_boot, ridge_lambda = 1e-7) {
+run_bootstrap_raw = function(
+  Y_wide, X_reg, A_vec,
+  n_boot, ridge_lambda = 1e-7
+) {
   N = nrow(Y_wide)
   T_pts = ncol(Y_wide)
   x_bar = colMeans(X_reg)
@@ -109,6 +112,23 @@ run_bootstrap_raw = function(Y_wide, X_reg, A_vec, n_boot, ridge_lambda = 1e-7) 
   }
 
   boot_curves
+}
+
+#' Integral trapezoidal acumulada do FATE a partir de t_treat
+#'
+#' @param fate_vec Vetor T de estimativas FATE
+#' @param time_grid Vetor T de pontos no tempo
+#' @param t_treat Instante de início do tratamento
+#' @return Vetor T: 0 para t < t_treat, integral acumulada para t >= t_treat
+cfate_cumulative = function(fate_vec, time_grid, t_treat) {
+  cfate = numeric(length(time_grid))
+  idx = which(time_grid >= t_treat)
+  if (length(idx) < 2) return(cfate)
+  t_post = time_grid[idx]
+  f_post = fate_vec[idx]
+  dt = diff(t_post)
+  cfate[idx] = c(0, cumsum((f_post[-length(f_post)] + f_post[-1]) / 2 * dt))
+  cfate
 }
 
 #' Constrói bandas simultâneas bootstrap
