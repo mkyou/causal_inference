@@ -537,9 +537,18 @@ O uso de ondaletas associadas a filtros mais longos, contudo, tende a agravar pr
 Discutiremos algumas das possíveis soluções para isso na Seção \ref{sec-extensoes-borda}.
 
 \subsection{Lifting scheme}\label{sec-lifting-scheme}
-O processo descrito na Seção \ref{sec-dwt-mra} refere-se à implementação clássica e amplamente difundida da DWT. Trata-se da abordagem predominante na literatura estatística, sendo comumente encontrada em pacotes do ambiente R, como o \texttt{wavethresh}, o \texttt{wavelets} e o \texttt{waveslim} \cite{nason_wavethresh_1999, aldrich_wavelets_2005, brandon_whitcher_waveslim_2001}. Existem, entretanto, abordagens alternativas. Proposto por \citeonline{sweldens_lifting_1995} e posteriormente consolidado por \citeonline{daubechies_factoring_1998}, o \emph{lifting scheme} representa uma forma mais moderna e flexível de aplicar a DWT.
+O processo descrito na Seção \ref{sec-dwt-mra} refere-se à implementação clássica e amplamente difundida da DWT. 
+Trata-se da abordagem predominante na literatura estatística, sendo comumente encontrada em pacotes do ambiente R, como o \texttt{wavethresh}, o \texttt{wavelets} e o \texttt{waveslim} \cite{nason_wavethresh_1999, aldrich_wavelets_2005, brandon_whitcher_waveslim_2001}. 
+Existem, entretanto, abordagens alternativas. 
+Proposto por \citeonline{sweldens_lifting_1995} e posteriormente consolidado por \citeonline{daubechies_factoring_1998}, o \emph{lifting scheme} representa uma forma mais moderna e flexível de aplicar a DWT.
 
-Em termos gerais, no \emph{lifting scheme}, para a resolução máxima \(J\) (com \(j \leq J, j \in \mathbb{Z}\)), aplicamos quatro operadores ao sinal \(f[k]\), assumindo — tal como na Seção \ref{sec-dwt-mra} — que o vetor de aproximação inicial \(s_{J}[\kappa]\) é idêntico a \(f[k]\). Assumiremos ainda que o sinal tem um número par de observações \(T\); caso o número seja ímpar, aplicamos tratamentos de borda, como na Seção \ref{sec-extensoes-borda}. Os operadores são: separação (\emph{split}), predição (\emph{prediction}), atualização (\emph{update}) e normalização (\emph{scaling}). O operador de separação divide \(s_{J}[\kappa]\) em dois subconjuntos disjuntos, \(s_{J, \text{par}}[\kappa] = s_{J}[2\kappa]\), contendo os elementos de índices pares, e \(s_{J, \text{ímpar}}[\kappa] = s_{J}[2\kappa + 1]\), contendo os de índices ímpares. Por exemplo, para o sinal \(f[k] = [3,4,5,6,1,2,3,4]\), e assumindo a indexação padrão iniciada em 0, temos \(s_{J, \text{par}}[\kappa] = [3, 5, 1, 3]\) (índices \(0, 2, 4, 6\)) e \(s_{J, \text{ímpar}}[\kappa] = [4, 6, 2, 4]\) (índices \(1, 3, 5, 7\)). Por construção, espera-se que as componentes pares e ímpares sejam altamente correlacionadas, justificando o uso de \(s_{J, \text{par}}\) para tentar predizer \(s_{J, \text{ímpar}}\). Utilizamos, assim, um operador de predição \(\mathcal{P}\) (que dependerá, entre outras coisas, da ondaleta escolhida para a decomposição da função) e chamamos os erros dessa predição de ``detalhe'' (análogos aos detalhes da Equação \ref{eq:algoritmo_piramidal}):
+Em termos gerais, no \emph{lifting scheme}, para a resolução máxima \(J\) (com \(j \leq J, j \in \mathbb{Z}\)), aplicamos quatro operadores ao sinal \(f[k]\), assumindo — tal como na Seção \ref{sec-dwt-mra} — que o vetor de aproximação inicial \(s_{J}[\kappa]\) é idêntico a \(f[k]\). 
+Assumiremos ainda que o sinal tem um número par de observações \(T\); caso o número seja ímpar, aplicamos tratamentos de borda, como na Seção \ref{sec-extensoes-borda}. 
+Os operadores são: separação (\emph{split}), predição (\emph{prediction}), atualização (\emph{update}) e normalização (\emph{scaling}). 
+O operador de separação divide \(s_{J}[\kappa]\) em dois subconjuntos disjuntos, \(s_{J, \text{par}}[\kappa] = s_{J}[2\kappa]\), contendo os elementos de índices pares, e \(s_{J, \text{ímpar}}[\kappa] = s_{J}[2\kappa + 1]\), contendo os de índices ímpares. 
+Por exemplo, para o sinal \(f[k] = [3,4,5,6,1,2,3,4]\), e assumindo a indexação padrão iniciada em 0, temos \(s_{J, \text{par}}[\kappa] = [3, 5, 1, 3]\) (índices \(0, 2, 4, 6\)) e \(s_{J, \text{ímpar}}[\kappa] = [4, 6, 2, 4]\) (índices \(1, 3, 5, 7\)). 
+Por construção, espera-se que as componentes pares e ímpares sejam altamente correlacionadas, justificando o uso de \(s_{J, \text{par}}\) para tentar predizer \(s_{J, \text{ímpar}}\). 
+Utilizamos, assim, um operador de predição \(\mathcal{P}\) (que dependerá, entre outras coisas, da ondaleta escolhida para a decomposição da função) e chamamos os erros dessa predição de ``detalhe'' (análogos aos detalhes da Equação \ref{eq:algoritmo_piramidal}):
 \begin{equation}
 \begin{aligned}
     \hat s_{J,\text{ímpar}}[\kappa] &= \mathcal{P}\!\big(s_{J, \text{par}}[\kappa]\big),\\
@@ -548,24 +557,30 @@ Em termos gerais, no \emph{lifting scheme}, para a resolução máxima \(J\) (co
 \label{eq:lifting-predictor-detail}
 \end{equation}
 
-É possível que a subamostra \(s_{J, \text{par}}[\kappa]\), sofra de falseamento (\emph{aliasing}) e falhe em preservar propriedades globais do sinal, tais como a sua média. Para corrigir isso, introduzimos um operador de atualização \(\mathcal{U}\), que ajusta a aproximação com base nos detalhes recém-calculados na Equação \ref{eq:lifting-predictor-detail}:
+É possível que a subamostra \(s_{J, \text{par}}[\kappa]\), sofra de falseamento (\emph{aliasing}) e falhe em preservar propriedades globais do sinal, tais como a sua média. 
+Para corrigir isso, introduzimos um operador de atualização \(\mathcal{U}\), que ajusta a aproximação com base nos detalhes recém-calculados na Equação \ref{eq:lifting-predictor-detail}:
 \begin{equation}
     s_{J-1}[\kappa] = s_{J, \text{par}}[\kappa] + \mathcal{U}\!\big(d_{J-1}[\kappa]\big).
 \end{equation}
 
 Após a atualização, é comum aplicar uma etapa de normalização, reescalando \(s_{J-1}[\kappa]\) e \(d_{J-1}[\kappa]\) por constantes (ou por uma matriz diagonal) a fim de assegurar a ortogonalidade do banco de filtros.
 
-O resultado desta primeira iteração é o conjunto \(\{s_{J-1}[\kappa], d_{J-1}[\kappa]\}\). O procedimento para os níveis subsequentes segue a mesma lógica da DWT via MRA: tomamos os coeficientes de aproximação \(s_{J-1}[\kappa]\) como entrada para a próxima iteração, obtendo \(\{s_{J-2}[\kappa], d_{J-2}[\kappa]\}\), e repetimos o processo até atingir o nível de resolução desejado.
+O resultado desta primeira iteração é o conjunto \(\{s_{J-1}[\kappa], d_{J-1}[\kappa]\}\). 
+O procedimento para os níveis subsequentes segue a mesma lógica da DWT via MRA: tomamos os coeficientes de aproximação \(s_{J-1}[\kappa]\) como entrada para a próxima iteração, obtendo \(\{s_{J-2}[\kappa], d_{J-2}[\kappa]\}\), e repetimos o processo até atingir o nível de resolução desejado.
 
-Teoricamente, mantidas as demais condições constantes (extensão de borda, alinhamento na separação e normalização) e respeitada a ordem de aplicação dos operadores, os coeficientes obtidos pela DWT via MRA e via \emph{lifting scheme} são equivalentes. A conexão formal entre as duas abordagens se estabelece a partir dos filtros passa-baixa e passa-alta, \(h\) e \(g\), definidos anteriormente.
+Teoricamente, mantidas as demais condições constantes (extensão de borda, alinhamento na separação e normalização) e respeitada a ordem de aplicação dos operadores, os coeficientes obtidos pela DWT via MRA e via \emph{lifting scheme} são equivalentes. 
+A conexão formal entre as duas abordagens se estabelece a partir dos filtros passa-baixa e passa-alta, \(h\) e \(g\), definidos anteriormente.
 
-A fim de melhor entendermos tal conexão, considere um filtro passa-baixa genérico \(h = \{h_m \in \mathbb{R} \mid m \in \mathbb{Z}\}\) em que apenas um número finito de elementos \(h_m\) é não nulo. A transformada \(z\) de \(h\) é expressa pelo polinômio de Laurent, 
+A fim de melhor entendermos tal conexão, considere um filtro passa-baixa genérico \(h = \{h_m \in \mathbb{R} \mid m \in \mathbb{Z}\}\) em que apenas um número finito de elementos \(h_m\) é não nulo. 
+A transformada \(z\) de \(h\) é expressa pelo polinômio de Laurent, 
 \begin{equation}
     h(z) = \sum\limits_{m_{\text{início}}}^{m_{\text{fim}}}h_m z^{-m}.
     \label{eq:transformada-z}
 \end{equation}
 
-O operador \(z\), na Equação \ref{eq:transformada-z}, fornece uma forma compacta de representar a sequência do filtro. Podemos, por exemplo, escrever \(h = [h_0, h_1, h_2]\) como \(h(z) = h_0 + h_1 z^{-1} + h_2 z^{-2}\), notação que facilita a aplicação do filtro ao sinal \(f[k]\) (a DWT passa a ser, essencialmente, uma multiplicação de polinômios). Além disso, qualquer filtro \(h(z)\) pode ser decomposto em suas componentes pares e ímpares. Partindo da Equação \ref{eq:transformada-z}:
+O operador \(z\), na Equação \ref{eq:transformada-z}, fornece uma forma compacta de representar a sequência do filtro. 
+Podemos, por exemplo, escrever \(h = [h_0, h_1, h_2]\) como \(h(z) = h_0 + h_1 z^{-1} + h_2 z^{-2}\), notação que facilita a aplicação do filtro ao sinal \(f[k]\) (a DWT passa a ser, essencialmente, uma multiplicação de polinômios). 
+Além disso, qualquer filtro \(h(z)\) pode ser decomposto em suas componentes pares e ímpares. Partindo da Equação \ref{eq:transformada-z}:
 \[
         h(z) = \cdots + h_0 + h_1 z^{-1} + h_2 z^{-2} + \cdots;
     \]
@@ -591,12 +606,15 @@ Aplicando o mesmo raciocínio ao filtro passa-alta \(g\), obtemos \(g_\text{par}
     \label{eq:matriz-polifásica}
 \end{equation}
 
-O algoritmo do \emph{lifting scheme} decorre da fatoração desta matriz \(P(u)\) --- possível sempre que o determinante for unitário (isto é, \(\det(P(u)) = c\,u^{-k}\), para algum \(c \neq 0\) e \(k \in \mathbb{Z}\)) --- em um produto de matrizes triangulares elementares. Essas matrizes correspondem, precisamente, aos operadores de separação, predição, atualização e normalização citados no início dessa seção. Embora a fatoração detalhada fuja ao escopo deste trabalho, vale notar que ela pode ser obtida de duas formas: (i) ``artesanalmente'', resolvendo equações algébricas para obter coeficientes exatos; ou (ii) via algoritmo de Euclides, um método sistemático, porém potencialmente instável numericamente e que, devido à não unicidade da divisão polinomial, pode levar a coeficientes não únicos \cite{daubechies_factoring_1998}.
+O algoritmo do \emph{lifting scheme} decorre da fatoração desta matriz \(P(u)\) --- possível sempre que o determinante for unitário (isto é, \(\det(P(u)) = c\,u^{-k}\), para algum \(c \neq 0\) e \(k \in \mathbb{Z}\)) --- em um produto de matrizes triangulares elementares. 
+Essas matrizes correspondem, precisamente, aos operadores de separação, predição, atualização e normalização citados no início dessa seção. 
+Embora a fatoração detalhada fuja ao escopo deste trabalho, vale notar que ela pode ser obtida de duas formas: (i) ``artesanalmente'', resolvendo equações algébricas para obter coeficientes exatos; ou (ii) via algoritmo de Euclides, um método sistemático, porém potencialmente instável numericamente e que, devido à não unicidade da divisão polinomial, pode levar a coeficientes não únicos \cite{daubechies_factoring_1998}.
 
 Retomando o exemplo da Seção \ref{sec-dwt-mra}, utilizaremos a ondaleta de Haar e o sinal \(f[k] = [3, 4, 5, 6, 1, 2, 3, 4]\) para ilustrar tanto a conexão entre as abordagens quanto a aplicação prática do \emph{lifting}.
 
 \begin{example}[Aplicação de \emph{lifting} com ondaleta de Haar]
-    Como sabemos, os filtros normalizados da Haar são \(h = [1/\sqrt{2}, 1/\sqrt{2}]\) e \(g = [1/\sqrt{2}, -1/\sqrt{2}]\). Implementações de Haar via \emph{lifting}, no entanto, costumam adotar \(g_{\text{lifting}} = [- 1/\sqrt{2}, 1/\sqrt{2}]\).\footnote{Ondaletas são definidas a menos de um sinal (fator de fase \(\pm 1\)). A inversão de polaridade no filtro passa-alta não altera as propriedades de ortogonalidade ou de multirresolução, apenas inverte o sinal dos coeficientes de detalhe.} Podemos ver que as transformadas \(z\) são constantes (polinômios de grau 0)
+    Como sabemos, os filtros normalizados da Haar são \(h = [1/\sqrt{2}, 1/\sqrt{2}]\) e \(g = [1/\sqrt{2}, -1/\sqrt{2}]\). 
+    Implementações de Haar via \emph{lifting}, no entanto, costumam adotar \(g_{\text{lifting}} = [- 1/\sqrt{2}, 1/\sqrt{2}]\).\footnote{Ondaletas são definidas a menos de um sinal (fator de fase \(\pm 1\)). A inversão de polaridade no filtro passa-alta não altera as propriedades de ortogonalidade ou de multirresolução, apenas inverte o sinal dos coeficientes de detalhe.} Podemos ver que as transformadas \(z\) são constantes (polinômios de grau 0)
 		\[ 
             h(z) = \frac{1}{\sqrt{2}} + \frac{1}{\sqrt{2}}z^{-1} \implies h_\text{par} = \frac{1}{\sqrt{2}}, \quad h_\text{ímpar} = \frac{1}{\sqrt{2}},
         \]
@@ -663,15 +681,17 @@ Desta forma, \(P(u)_{\text{Haar}}\) pode ser fatorada em três matrizes que corr
 
     \end{enumerate}
 
-    Observe que os coeficientes de aproximação são idênticos aos obtidos pela DWT via MRA. Os coeficientes de detalhes, por sua vez, são idênticos em magnitude \(\lvert -0.71\rvert = \lvert 0.71\rvert\), diferindo apenas no sinal devido à convenção adotada na etapa de predição do \emph{lifting} (na implementação clássica, via MRA, calculamos a diferença \(\text{par} - \text{ímpar}\), enquanto aqui calculamos \(\text{ímpar} - \text{par}\)).
+    Observe que os coeficientes de aproximação são idênticos aos obtidos pela DWT via MRA. 
+    Os coeficientes de detalhes, por sua vez, são idênticos em magnitude \(\lvert -0.71\rvert = \lvert 0.71\rvert\), diferindo apenas no sinal devido à convenção adotada na etapa de predição do \emph{lifting} (na implementação clássica, via MRA, calculamos a diferença \(\text{par} - \text{ímpar}\), enquanto aqui calculamos \(\text{ímpar} - \text{par}\)).
 
 \end{example}
 
-O \emph{lifting scheme}, a depender de como implementado, pode apresentar algumas vantagens em relação à DWT padrão. Por conta da simplicidade de suas operações (os processos de separação, predição, atualização e normalização), os cálculos via \emph{lifting} podem ser mais rápidos e não requerem memória auxiliar, característica que os torna mais adequados ao processamento de sinais grandes quando os recursos são limitados. Ainda pela simplicidade das operações, a inversibilidade da transformada torna-se trivial: garantimos a reconstrução perfeita pela estrutura do algoritmo, independentemente do filtro utilizado.
+O \emph{lifting scheme}, a depender de como implementado, pode apresentar algumas vantagens em relação à DWT padrão. 
+Por conta da simplicidade de suas operações (os processos de separação, predição, atualização e normalização), os cálculos via \emph{lifting} podem ser mais rápidos e não requerem memória auxiliar, característica que os torna mais adequados ao processamento de sinais grandes quando os recursos são limitados. 
+Ainda pela simplicidade das operações, a inversibilidade da transformada torna-se trivial: garantimos a reconstrução perfeita pela estrutura do algoritmo, independentemente do filtro utilizado.
 
-Outras vantagens (que podem sacrificar a velocidade do procedimento) se referem a generalização do tipo de dado ao qual o algoritmo pode ser aplicado. A DWT padrão exige que o domínio da função seja tal que as operações de translação e de dilatação funcionem bem. Com o \emph{lifting scheme}, é possível prescindir dessa hipótese e aplicar a DWT a grades irregulares e \emph{manifolds}, por exemplo. Os pacotes \texttt{adlift} e \texttt{nlt} \cite{nunes_adaptive_2006, knight_nlt_2008} (do \texttt{R}), são exemplos de implementações mais lentas do \emph{lifting scheme} que generalizam a DWT para implementar as chamadas ondaletas de segunda geração \cite{sweldens_lifting_1995}.
-
-
+Outras vantagens se referem à generalização do tipo de dado ao qual o algoritmo pode ser aplicado. A DWT padrão exige que o domínio da função seja tal que as operações de translação e de dilatação funcionem bem. Com o \emph{lifting scheme}, é possível prescindir dessa hipótese ao redesenhar os operadores de predição e atualização para incorporar as distâncias efetivas entre os pontos de observação, permitindo aplicar a DWT a grades irregularmente espaçadas e \emph{manifolds}. 
+Os pacotes \texttt{adlift} e \texttt{nlt} \cite{nunes_adaptive_2006, knight_nlt_2008} (do \texttt{R}) são exemplos de implementações desse tipo, que generalizam a DWT para as chamadas ondaletas de segunda geração \cite{sweldens_lifting_1995}.
 
 \subsection{Limiarização de coeficientes}\label{sec-limiarizacao}
 Uma vez aplicada a DWT, seja via MRA ou via \emph{lifting scheme}, obtemos uma representação do sinal em múltiplas escalas de resolução. Usualmente, supõe-se que a série observada \(f[k]\) corresponde a uma componente determinística (a função de interesse, \(f(t)\)) contaminada por um ruído aditivo \(\eta_k\). Neste trabalho, adotamos o modelo clássico em que \(\eta_k\) é um ruído branco gaussiano, com média nula e variância finita e constante \(\sigma^{2}\) (a suposição de ruído independente costuma ser adequada, apesar de a correlação temporal de curto prazo presente em dados funcionais, pois a DWT tende a atuar como um decorrelacionador do sinal quando a dependência serial é fraca.) \cite{morettin_wavelets_2017}. Formalmente, consideramos:
