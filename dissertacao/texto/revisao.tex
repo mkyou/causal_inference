@@ -70,8 +70,7 @@ Considerando os exemplos que trouxemos no Capítulo \ref{sec-introducao}, no cas
 No problema da conduta clínica, por sua vez, \(Y_i^{(1)}(t)\) seria a trajetória do sinal vital do paciente \(i\) caso essa conduta fosse aplicada na admissão, enquanto \(Y_i^{(0)}(t)\) seria a trajetória em uma situação de não-aplicação da conduta.
 \(A_i\), neste cenário, indicaria se a conduta foi de fato aplicada e \(\mathbf{X}_i\) denotaria as características do paciente disponíveis na admissão.
 
-As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar, com exceção da ignorabilidade condicional, que os autores substituem pela ignorabilidade média.
-\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
+As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar. A ignorabilidade condicional, todavia, é relaxada pelos autores em favor da ignorabilidade média.\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
 A condição plena identifica qualquer funcional da distribuição dos desfechos potenciais (média, variância, quantis), ao passo que a ignorabilidade média identifica apenas a média de \(Y\). 
 Como o \(\mathrm{FATE}\) é uma média, a versão mais fraca é suficiente.} 
 Em suma, em vez de assumirmos uma independência em termos distribucionais, requeremos que, para todo \(t\),
@@ -136,7 +135,7 @@ O que dá validade às coberturas simultâneas da Equação \ref{eq:ecker_bandas
 Dado que o ajuste via mínimos quadrados ordinários constitui uma operação linear nas observações, \(\hat{\theta}(t)\) converge para um processo gaussiano (pois assumimos que \(\boldsymbol{\epsilon}^{(a)}(t)\) segue um \(\mathrm{MGP}\)). 
 É com base nessa propriedade linear que resultados clássicos da teoria de campos aleatórios podem ser utilizados para calibrar o limiar \(u_{\alpha}(t)\). 
 Tal garantia teórica, no entanto, perde-se quando o procedimento de estimação incorpora etapas não lineares --- como a limiarização de coeficientes em ondaletas ou a seleção adaptativa de hiperparâmetros de suavização --- exigindo justificativas adicionais em abordagens que priorizam esparsidade ou adaptação a descontinuidades locais.
-
+Tendo isso em vista, cabe ressaltar que, em seu trabalho, \citeonline{ecker_causal_2024} fixaram o número de bases das \textit{B-splines} e não recorreram à validação cruzada generalizada. 
 
 Em uma vertente paralela que busca relaxar a dependência estrita de processos gaussianos, \citeonline{sparkes_functional_2024} também reivindicam a formalização do \(\mathrm{FATE}\). 
 Eles, porém, trabalham com uma filosofia de estimação distinta, focada na robustez distributiva. 
@@ -179,7 +178,7 @@ Ondaletas são funções que satisfazem certas propriedades. Elas oscilam ao lon
 
 Uma dada função \(\psi(t)\) é uma ondaleta se satisfizer:
 \begin{enumerate}
-  \item Condição de média nula: \(\int_{-\infty}^{\infty} \psi(t) dt = 0\). Garante que a função seja oscilatória, com áreas positivas e negativas que se cancelam.\footnote{A condição de média nula implica que \(\hat{\psi}(0) = 0\) (em que \(\hat{\psi}\) é a transformada de Fourier de \(\psi\)). Em construções usuais, essa propriedade é suficiente para a admissibilidade (isto é, para que \(\int_0^\infty \left(|\hat{\psi}(\omega)|^2/|\omega|\right) d\omega < \infty\)), condição que garante que a CWT (\emph{Continuous Wavelet Transform}, em português: Transformada de Ondaletas Contínua) seja estavelmente inversível.} É a propriedade que torna as ondaletas sensíveis a flutuações e mudanças na função que queremos representar, \(f(t)\).
+  \item Condição de média nula: \(\int_{-\infty}^{\infty} \psi(t) dt = 0\). Garante que a função seja oscilatória, com áreas positivas e negativas que se cancelam.\footnote{A condição de média nula implica que \(\hat{\psi}(0) = 0\) (em que \(\hat{\psi}\) é a transformada de Fourier de \(\psi\)). Em construções usuais, essa propriedade é suficiente para a admissibilidade (isto é, para que \(\int_0^\infty \left(|\hat{\psi}(\omega)|^2/|\omega|\right) d\omega < \infty\)), condição que garante que a CWT (\emph{Continuous Wavelet Transform}, em português: Transformada de Ondaletas Contínua) seja estavelmente inversível.} É a propriedade que torna as ondaletas sensíveis a flutuações e mudanças na função que queremos representar, digamos, \(f(t)\).
 
   \item Energia finita: \(\int_{-\infty}^{\infty} |\psi(t)|^{2} dt < \infty\). Formaliza a noção de que a ondaleta é uma perturbação localizada, no sentido de que sua energia se concentra em torno de uma região do domínio (tipicamente com decaimento à medida que \(|t|\) cresce). 
 
@@ -244,10 +243,9 @@ Para precisar essa vantagem, caracterizamos antes a noção de regularidade que 
 \end{definition}
 
 O expoente \(\alpha\) quantifica a suavidade local de \(f\) em torno de \(t_0\) e pode variar de ponto a ponto, sendo alto onde a função se aproxima de um polinômio e baixo onde há picos ou descontinuidades (um salto corresponde a \(\alpha = 0\)).
-É quando essa regularidade varia ao longo do domínio que as ondaletas superam os \emph{B-splines}.
-Uma representação por \emph{B-splines} ajusta seus coeficientes a partir de toda a extensão do sinal e fixa de antemão a suavidade da estimativa, que se mostra adequada apenas quando o efeito subjacente é regular em todo o domínio.
-Reforça-se que, como pontuado na Seção \ref{sec-introducao}, supor tal regularidade é especialmente delicado em inferência causal, pois o efeito de tratamento não é observado e sua regularidade não pode ser conferida a partir dos dados, ainda que os desfechos observados pareçam regulares.
-Havendo trechos pouco regulares, uma resolução global única não os acomoda sem suavizar em excesso as demais regiões.
+Uma representação por \emph{B-splines} ajusta seus coeficientes a partir de toda a extensão do sinal, o que exige que o efeito subjacente seja uniformemente regular.
+Reforça-se que, como pontuado no Capítulo \ref{sec-introducao}, supor tal regularidade é especialmente delicado em inferência causal, pois o efeito de tratamento não é observado e sua regularidade não pode ser conferida a partir dos dados, ainda que os desfechos observados pareçam regulares.
+Havendo trechos não uniformemente regulares, uma resolução global única não os acomoda sem suavizar em excesso as demais regiões.
 A limiarização em ondaletas, por operar coeficiente a coeficiente, ajusta-se à regularidade local e concentra esses comportamentos em poucos coeficientes de detalhe, desempenho que estimadores lineares, como os \emph{B-splines}, não alcançam \cite{donoho_ideal_1994}.
 
 No exemplo da rede elétrica, a curva de consumo de cada domicílio tende a concentrar sua irregularidade em horários específicos de alta demanda, permanecendo estável nos demais períodos. É exatamente esse tipo de estrutura que as ondaletas capturam com naturalidade, adaptando a resolução local ao nível de irregularidade de cada trecho.
