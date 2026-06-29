@@ -301,6 +301,92 @@ run_single_sim = function(
 }
 
 # =============================================================================
+# AGREGAÇÃO FINAL
+# =============================================================================
+
+aggregate_simulation_1 = function(sim_tag, ckpt_tag, out_tag, n_exemplars = 10) {
+  out_dir   = file.path("output", out_tag)
+  ckpt_base = file.path("output", ckpt_tag)
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+  config_dirs = sort(list.dirs(ckpt_base, recursive = FALSE))
+  n_configs   = length(config_dirs)
+  if (n_configs == 0) { cat("ERRO: Sem configs!\n"); return(NULL) }
+
+  set.seed(42)
+
+  # --- Passo 1/2: métricas brutas (sem curvas) ---
+  cat(sprintf("\n--- Passo 1/2: métricas brutas (%d configs) ---\n", n_configs))
+  metrics_list = vector("list", n_configs)
+  for (i in seq_along(config_dirs)) {
+    batch_files = list.files(config_dirs[i], pattern = "\\.rds$", full.names = TRUE)
+    cat(sprintf("  [%d/%d] %s\r", i, n_configs, basename(config_dirs[i])))
+    metrics_list[[i]] = rbindlist(lapply(batch_files, function(f) readRDS(f)$metrics))
+  }
+  cat("\n")
+
+  all_metrics = rbindlist(metrics_list)
+  rm(metrics_list); gc(verbose = FALSE)
+
+  summary_dt = all_metrics[, .(
+    N_sims    = .N,
+    Cov_Simul = round(mean(Cov_Simul, na.rm = TRUE) * 100, 1),
+    Cov_Point = round(mean(Cov_Point, na.rm = TRUE) * 100, 1),
+    NRMSE     = round(mean(NRMSE, na.rm = TRUE), 4),
+    NRMSE_SD  = round(sd(NRMSE, na.rm = TRUE), 4),
+    Bias      = round(mean(Bias, na.rm = TRUE), 4),
+    Width     = round(mean(Width, na.rm = TRUE), 3)
+  ), by = .(ErrorDist, Scenario, Method, N, T_pts)]
+
+  fwrite(all_metrics, file.path(out_dir, paste0(sim_tag, "_raw.csv")))
+  fwrite(summary_dt,  file.path(out_dir, paste0(sim_tag, "_summary.csv")))
+  cat(sprintf(
+    "  raw: %d linhas | summary: %d linhas\n",
+    nrow(all_metrics), nrow(summary_dt)
+  ))
+  rm(all_metrics); gc(verbose = FALSE)
+
+  # --- Passo 2/2: curvas-resumo + exemplares (config por config) ---
+  cat(sprintf("\n--- Passo 2/2: curvas-resumo + exemplares ---\n"))
+  curve_summ_list = vector("list", n_configs)
+  exemplar_list   = vector("list", n_configs)
+
+  for (i in seq_along(config_dirs)) {
+    batch_files = list.files(config_dirs[i], pattern = "\\.rds$", full.names = TRUE)
+    cat(sprintf("  [%d/%d] %s...\n", i, n_configs, basename(config_dirs[i])))
+
+    curves = rbindlist(lapply(batch_files, function(f) readRDS(f)$curves))
+
+    curve_summ_list[[i]] = curves[, .(
+      RMSE_t  = sqrt(mean((Est - TrueCurve)^2, na.rm = TRUE)),
+      Bias_t  = mean(Est - TrueCurve, na.rm = TRUE),
+      Cov_t   = mean(TrueCurve >= Lower & TrueCurve <= Upper, na.rm = TRUE),
+      Width_t = mean(Upper - Lower, na.rm = TRUE)
+    ), by = .(ErrorDist, Scenario, Method, N, T_pts, t_val)]
+
+    eids = sort(sample(unique(curves$SimID), min(n_exemplars, length(unique(curves$SimID)))))
+    exemplar_list[[i]] = curves[SimID %in% eids]
+
+    rm(curves); gc(verbose = FALSE)
+  }
+
+  all_curve_summ = rbindlist(curve_summ_list)
+  all_exemplars  = rbindlist(exemplar_list)
+
+  fwrite(all_curve_summ, file.path(out_dir, paste0(sim_tag, "_curve_summary.csv")))
+  fwrite(all_exemplars,  file.path(out_dir, paste0(sim_tag, "_exemplars.csv")))
+  cat(sprintf(
+    "  curve_summary: %d linhas | exemplars: %d linhas\n",
+    nrow(all_curve_summ), nrow(all_exemplars)
+  ))
+
+  cat("\nSumário:\n")
+  print(summary_dt)
+  cat(sprintf("\nSalvo em: %s/\n", out_dir))
+  return(summary_dt)
+}
+
+# =============================================================================
 # EXECUTOR PRINCIPAL
 # =============================================================================
 
@@ -400,39 +486,7 @@ run_simulation_1 = function() {
 
   # --- Agregação final ---
   cat("\n\n========== AGREGANDO RESULTADOS ==========\n")
-
-  all_files = list.files(file.path("output", ckpt_tag), pattern = "\\.rds$",
-                         recursive = TRUE, full.names = TRUE)
-  if (length(all_files) == 0) {
-    cat("ERRO: Sem checkpoints!\n"); return(NULL)
-  }
-
-  all_data = lapply(all_files, readRDS)
-  all_results = rbindlist(lapply(all_data, function(x) x$metrics))
-  all_curves = rbindlist(lapply(all_data, function(x) x$curves))
-
-  # Summary
-  summary_dt = all_results[, .(
-    N_sims = .N,
-    Cov_Simul = round(mean(Cov_Simul, na.rm = TRUE) * 100, 1),
-    Cov_Point = round(mean(Cov_Point, na.rm = TRUE) * 100, 1),
-    NRMSE = round(mean(NRMSE, na.rm = TRUE), 4),
-    Bias = round(mean(Bias, na.rm = TRUE), 4),
-    Width = round(mean(Width, na.rm = TRUE), 3)
-  ), by = .(ErrorDist, Scenario, Method, N, T_pts)]
-
-  out_dir = file.path("output", out_tag)
-  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
-  fwrite(all_results, file.path(out_dir, paste0(sim_tag, "_raw.csv")))
-  fwrite(summary_dt,  file.path(out_dir, paste0(sim_tag, "_summary.csv")))
-  fwrite(all_curves,  file.path(out_dir, paste0(sim_tag, "_curves.csv")))
-
-  cat("\nSumário:\n")
-  print(summary_dt)
-  cat(sprintf("\nSalvo em: %s/\n", out_dir))
-
-  return(summary_dt)
+  return(aggregate_simulation_1(sim_tag, ckpt_tag, out_tag, n_exemplars = 10))
 }
 
 # =============================================================================

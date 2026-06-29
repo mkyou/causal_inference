@@ -1,18 +1,30 @@
 \chapter[Metodologia]{Metodologia}\label{sec-metodologia}
-Neste capítulo, detalhamos como propomos estimar o \(\mathrm{FATE}\) utilizando ondaletas na etapa de pré-processamento dos dados funcionais (veja a Equação \ref{eq:fate_identificabilidade}). Contribuiremos em duas frentes. Primeiro, propomos substituir o uso de \emph{splines} por ondaletas, dispensando a hipótese de que o efeito de tratamento seja uma função suave no tempo. Segundo, consideramos cenários em que a estimativa causal precisa ser atualizada em tempo real --- necessidade que endereçamos por meio do \texttt{rLifting}, nossa implementação do \emph{lifting scheme}, fortemente inspirada no texto de \citeonline{liu_improved_2014}.
+Neste capítulo, detalhamos como propomos estimar o \(\mathrm{FATE}\) utilizando ondaletas na etapa de pré-processamento dos dados funcionais. 
+Contribuiremos em três frentes. 
+Primeiro, propomos substituir o uso de \emph{splines} por ondaletas, dispensando a hipótese de que o efeito de tratamento seja uma função uniformemente regular no tempo. 
+Segundo, consideramos cenários em que a estimativa causal precisa ser atualizada em tempo real, necessidade que endereçamos por meio do \texttt{rLifting}, nossa implementação do \emph{lifting scheme} fortemente inspirada em \citeonline{liu_improved_2014}. 
+Terceiro, propomos o \(\mathrm{CFATE}\) (\emph{Cumulative Functional Average Treatment Effect}, em português: Efeito Médio de Tratamento Funcional Acumulado), que quantifica o efeito causal acumulado do tratamento até um dado instante e cuja definição formal apresentamos mais adiante.
 
-Assumiremos as suposições necessárias à identificabilidade do \(\mathrm{FATE}\) (Seção \ref{sec-inferencia-causal-funcional}) e consideraremos um processo gerador de dados alinhado ao de \citeonline{ecker_causal_2024}. Teremos \(i = 1, \dots, N\) unidades amostrais, cada uma com um vetor de covariáveis pré-intervenção \(\mathbf{X}_i \in \mathbb{R}^{P}\) e uma atribuição binária de tratamento \(A_i \in \mathcal{A} \equiv \{0,1\}\). O desfecho de interesse é uma trajetória temporal \(Y_i(t)\) (\(t \in \mathcal{T}\)), observada na prática através do sinal \(Y_i[k]\), com \(k = 0, \dots, T-1\) e \(T \in \mathbb{N}, T < \mathcal{T}\) denotando o número de observações por unidade amostral. 
+Assumimos as suposições necessárias à identificabilidade do \(\mathrm{FATE}\) (Seção \ref{sec-inferencia-causal-funcional}) e consideramos um processo gerador de dados alinhado ao de \citeonline{ecker_causal_2024}. 
+Teremos \(i = 1, \dots, N\) unidades amostrais, cada uma com um vetor de covariáveis pré-intervenção \(\mathbf{X}_i \in \mathbb{R}^{P}\) e uma atribuição binária de tratamento \(A_i \in \mathcal{A} \equiv \{0,1\}\). 
+O desfecho de interesse é uma trajetória temporal \(Y_i(t)\) (\(t \in \mathcal{T}\)), observada na prática através do sinal \(Y_i[k]\), com \(k = 0, \dots, T-1\) e \(T \in \mathbb{N}, T < \mathcal{T}\) denotando o número de observações por unidade amostral. 
+A partir daqui, daremos a alcunha de \emph{online} para métodos de pré-processamento que respeitem a seta do tempo. Do contrário, chamaremos a abordagem de \emph{offline}.
 
-Para garantir clareza, diremos que um pré-processamento é operacionalmente causal (\emph{online}) quando a reconstrução da função em \(t_k \equiv k\) depender apenas dos pontos \(Y_i[0], \dots, Y_i[k]\); caso contrário, chamaremo-lo de global (\emph{offline}). 
-
-A primeira contribuição assume um cenário com intervenção única, aplicada no início do acompanhamento. Sob essa premissa, o viés de antecipação não compromete a direcionalidade do efeito causal, de modo que a causalidade operacional é dispensável. Esse cenário nos permite mensurar o ganho das ondaletas em relação aos \emph{splines}, independentemente da escolha entre os modos de pré-processamento. Na segunda contribuição, por outro lado, a necessidade de atualização em tempo real impõe a causalidade operacional, exigindo que o pré-processamento seja adaptado de acordo.
+Para quantificar o ganho puro da substituição das \emph{splines} pelas ondaletas, propomos, na primeira contribuição, um estimador com pré-processamento \emph{offline}. 
+Ancorados no PGD de \citeonline{ecker_causal_2024}, que supõe intervenção única e covariáveis mensuradas pré-tratamento, o viés de antecipação não compromete a identificabilidade do \(\mathrm{FATE}\), o que nos permite, assim como no trabalho original, dispensar a causalidade operacional. 
+A comparação entre os estimadores \emph{offline} e \emph{online} nesse mesmo cenário nos possibilita, ainda, aferir o custo da restrição causal sobre a qualidade da estimativa do \(\mathrm{FATE}\). 
+Na medida em que essa perda se mostrar pequena, o pré-processamento \emph{online} se justifica para cenários mais complexos, em que a causalidade operacional não pode ser dispensada.
 
 \section{Estimação do FATE}\label{sec-estimacao-fate}
 
-A escolha por basear nosso estimador no arcabouço de \citeonline{ecker_causal_2024}, preterindo \citeonline{testa_doubly-robust_2025} e \citeonline{sparkes_functional_2024}, se deve a motivos práticos e estruturais abordados anteriormente neste trabalho. Ao contrário da proposta de \citeonline{testa_doubly-robust_2025}, nós defendemos que a representação funcional deve anteceder a fase de modelagem, objetivando a limpeza das trajetórias ruidosas (Seção \ref{sec-inferencia-causal-funcional}). Além disso, preferimos a manutenção do formalismo dos resultados potenciais, deixado de lado por \citeonline{sparkes_functional_2024}, dado que essa estrutura possui literatura consolidada e facilita diálogos com possíveis extensões longitudinais, como as de \citeonline{ying_causality_2024}.
+A escolha por basear nosso estimador no arcabouço de \citeonline{ecker_causal_2024}, preterindo \citeonline{testa_doubly-robust_2025} e \citeonline{sparkes_functional_2024}, se deve a motivos práticos e estruturais abordados anteriormente neste trabalho. 
+Ao contrário da proposta de \citeonline{testa_doubly-robust_2025}, nós defendemos que a representação funcional deve anteceder a fase de modelagem, objetivando a limpeza das trajetórias ruidosas (Seção \ref{sec-inferencia-causal-funcional}). 
+Além disso, preferimos a manutenção do formalismo dos resultados potenciais, deixado de lado por \citeonline{sparkes_functional_2024}, dado que essa estrutura possui literatura consolidada e facilita diálogos com possíveis extensões longitudinais, como as de \citeonline{ying_causality_2024}.
 
 \subsection{Estimador com pré-processamento \emph{offline}}\label{sec-estimador-offline}
-Assim como \citeonline{ecker_causal_2024}, também empregaremos um modelo linear funcional para o desfecho, ajustando uma regressão para o grupo tratado (\(a = 1\)) e outra para o de comparação (\(a = 0)\). A partir desses ajustes, tomamos \(\hat{\theta}(t)\) como a média das diferenças entre as predições de ambos os modelos em toda a amostra. Por conveniência, reproduzimos abaixo as Equações \ref{eq:ecker_modelo_regressao_funcional} e \ref{eq:ecker_estimador_fate}:
+Assim como \citeonline{ecker_causal_2024}, também empregaremos um modelo linear funcional para o desfecho, ajustando uma regressão para o grupo tratado (\(a = 1\)) e outra para o de comparação (\(a = 0)\). 
+A partir desses ajustes, tomamos \(\hat{\theta}(t)\) como a média das diferenças entre as predições de ambos os modelos em toda a amostra. 
+Por conveniência, reproduzimos abaixo as Equações \ref{eq:ecker_modelo_regressao_funcional} e \ref{eq:ecker_estimador_fate}:
 \begin{equation*}
     Y_i^{(a)}(t) = \mathbf{X}_i^{\mathsf{T}}\boldsymbol{\beta}^{(a)}(t) + \epsilon_i^{(a)}(t), \quad \text{para } i \text{ tal que } A_i = a;
 \end{equation*}
@@ -24,10 +36,10 @@ Construímos nosso estimador a partir dos seguintes passos:
 
 \begin{estimatorbox}[Pré-processamento dos sinais]
     \begin{enumerate}
-        \item Obtemos o sinal temporal completo observado para cada unidade \(i = 1, \dots, N\). Reforçamos que o acesso ao vetor \((Y_i[0], \dots, Y_i[T-1])\) caracteriza a natureza \emph{offline} do estimador.
-        \item Aplicamos a DWT (utilizamos o \emph{lifting scheme} por eficiência computacional, mas poderíamos ter empregado a MRA), considerando um total de \(J = \log_2(T)\) níveis de resolução.
-        \item Para lidar com eventuais efeitos de borda, recorremos à extensão simétrica (Seção \ref{sec-extensoes-borda}). Em seguida, limiarizamos os coeficientes de detalhe por meio de uma regra escolhida pelo analista (Seção \ref{sec-limiarizacao}). Por padrão, selecionamos a limiarização semissuave (como recomendado por \citeonline{liu_improved_2014}).
-        \item O limiar varia com o nível de resolução \(j\). Nossa implementação permite calcular \(\lambda_j\) de forma adaptativa, independentemente da regra de limiarização vigente. Fixamos os hiperparâmetros em \(\alpha = 0.3\) e \(\beta = 1.2\), também em linha com o padrão de calibração de \citeonline{liu_improved_2014}.
+        \item Obtemos o sinal temporal completo observado para cada unidade \(i = 1, \dots, N\). 
+        Reforçamos que o acesso ao vetor \((Y_i[0], \dots, Y_i[T-1])\) caracteriza a natureza \emph{offline} do estimador.
+        \item Aplicamos a DWT via \emph{lifting scheme} adotando \(J = \lfloor\log_2(T)\rfloor\) níveis de resolução, que corresponde ao máximo para uma decomposição diádica com sinal de comprimento \(T\).
+        \item Para lidar com eventuais efeitos de borda, o analista escolhe uma extensão de borda (Seção \ref{sec-extensoes-borda}) e uma regra de limiarização para os coeficientes de detalhe (Seção \ref{sec-limiarizacao}).
         \item Após a limiarização, aplicamos a transformada inversa (IDWT) via \emph{lifting} para reconstruir o sinal, obtendo a trajetória funcional estimada \(\hat{Y}_i(t)\) em toda a grade temporal.
     \end{enumerate}
 \end{estimatorbox}
@@ -39,18 +51,18 @@ Construímos nosso estimador a partir dos seguintes passos:
         \item Para cada grupo \(a \in \{0,1\}\) e para cada instante \(t\) da grade temporal, ajustamos modelos de regressão via mínimos quadrados ordinários,\footnote{Na prática, adicionamos uma penalização Ridge com parâmetro \(\lambda_{\text{Ridge}} = 10^{-7}\) para garantir estabilidade numérico-computacional na inversão de \((\mathbf{X}^{\mathsf{T}}\mathbf{X})^{-1}\), prevenindo falhas em situações de multicolinearidade entre as covariáveis.} obtendo \(\hat{\boldsymbol{\beta}}^{(1)}(t)\) e \(\hat{\boldsymbol{\beta}}^{(0)}(t)\).
 
         \item Definimos o perfil médio de covariáveis na amostra global, \(\bar{\mathbf{X}}\), e estimamos o \(\mathrm{FATE}\) por
-\[
+        \[
             \hat{\theta}(t) = \bar{\mathbf{X}}^{\mathsf{T}}\left(\hat{\boldsymbol{\beta}}^{(1)}(t) - \hat{\boldsymbol{\beta}}^{(0)}(t)\right).
         \]
     \end{enumerate}
 \end{estimatorbox}
 
-Mantemos a hipótese de ruído gaussiano (\(\boldsymbol{\epsilon}^{(a)}(t) \sim \mathrm{MGP}\), Seção \ref{sec-inferencia-causal-funcional}), apesar da identificação do \(\mathrm{FATE}\) exigir apenas a exogeneidade em média (\(\mathbb{E}[\epsilon_i^{(a)}(t) \mid \mathbf{X}_i] = 0\)), porque a calibração da limiarização pressupõe tal suposição.\footnote{Como o limiar se apoia no MAD, que é robusto, esperamos que desvios moderados da normalidade sejam bem acomodados na prática.} 
-Avaliamos a robustez a desvios dessa hipótese nos estudos de simulação (Capítulo \ref{sec-estudos-simulacao}), em contraste com as \emph{splines}.
-
-Essa gaussianidade do ruído, porém, não se transfere ao estimador. 
-O leitor há de lembrar-se que as bandas de confiança propostas por \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}) pressupõem que o estimador \(\hat{\theta}(t)\) preserve a natureza gaussiana do processo gerador de dados, premissa que a limiarização de coeficientes em ondaletas viola. 
-Para contornar essa limitação e atingir a cobertura nominal de \(100(1 - \alpha)\%\), estruturamos o procedimento separando a estimação pontual (com ondaletas) da quantificação de incerteza (sem pré-processamento), em linha com o que \citeonline{chatterjee_bootstrapping_2011} discutem para estimadores penalizados.
+A estimação causal supõe uma grade temporal comum a todos os \(N\) indivíduos, mas não necessariamente igualmente espaçada (lembre-se que o \emph{lifting scheme} permite a aplicação da DWT a grades temporais irregulares). 
+Vale pontuar que mantivemos a hipótese de ruído gaussiano (\(\boldsymbol{\epsilon}^{(a)}(t) \sim \mathrm{MGP}\), Seção \ref{sec-inferencia-causal-funcional}), não porque a identificação do \(\mathrm{FATE}\) a exija (a exogeneidade em média \(\mathbb{E}[\epsilon_i^{(a)}(t) \mid \mathbf{X}_i] = 0\) é suficiente), mas porque a calibração do limiar a pressupõe.\footnote{Como o limiar se apoia no MAD, que é robusto, esperamos que desvios moderados da normalidade sejam bem acomodados na prática.} 
+Avaliamos a robustez a essa hipótese nos estudos de simulação (Capítulo \ref{sec-estudos-simulacao}). 
+Observa-se, porém, que a gaussianidade assumida no ruído não é herdada pelo estimador. 
+A limiarização dos coeficientes em ondaletas viola a premissa de que \(\hat{\theta}(t)\) preserve a natureza gaussiana do processo gerador, sobre a qual se apoiam as bandas de confiança de \citeonline{ecker_causal_2024} (Equação \ref{eq:ecker_bandas_simultaneas}). 
+Para atingir a cobertura nominal de \(100(1-\alpha)\%\), portanto, separamos a estimação pontual com ondaletas da quantificação de incerteza, em linha com \citeonline{chatterjee_bootstrapping_2011}.
 
 \subsubsection{Estimação das bandas de confiança}\label{sec-bootstrap-ic}
 
