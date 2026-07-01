@@ -1,0 +1,11 @@
+# Verifica consistencia matematica do esquema recem-criado
+diag = diagnose_wavelet(
+  scheme = my_linear,
+  config = list(
+    is_ortho = FALSE, # Se TRUE, testa ortogonalidade
+    # Avalia momentos nulos para graus 0 e 1
+    # Tambem poderiamos avaliar para graus maiores
+    vm_degrees = c(0, 1),
+    max_taps  = 5
+  )
+)

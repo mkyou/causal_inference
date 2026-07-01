@@ -7,11 +7,11 @@ library(ggplot2)
 # 1. SETUP
 # =============================================================================
 
-script_dir <- tryCatch(
+script_dir = tryCatch(
   dirname(rstudioapi::getActiveDocumentContext()$path),
   error = function(e) {
-    args <- commandArgs(trailingOnly = FALSE)
-    file_arg <- grep("^--file=", args, value = TRUE)
+    args = commandArgs(trailingOnly = FALSE)
+    file_arg = grep("^--file=", args, value = TRUE)
     if (length(file_arg) > 0) {
       dirname(normalizePath(sub("^--file=", "", file_arg)))
     } else {
@@ -19,20 +19,21 @@ script_dir <- tryCatch(
     }
   }
 )
+
 if (basename(script_dir) == "scripts") {
   setwd(dirname(script_dir))
 } else {
   setwd(script_dir)
 }
 
-out_dir <- "output/sim1_final/plots"
+out_dir = "output/sim1_final/plots"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # =============================================================================
 # 2. SISTEMA VISUAL
 # =============================================================================
 
-METHOD_COLORS <- c(
+METHOD_COLORS = c(
   wavelet_causal = "royalblue",
   wavelet_causal_conf_low = "royalblue",
   wavelet_causal_conf_med = "royalblue",
@@ -45,14 +46,14 @@ METHOD_COLORS <- c(
 )
 
 # Linha: diferencia métodos no gráfico de comparação
-LT_MAIN <- c(
+LT_MAIN = c(
   wavelet_causal = "solid",
   wavelet_offline = "dashed",
   spline_ecker = "dotted"
 )
 
 # Linha: diferencia níveis de confundimento dentro de uma família
-LT_CONF <- c(
+LT_CONF = c(
   wavelet_causal = "solid",
   wavelet_causal_conf_low = "dashed",
   wavelet_causal_conf_med = "dotdash",
@@ -65,13 +66,13 @@ LT_CONF <- c(
 
 # Forma: causal=triângulo, offline=X, spline=círculo
 # Confundimento: sem conf=triângulo, baixo=círculo, médio=X, alto=quadrado
-SH_MAIN <- c(
+SH_MAIN = c(
   wavelet_causal = 17,
   wavelet_offline = 4,
   spline_ecker = 19
 )
 
-SH_CONF <- c(
+SH_CONF = c(
   wavelet_causal = 17,
   wavelet_causal_conf_low = 19,
   wavelet_causal_conf_med = 4,
@@ -82,7 +83,7 @@ SH_CONF <- c(
   wavelet_offline_conf_high = 15
 )
 
-METHOD_LABELS <- c(
+METHOD_LABELS = c(
   wavelet_causal = "Ond. causal",
   wavelet_causal_conf_low = "Ond. causal (conf. baixo)",
   wavelet_causal_conf_med = "Ond. causal (conf. médio)",
@@ -94,34 +95,34 @@ METHOD_LABELS <- c(
   spline_ecker = "Spline (Ecker)"
 )
 
-SCENARIO_LABELS <- c(
+SCENARIO_LABELS = c(
   Bumps = "Bumps", Doppler = "Doppler",
   Heavisine = "Escada", Sigmoid = "Sigmoide"
 )
 
-DIST_LABELS <- c(gaussian = "Gaussiano", t = "t (5 g.l.)")
+DIST_LABELS = c(gaussian = "Gaussiano", t = "t (5 g.l.)")
 
-MAIN_METHODS <- c("wavelet_causal", "wavelet_offline", "spline_ecker")
+MAIN_METHODS = c("wavelet_causal", "wavelet_offline", "spline_ecker")
 
-OFFLINE_CONF <- c(
+OFFLINE_CONF = c(
   "wavelet_offline", "wavelet_offline_conf_low",
   "wavelet_offline_conf_med", "wavelet_offline_conf_high"
 )
 
-CAUSAL_CONF <- c(
+CAUSAL_CONF = c(
   "wavelet_causal", "wavelet_causal_conf_low",
   "wavelet_causal_conf_med", "wavelet_causal_conf_high"
 )
 
-CASES <- list(
+CASES = list(
   worst = list(N = 200, T = 128),
   med = list(N = 500, T = 256),
   best = list(N = 2000, T = 512)
 )
 
-T_TREAT <- 50.0
+T_TREAT = 50.0
 
-base_theme <- theme_bw(base_size = 11) +
+base_theme = theme_bw(base_size = 11) +
   theme(
     text = element_text(family = "serif"),
     plot.title = element_blank(),
@@ -139,13 +140,13 @@ base_theme <- theme_bw(base_size = 11) +
 # =============================================================================
 
 cat("Carregando dados...\n")
-dt_raw <- fread("output/sim1_final/sim1_raw.csv")
-dt_csumm <- fread("output/sim1_final/sim1_curve_summary.csv")
-dt_ex <- fread("output/sim1_final/sim1_exemplars.csv")
+dt_raw = fread("output/sim1_final/sim1_raw.csv")
+dt_csumm = fread("output/sim1_final/sim1_curve_summary.csv")
+dt_ex = fread("output/sim1_final/sim1_exemplars.csv")
 
 # NRMSE_t = RMSE_t / range(TrueCurve): range é determinístico,
 # extrai dos exemplares
-true_ranges <- dt_ex[
+true_ranges = dt_ex[
   Method == "wavelet_offline",
   .(
     true_range = diff(range(TrueCurve))
@@ -153,13 +154,13 @@ true_ranges <- dt_ex[
   by = .(Scenario, N, T_pts, ErrorDist)
 ]
 
-dt_csumm <- merge(
+dt_csumm = merge(
   dt_csumm, true_ranges,
   by = c("Scenario", "N", "T_pts", "ErrorDist"), all.x = TRUE
 )
 dt_csumm[, NRMSE_t := RMSE_t / true_range]
 
-prep <- function(dt) {
+prep = function(dt) {
   dt[, Method_label := factor(
     METHOD_LABELS[Method],
     levels = unname(METHOD_LABELS)
@@ -179,23 +180,23 @@ prep <- function(dt) {
   dt[, T_fac := factor(T_pts, levels = c(128, 256, 512))]
   dt
 }
-dt_raw <- prep(dt_raw)
-dt_csumm <- prep(dt_csumm)
-dt_ex <- prep(dt_ex)
+dt_raw = prep(dt_raw)
+dt_csumm = prep(dt_csumm)
+dt_ex = prep(dt_ex)
 
 # =============================================================================
 # 4. FUNÇÕES
 # =============================================================================
 
-save_plot <- function(p, fname, width = 9, height = 6) {
-  path <- file.path(out_dir, fname)
+save_plot = function(p, fname, width = 9, height = 6) {
+  path = file.path(out_dir, fname)
   ggsave(path, p, width = width, height = height, dpi = 300, bg = "white")
   cat(sprintf("  -> %s\n", fname))
 }
 
 # NRMSE: mediana + quartis, faceta ErrorDist × N
-plot_nrmse <- function(dt, methods, lt, sh) {
-  dt_s <- dt[Method %in% methods]
+plot_nrmse = function(dt, methods, lt, sh) {
+  dt_s = dt[Method %in% methods]
   dt_s[, Method := factor(Method, levels = methods)]
   ggplot(dt_s, aes(
     x = T_fac, y = NRMSE,
@@ -233,8 +234,8 @@ plot_nrmse <- function(dt, methods, lt, sh) {
 }
 
 # Cobertura simultânea: linhas, faceta ErrorDist × N
-plot_coverage <- function(dt, methods, lt, sh) {
-  dt_cov <- dt[Method %in% methods, .(
+plot_coverage = function(dt, methods, lt, sh) {
+  dt_cov = dt[Method %in% methods, .(
     Cov = mean(Cov_Simul, na.rm = TRUE)
   ), by = .(ErrorDist_label, N_label, T_fac, Method)]
   dt_cov[, Method := factor(Method, levels = methods)]
@@ -274,18 +275,18 @@ plot_coverage <- function(dt, methods, lt, sh) {
 
 # Curvas ponto-a-ponto (Bias_t ou Width_t por t)
 # Faceta: cenário (linhas) × distribuição (colunas), escala livre por linha
-plot_pointwise <- function(dt_cs, metric, ylab, methods, lt, sh,
+plot_pointwise = function(dt_cs, metric, ylab, methods, lt, sh,
                            N_sel, T_sel, add_hline = NULL) {
-  dt_s <- dt_cs[Method %in% methods & N == N_sel & T_pts == T_sel]
+  dt_s = dt_cs[Method %in% methods & N == N_sel & T_pts == T_sel]
   dt_s[, Method := factor(Method, levels = methods)]
 
-  n_pts <- dt_s[, .N, by = .(Scenario_label, ErrorDist_label, Method)][, max(N)]
-  every <- max(1L, floor(n_pts / 12))
-  dt_pts <- dt_s[, .SD[seq(1, .N, by = every)],
+  n_pts = dt_s[, .N, by = .(Scenario_label, ErrorDist_label, Method)][, max(N)]
+  every = max(1L, floor(n_pts / 12))
+  dt_pts = dt_s[, .SD[seq(1, .N, by = every)],
     by = .(Scenario_label, ErrorDist_label, Method)
   ]
 
-  p <- ggplot(dt_s, aes(
+  p = ggplot(dt_s, aes(
     x = t_val, y = .data[[metric]],
     color = Method, linetype = Method
   )) +
@@ -311,7 +312,7 @@ plot_pointwise <- function(dt_cs, metric, ylab, methods, lt, sh,
     ) +
     base_theme
   if (!is.null(add_hline)) {
-    p <- p + geom_hline(
+    p = p + geom_hline(
       yintercept = add_hline, color = "gray40",
       linewidth = 0.4, linetype = "dashed"
     )
@@ -321,20 +322,20 @@ plot_pointwise <- function(dt_cs, metric, ylab, methods, lt, sh,
 
 # Exemplar: curva verdadeira + estimativa + banda (uma run por grupo)
 # Faceta: cenário (linhas) × método (colunas)
-plot_exemplar <- function(dt_e, methods, lt, sh, N_sel, T_sel,
+plot_exemplar = function(dt_e, methods, lt, sh, N_sel, T_sel,
                           dist_sel = "gaussian") {
-  dt_s <- dt_e[
+  dt_s = dt_e[
     Method %in% methods & N == N_sel &
       T_pts == T_sel & ErrorDist == dist_sel
   ]
-  dt_s <- dt_s[
+  dt_s = dt_s[
     dt_s[, .I[SimID == min(SimID)], by = .(Scenario, Method)]$V1
   ]
   dt_s[, Method := factor(Method, levels = methods)]
 
-  n_pts <- dt_s[, .N, by = .(Scenario_label, Method)][, max(N)]
-  every <- max(1L, floor(n_pts / 12))
-  dt_pts <- dt_s[, .SD[seq(1, .N, by = every)],
+  n_pts = dt_s[, .N, by = .(Scenario_label, Method)][, max(N)]
+  every = max(1L, floor(n_pts / 12))
+  dt_pts = dt_s[, .SD[seq(1, .N, by = every)],
     by = .(Scenario_label, Method)
   ]
 
@@ -379,7 +380,7 @@ plot_exemplar <- function(dt_e, methods, lt, sh, N_sel, T_sel,
 # --- 5.1 Comparação principal: NRMSE e cobertura ---
 cat("\n[5.1] NRMSE e cobertura (3 métodos)...\n")
 for (scen in names(SCENARIO_LABELS)) {
-  dt_s <- dt_raw[Scenario == scen]
+  dt_s = dt_raw[Scenario == scen]
   save_plot(
     plot_nrmse(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN),
     sprintf("nrmse_%s.png", scen)
@@ -393,8 +394,8 @@ for (scen in names(SCENARIO_LABELS)) {
 # --- 5.2 Curvas ponto-a-ponto: NRMSE, viés e largura (3 métodos) ---
 cat("\n[5.2] Ptwise NRMSE, viés e largura (3 métodos)...\n")
 for (case_name in names(CASES)) {
-  N_sel <- CASES[[case_name]]$N
-  T_sel <- CASES[[case_name]]$T
+  N_sel = CASES[[case_name]]$N
+  T_sel = CASES[[case_name]]$T
   save_plot(
     plot_pointwise(
       dt_csumm, "NRMSE_t", "NRMSE pontual",

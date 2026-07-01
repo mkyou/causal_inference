@@ -1,8 +1,9 @@
 # =============================================================================
 # scripts/sim_3.R
-# Simulação 3: Robustez a grade irregular (uniform vs. irregular)
-# Métodos: wavelet_offline, wavelet_causal (ambos via rLifting com t=time_grid)
-# Grid: N ∈ {200, 500}, T ∈ {128, 256}, 4 cenários, 2 ruídos, 1000 sims
+# Simulação 3: rLifting causal em grade irregular compartilhada
+# Grid: 2 dists × 3 irr × 2N × 2T × 4 cenários = 96 configs
+# K = 1000, mclapply por batch (mesmo padrão da sim_1)
+# Grade irregular fixa por (irr_level, T_pts), compartilhada pelos N sujeitos
 # =============================================================================
 
 library(data.table)
@@ -10,13 +11,13 @@ library(parallel)
 library(rLifting)
 library(MASS)
 
-# --- Setup portável ---
 script_dir = tryCatch(
   dirname(rstudioapi::getActiveDocumentContext()$path),
   error = function(e) {
     args = commandArgs(trailingOnly = FALSE)
     file_arg = grep("^--file=", args, value = TRUE)
-    if (length(file_arg) > 0) dirname(normalizePath(sub("^--file=", "", file_arg)))
+    if (length(file_arg) > 0)
+      dirname(normalizePath(sub("^--file=", "", file_arg)))
     else getwd()
   }
 )
@@ -26,27 +27,27 @@ source("R/config_ecker.R")
 source("R/generate_sequential_dgp.R")
 source("R/generate_ecker_dgp.R")
 source("R/estimate_fate_optimized.R")
-source("R/process_functional_data.R")
 source("R/utils_dgp_functions.R")
 
 # =============================================================================
 # CONFIGURAÇÃO
 # =============================================================================
 
-QUICK_TEST = TRUE
-
-N_SIM = ifelse(QUICK_TEST, 1, 1000)
-BATCH_SIZE = ifelse(QUICK_TEST, 1, 25)
-N_CORES = max(1, detectCores() - 2)
-ALPHA = 0.05
+QUICK_TEST  = FALSE
+N_SIM       = ifelse(QUICK_TEST, 5, 1000)
+BATCH_SIZE  = ifelse(QUICK_TEST, 5, 25)
+N_BOOT      = 200
+ALPHA       = 0.05
 
 t_start = 20.0
-t_end = 80.0
+t_end   = 80.0
 t_treat = 50.0
 
-GRID_N = if (QUICK_TEST) c(500) else c(200, 500)
-GRID_T = if (QUICK_TEST) c(256) else c(128, 256)
-GRID_W = if (QUICK_TEST) c(64) else c(64, 64)
+GRID_N     = if (QUICK_TEST) c(200)      else c(200, 2000)
+GRID_T     = if (QUICK_TEST) c(128)      else c(128, 512)
+GRID_W     = if (QUICK_TEST) c(64)       else c(64, 128)
+GRID_DIST  = if (QUICK_TEST) "gaussian"  else c("gaussian", "t")
+IRR_LEVELS = if (QUICK_TEST) "moderado"  else c("leve", "moderado", "severo")
 
 SCENARIOS = list(
   list(name = "Sigmoid",   func = effect_sigmoid,   mag = 2, family = "haar"),
@@ -55,130 +56,217 @@ SCENARIOS = list(
   list(name = "Heavisine", func = effect_heavisine, mag = 4, family = "haar")
 )
 
-NOISE_DISTS = c("gaussian", "t")
-DF_T = 5
-GRID_TYPES = c("uniform", "irregular")
+N_CORES = max(1L, detectCores() - 2L)
 
 safe_cores = function(N, T_pts, mem_safety = 0.75) {
-  data_bytes = 12 * N * T_pts * 8
-  fork_base = 400e6
-  bytes_per_worker = data_bytes + fork_base
-  avail_bytes = tryCatch(
+  data_bytes   = 10 * N * T_pts * 8
+  fork_base    = 400e6
+  avail_bytes  = tryCatch(
     as.numeric(
       system("awk '/MemAvailable/ {print $2}' /proc/meminfo", intern = TRUE)
     ) * 1024,
     error = function(e) 8e9
   )
-  max(1L, min(N_CORES, floor(avail_bytes * mem_safety / bytes_per_worker)))
+  max(1L, min(N_CORES, floor(avail_bytes * mem_safety / (data_bytes + fork_base))))
 }
 
 # =============================================================================
-# WORKER
+# GRADES IRREGULARES (fixas por irr_level × T_pts, seed determinístico)
 # =============================================================================
 
-run_single_sim_3 = function(
-    sim_id, scen, N, T_pts, time_grid, L_chol,
-    W, n_boot, error_dist = "gaussian", grid_type = "uniform"
+make_irregular_grid = function(irr_level, T_pts, t_start, t_end, t_treat) {
+  seed = switch(irr_level, leve = 1001L, moderado = 1002L, severo = 1003L) + T_pts
+  set.seed(seed)
+  switch(irr_level,
+    leve = {
+      reg   = seq(t_start, t_end, length.out = T_pts)
+      delta = (t_end - t_start) / (T_pts - 1) * 0.25
+      g     = reg + runif(T_pts, -delta, delta)
+      g[1]  = t_start; g[T_pts] = t_end
+      sort(g)
+    },
+    moderado = sort(runif(T_pts, t_start, t_end)),
+    severo = {
+      n_pre  = round(2 / 3 * T_pts)
+      n_post = T_pts - n_pre
+      sort(c(runif(n_pre, t_start, t_treat), runif(n_post, t_treat, t_end)))
+    }
+  )
+}
+
+GRIDS = list()
+for (irr in IRR_LEVELS) {
+  for (T_pts in GRID_T) {
+    GRIDS[[paste0(irr, "_T", T_pts)]] = make_irregular_grid(
+      irr, T_pts, t_start, t_end, t_treat
+    )
+  }
+}
+
+# =============================================================================
+# WORKER: Uma réplica — rLifting causal + bootstrap
+# =============================================================================
+
+run_single_sim_s3 = function(
+  sim_id, scen, N, T_pts, time_grid, L_chol, W,
+  error_dist, irr_level, n_boot
 ) {
   dat = generate_ecker_dataset(
     scen, N, T_pts, time_grid, L_chol,
     t_start = t_start, t_end = t_end, t_treat = t_treat,
-    error_dist = error_dist, df_t = DF_T
+    error_dist = error_dist
   )
   true_curve = dat$true_curve
-  idx_post = time_grid >= t_treat
+  idx_post   = which(time_grid >= t_treat)
   true_range = diff(range(true_curve[idx_post]))
   if (true_range == 0) true_range = 1
-  raw_est = colMeans(dat$Y_wide[dat$A_vec == 1, ]) -
-    colMeans(dat$Y_wide[dat$A_vec == 0, ])
-  cfate_true = cfate_cumulative(true_curve, time_grid, t_treat)
 
   proj = precompute_projection(dat$X_reg, dat$A_vec)
 
-  # Wavelet offline — passa time_grid (suporta grade irregular)
-  y_off = tryCatch(
-    smooth_data_matrix(
-      time_grid, dat$Y_wide, "rlifting_offline",
-      scheme_name = scen$family, threshold_method = "semisoft", alpha = 0.3
-    ),
+  scheme_obj = lifting_scheme("haar")
+  max_levels = floor(log2(W))
+
+  y_cau = tryCatch(
+    t(apply(dat$Y_wide, 1, function(sig)
+      denoise_signal_causal(
+        sig, scheme_obj,
+        levels = max_levels, window_size = W,
+        shrinkage = "semisoft", alpha = 0.3
+      )
+    )),
     error = function(e) NULL
   )
+  if (is.null(y_cau)) return(NULL)
 
-  # Wavelet causal — passa t = time_grid (suporta grade irregular)
-  max_levels = floor(log2(W))
-  scheme_obj = lifting_scheme(scen$family)
-  y_cau = tryCatch({
-    t(apply(dat$Y_wide, 1, function(sig) {
-      denoise_signal_causal(
-        sig, scheme_obj, levels = max_levels, window_size = W,
-        method = "semisoft", alpha = 0.3, t = time_grid
-      )
-    }))
-  }, error = function(e) NULL)
+  fate_cau = estimate_fate_fast(y_cau, proj)
+  boot_crv = run_bootstrap_raw(dat$Y_wide, dat$X_reg, dat$A_vec, n_boot)
+  band     = build_simultaneous_band(fate_cau$fate_est, boot_crv, ALPHA)
 
-  fate_off = if (!is.null(y_off)) estimate_fate_fast(y_off, proj) else NULL
-  fate_cau = if (!is.null(y_cau)) estimate_fate_fast(y_cau, proj) else NULL
+  cov_simul = as.integer(all(true_curve >= band$lower & true_curve <= band$upper))
+  cov_point = mean(true_curve >= band$lower & true_curve <= band$upper)
+  post_diff = fate_cau$fate_est[idx_post] - true_curve[idx_post]
+  nrmse     = sqrt(mean(post_diff^2)) / true_range
+  bias      = mean(post_diff)
+  width     = mean(band$upper - band$lower, na.rm = TRUE)
 
-  boot_curves = run_bootstrap_raw(dat$Y_wide, dat$X_reg, dat$A_vec, n_boot)
+  cfate_hat  = cfate_cumulative(fate_cau$fate_est, time_grid, t_treat)
+  cfate_boot = t(apply(
+    boot_crv, 1,
+    function(r) cfate_cumulative(r, time_grid, t_treat)
+  ))
+  cfate_band = build_simultaneous_band(cfate_hat, cfate_boot, ALPHA)
 
-  compute_metrics = function(fate_est, method_name) {
-    if (is.null(fate_est)) return(list(metrics = NULL, curves = NULL))
-    band = build_simultaneous_band(fate_est$fate_est, boot_curves, ALPHA)
-    cov_simul = as.integer(all(true_curve >= band$lower & true_curve <= band$upper))
-    cov_point = mean(true_curve >= band$lower & true_curve <= band$upper)
-    post_diff = fate_est$fate_est[idx_post] - true_curve[idx_post]
-    nrmse = sqrt(mean(post_diff^2)) / true_range
-    bias = mean(post_diff)
-    width = mean(band$upper - band$lower, na.rm = TRUE)
+  true_cfate   = cfate_cumulative(true_curve, time_grid, t_treat)
+  cfate_range  = max(abs(true_cfate[idx_post]))
+  if (cfate_range == 0) cfate_range = 1
+  cfate_diff   = cfate_hat[idx_post] - true_cfate[idx_post]
+  cfate_nrmse  = sqrt(mean(cfate_diff^2)) / cfate_range
+  cfate_cov_simul = as.integer(
+    all(true_cfate >= cfate_band$lower & true_cfate <= cfate_band$upper)
+  )
+  cfate_cov_point = mean(
+    true_cfate >= cfate_band$lower & true_cfate <= cfate_band$upper
+  )
 
-    cfate_est_vec = cfate_cumulative(fate_est$fate_est, time_grid, t_treat)
-    cfate_lower = numeric(length(time_grid))
-    cfate_upper = numeric(length(time_grid))
-    valid_boot = which(complete.cases(boot_curves))
-    if (length(valid_boot) >= 50) {
-      cfate_boot_mat = t(apply(
-        boot_curves[valid_boot, , drop = FALSE], 1,
-        function(r) cfate_cumulative(r, time_grid, t_treat)
-      ))
-      cb = build_simultaneous_band(
-        cfate_est_vec[idx_post],
-        cfate_boot_mat[, idx_post, drop = FALSE],
-        ALPHA
-      )
-      cfate_lower[idx_post] = cb$lower
-      cfate_upper[idx_post] = cb$upper
-    }
+  metrics_dt = data.table(
+    SimID = sim_id, Scenario = scen$name, ErrorDist = error_dist,
+    Irregularity = irr_level, N = N, T_pts = T_pts,
+    Cov_Simul = cov_simul * 100, Cov_Point = cov_point * 100,
+    NRMSE = round(nrmse, 6), Bias = round(bias, 6), Width = round(width, 4),
+    CFATE_NRMSE = round(cfate_nrmse, 6),
+    CFATE_Cov_Simul = cfate_cov_simul * 100,
+    CFATE_Cov_Point = round(cfate_cov_point * 100, 2)
+  )
 
-    metrics_dt = data.table(
-      SimID = sim_id, GridType = grid_type, ErrorDist = error_dist,
-      Scenario = scen$name, Method = method_name,
-      N = N, T_pts = T_pts,
-      Cov_Simul = cov_simul, Cov_Point = round(cov_point, 4),
-      NRMSE = round(nrmse, 6), Bias = round(bias, 6), Width = round(width, 4)
-    )
-    curves_dt = data.table(
-      SimID = sim_id, GridType = grid_type, ErrorDist = error_dist,
-      Scenario = scen$name, Method = method_name,
-      N = N, T_pts = T_pts, t_val = time_grid,
-      TrueCurve = true_curve, RawEst = raw_est,
-      Est = fate_est$fate_est, Lower = band$lower, Upper = band$upper,
-      CFATE_True = cfate_true, CFATE_Est = cfate_est_vec,
-      CFATE_Lower = cfate_lower, CFATE_Upper = cfate_upper
-    )
-    list(metrics = metrics_dt, curves = curves_dt)
+  curves_dt = data.table(
+    SimID = sim_id, Scenario = scen$name, ErrorDist = error_dist,
+    Irregularity = irr_level, N = N, T_pts = T_pts,
+    t_val = time_grid,
+    TrueCurve = true_curve, Est = fate_cau$fate_est,
+    Lower = band$lower, Upper = band$upper,
+    TrueCFATE = true_cfate, CFATE_Est = cfate_hat,
+    CFATE_Lower = cfate_band$lower, CFATE_Upper = cfate_band$upper
+  )
+
+  rm(dat, y_cau, boot_crv, fate_cau); gc(verbose = FALSE)
+  list(metrics = metrics_dt, curves = curves_dt)
+}
+
+# =============================================================================
+# AGREGAÇÃO (dois passes — OOM-safe)
+# =============================================================================
+
+aggregate_simulation_3 = function(n_exemplars = 10) {
+  cat("\n\n========== AGREGANDO SIM 3 ==========\n")
+  config_dirs = list.dirs(
+    "output/sim3_checkpoints", recursive = FALSE, full.names = TRUE
+  )
+  if (length(config_dirs) == 0) {
+    cat("ERRO: Nenhum checkpoint encontrado.\n")
+    return(invisible(NULL))
+  }
+  out_dir = "output/sim3_final"
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+  # Passe 1: métricas
+  metrics_list = vector("list", length(config_dirs))
+  for (i in seq_along(config_dirs)) {
+    bf = list.files(config_dirs[i], pattern = "\\.rds$", full.names = TRUE)
+    metrics_list[[i]] = rbindlist(lapply(bf, function(f) readRDS(f)$metrics))
+  }
+  all_metrics = rbindlist(metrics_list)
+
+  summary_dt = all_metrics[, .(
+    N_sims          = .N,
+    Cov_Simul       = round(mean(Cov_Simul), 2),
+    Cov_Point       = round(mean(Cov_Point), 2),
+    NRMSE           = round(mean(NRMSE), 4),
+    NRMSE_SD        = round(sd(NRMSE), 4),
+    Bias            = round(mean(Bias), 4),
+    Width           = round(mean(Width), 4),
+    CFATE_NRMSE     = round(mean(CFATE_NRMSE), 4),
+    CFATE_Cov_Simul = round(mean(CFATE_Cov_Simul), 2),
+    CFATE_Cov_Point = round(mean(CFATE_Cov_Point), 2)
+  ), by = .(ErrorDist, Scenario, Irregularity, N, T_pts)]
+
+  fwrite(all_metrics, "output/sim3_final/sim3_raw.csv")
+  fwrite(summary_dt,  "output/sim3_final/sim3_summary.csv")
+  rm(all_metrics, metrics_list); gc(verbose = FALSE)
+
+  cat("Sumário:\n"); print(summary_dt)
+
+  # Passe 2: curvas, config por config
+  csumm_list    = vector("list", length(config_dirs))
+  exemplar_list = vector("list", length(config_dirs))
+
+  for (i in seq_along(config_dirs)) {
+    bf     = list.files(config_dirs[i], pattern = "\\.rds$", full.names = TRUE)
+    curves = rbindlist(lapply(bf, function(f) readRDS(f)$curves))
+
+    csumm_list[[i]] = curves[, .(
+      RMSE_t        = sqrt(mean((Est - TrueCurve)^2)),
+      Bias_t        = mean(Est - TrueCurve),
+      Cov_t         = mean(Lower <= TrueCurve & TrueCurve <= Upper) * 100,
+      Width_t       = mean(Upper - Lower, na.rm = TRUE),
+      CFATE_RMSE_t  = sqrt(mean((CFATE_Est - TrueCFATE)^2)),
+      CFATE_Bias_t  = mean(CFATE_Est - TrueCFATE),
+      CFATE_Cov_t   = mean(CFATE_Lower <= TrueCFATE & TrueCFATE <= CFATE_Upper) * 100,
+      CFATE_Width_t = mean(CFATE_Upper - CFATE_Lower, na.rm = TRUE)
+    ), by = .(ErrorDist, Scenario, Irregularity, N, T_pts, t_val)]
+
+    eids = sort(sample(
+      unique(curves$SimID),
+      min(n_exemplars, length(unique(curves$SimID)))
+    ))
+    exemplar_list[[i]] = curves[SimID %in% eids]
+    rm(curves); gc(verbose = FALSE)
   }
 
-  res_off = compute_metrics(fate_off, "wavelet_offline")
-  res_cau = compute_metrics(fate_cau, "wavelet_causal")
+  fwrite(rbindlist(csumm_list),    "output/sim3_final/sim3_curve_summary.csv")
+  fwrite(rbindlist(exemplar_list), "output/sim3_final/sim3_exemplars.csv")
 
-  rm(dat, y_off, y_cau, boot_curves); gc(verbose = FALSE)
-
-  all_metrics = list(res_off$metrics, res_cau$metrics)
-  all_curves = list(res_off$curves, res_cau$curves)
-  list(
-    metrics = rbindlist(all_metrics[!sapply(all_metrics, is.null)]),
-    curves  = rbindlist(all_curves[!sapply(all_curves,  is.null)])
-  )
+  cat(sprintf("\nSalvo em: output/sim3_final/\n"))
+  invisible(summary_dt)
 }
 
 # =============================================================================
@@ -186,128 +274,87 @@ run_single_sim_3 = function(
 # =============================================================================
 
 run_simulation_3 = function() {
-  sim_tag = if (QUICK_TEST) "sim3_test" else "sim3"
-  ckpt_tag = paste0(sim_tag, "_checkpoints")
-  out_tag = paste0(sim_tag, "_final")
-
-  for (grid_type in GRID_TYPES) {
-  for (error_dist in NOISE_DISTS) {
-  for (T_idx in seq_along(GRID_T)) {
-    T_pts = GRID_T[T_idx]
-    W = GRID_W[T_idx]
-
-    set.seed(42 + T_idx)
-    time_grid = if (grid_type == "uniform") {
-      seq(t_start, t_end, length.out = T_pts)
-    } else {
-      sort(runif(T_pts, t_start, t_end))
-    }
-
-    cat(sprintf("Pré-computando Cholesky MGP para T=%d (%s)...\n", T_pts, grid_type))
-    L_chol = make_mgp_chol(time_grid, sigma = 0.5, rho = 0.8)
-
-    for (N in GRID_N) {
-      n_boot = N
-
-      for (scen in SCENARIOS) {
-        config_label = sprintf(
-          "%s_%s_N%d_T%d_%s", grid_type, error_dist, N, T_pts, scen$name
-        )
-        ckpt_dir = file.path("output", ckpt_tag, config_label)
-        dir.create(ckpt_dir, recursive = TRUE, showWarnings = FALSE)
-
-        sim_ids = 1:N_SIM
-        n_batches = ceiling(N_SIM / BATCH_SIZE)
-        n_cores_this = safe_cores(N, T_pts)
+  for (error_dist in GRID_DIST) {
+    for (irr_level in IRR_LEVELS) {
+      for (T_idx in seq_along(GRID_T)) {
+        T_pts     = GRID_T[T_idx]
+        W         = GRID_W[T_idx]
+        time_grid = GRIDS[[paste0(irr_level, "_T", T_pts)]]
 
         cat(sprintf(
-          "\n>>> %s (N_BOOT=%d, Batches=%d, cores=%d) <<<\n",
-          config_label, n_boot, n_batches, n_cores_this
+          "\nCholesky MGP: dist=%s, irr=%s, T=%d...\n",
+          error_dist, irr_level, T_pts
         ))
+        L_chol = make_mgp_chol(time_grid, sigma = 0.5, rho = 0.8)
 
-        for (b in seq_len(n_batches)) {
-          batch_file = file.path(ckpt_dir, sprintf("batch_%04d.rds", b))
-          if (file.exists(batch_file)) {
-            cat(sprintf("  Batch %d/%d existe. Pulando.\n", b, n_batches))
-            next
-          }
-
-          start_idx = (b - 1) * BATCH_SIZE + 1
-          end_idx = min(b * BATCH_SIZE, N_SIM)
-          batch_ids = sim_ids[start_idx:end_idx]
-
-          cat(sprintf("  Batch %d/%d (sims %d-%d)... ", b, n_batches, start_idx, end_idx))
-
-          batch_results = mclapply(batch_ids, function(sid) {
-            tryCatch(
-              run_single_sim_3(
-                sid, scen, N, T_pts, time_grid, L_chol, W, n_boot, error_dist, grid_type
-              ),
-              error = function(e) {
-                message(sprintf("Sim %d erro: %s", sid, e$message)); NULL
-              }
+        for (N in GRID_N) {
+          for (scen in SCENARIOS) {
+            config_label = sprintf(
+              "%s_%s_N%d_T%d_%s", error_dist, irr_level, N, T_pts, scen$name
             )
-          }, mc.cores = n_cores_this)
+            ckpt_dir = file.path("output", "sim3_checkpoints", config_label)
+            dir.create(ckpt_dir, recursive = TRUE, showWarnings = FALSE)
 
-          batch_dt = rbindlist(lapply(batch_results, function(x) x$metrics))
-          batch_curves = rbindlist(lapply(batch_results, function(x) x$curves))
-
-          if (nrow(batch_dt) > 0) {
-            saveRDS(list(metrics = batch_dt, curves = batch_curves), batch_file)
+            n_batches    = ceiling(N_SIM / BATCH_SIZE)
+            n_cores_this = safe_cores(N, T_pts)
             cat(sprintf(
-              "OK (%d rows metrics, %d rows curves)\n",
-              nrow(batch_dt), nrow(batch_curves)
+              "\n>>> %s (Batches=%d, Cores=%d) <<<\n",
+              config_label, n_batches, n_cores_this
             ))
-          } else {
-            cat("VAZIO\n")
-          }
 
-          rm(batch_results, batch_dt, batch_curves); gc(verbose = FALSE)
+            for (b in seq_len(n_batches)) {
+              batch_file = file.path(ckpt_dir, sprintf("batch_%04d.rds", b))
+              if (file.exists(batch_file)) {
+                cat(sprintf("  Batch %d/%d existe. Pulando.\n", b, n_batches))
+                next
+              }
+
+              start_idx = (b - 1) * BATCH_SIZE + 1
+              end_idx   = min(b * BATCH_SIZE, N_SIM)
+              batch_ids = start_idx:end_idx
+              cat(sprintf(
+                "  Batch %d/%d (sims %d-%d)... ", b, n_batches, start_idx, end_idx
+              ))
+
+              batch_results = mclapply(batch_ids, function(sid) {
+                tryCatch(
+                  run_single_sim_s3(
+                    sid, scen, N, T_pts, time_grid, L_chol, W,
+                    error_dist, irr_level, N_BOOT
+                  ),
+                  error = function(e) {
+                    message(sprintf("Sim %d erro: %s", sid, e$message))
+                    NULL
+                  }
+                )
+              }, mc.cores = n_cores_this)
+
+              batch_results = Filter(Negate(is.null), batch_results)
+              batch_dt      = rbindlist(lapply(batch_results, `[[`, "metrics"))
+              batch_curves  = rbindlist(lapply(batch_results, `[[`, "curves"))
+
+              if (nrow(batch_dt) > 0) {
+                saveRDS(
+                  list(metrics = batch_dt, curves = batch_curves),
+                  batch_file
+                )
+                cat(sprintf("OK (%d sims)\n", nrow(batch_dt)))
+              } else {
+                cat("VAZIO\n")
+              }
+              rm(batch_results, batch_dt, batch_curves); gc(verbose = FALSE)
+            }
+          }
         }
       }
     }
   }
-  } # error_dist
-  } # grid_type
 
-  # --- Agregação final ---
-  cat("\n\n========== AGREGANDO RESULTADOS ==========\n")
-
-  all_files = list.files(
-    file.path("output", ckpt_tag), pattern = "\\.rds$",
-    recursive = TRUE, full.names = TRUE
-  )
-  if (length(all_files) == 0) { cat("ERRO: Sem checkpoints!\n"); return(NULL) }
-
-  all_data = lapply(all_files, readRDS)
-  all_results = rbindlist(lapply(all_data, function(x) x$metrics))
-  all_curves  = rbindlist(lapply(all_data, function(x) x$curves))
-
-  summary_dt = all_results[, .(
-    N_sims = .N,
-    Cov_Simul = round(mean(Cov_Simul, na.rm = TRUE) * 100, 1),
-    Cov_Point = round(mean(Cov_Point, na.rm = TRUE) * 100, 1),
-    NRMSE = round(mean(NRMSE, na.rm = TRUE), 4),
-    Bias = round(mean(Bias, na.rm = TRUE), 4),
-    Width = round(mean(Width, na.rm = TRUE), 3)
-  ), by = .(GridType, ErrorDist, Scenario, Method, N, T_pts)]
-
-
-  out_dir = file.path("output", out_tag)
-  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
-  fwrite(all_results, file.path(out_dir, paste0(sim_tag, "_raw.csv")))
-  fwrite(summary_dt,  file.path(out_dir, paste0(sim_tag, "_summary.csv")))
-  fwrite(all_curves,  file.path(out_dir, paste0(sim_tag, "_curves.csv")))
-
-  cat("\nSumário:\n")
-  print(summary_dt)
-  cat(sprintf("\nSalvo em: %s/\n", out_dir))
-
-  return(summary_dt)
+  aggregate_simulation_3()
 }
 
 # =============================================================================
 # RUN
 # =============================================================================
+
 results = run_simulation_3()

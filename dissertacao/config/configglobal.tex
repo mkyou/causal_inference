@@ -137,8 +137,52 @@
 }
 % ----------------------------------------------------------
 % ----------------------------------------------------------
+% Blocos de código
+% ----------------------------------------------------------
+\tcbuselibrary{listings}
+
+\newtcblisting{codeblock}{
+  listing only,
+  listing options={
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    breakatwhitespace=true,
+    showstringspaces=false,
+    tabsize=2,
+    keepspaces=true,
+    columns=flexible,
+    numbers=none,
+    backgroundcolor={},
+  },
+  colback=gray!8,
+  colframe=gray!40,
+  boxrule=0.4pt,
+  arc=2pt,
+  outer arc=2pt,
+  left=8pt, right=8pt, top=4pt, bottom=4pt,
+  before={\smallskip\noindent},
+  after={\smallskip},
+}
+% ----------------------------------------------------------
 % Ambiente para destaque de estimadores e procedimentos
 % ----------------------------------------------------------
+\tcbset{estimatorboxBstyle/.style={
+  breakable,
+  colback=white,
+  colframe=black,
+  boxrule=\fboxrule,
+  arc=0pt,
+  outer arc=0pt,
+  left=10pt, right=10pt, top=8pt, bottom=10pt,
+  fonttitle=\normalfont\bfseries,
+  before={\noindent},
+  after={\medskip},
+}}
+\newenvironment{estimatorboxB}[1][]{%
+  \begin{tcolorbox}[estimatorboxBstyle, title={#1}]%
+}{%
+  \end{tcolorbox}%
+}
 \newsavebox{\estimatorboxcontent}
 \newlength{\estimatorboxpad}
 \setlength{\estimatorboxpad}{10pt}

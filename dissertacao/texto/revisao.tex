@@ -64,7 +64,7 @@ Por essa razão, a literatura aplicada em inferência causal funcional, até ent
 
 \subsection{FATE e Inferência causal funcional}\label{sec-inferencia-causal-funcional}
 
-No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) as curvas dos desfechos potenciais sob tratamento e controle, respectivamente.
+No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) as curvas dos desfechos potenciais sob tratamento e controle, respectivamente; \(\mathcal{T}\) corresponde ao período de acompanhamento após a intervenção.
 Considerando os exemplos que trouxemos no Capítulo \ref{sec-introducao}, no caso da rede elétrica, \(Y_i^{(1)}(t)\) representaria a curva de consumo do domicílio \(i\) caso este recebesse a tarifa dinâmica, e \(Y_i^{(0)}(t)\), a curva que este mesmo domicílio apresentaria caso recebesse a tarifa padrão. 
 \(A_i\) indicaria qual das duas tarifas foi efetivamente atribuída, enquanto \(\mathbf{X}_i\) representaria as características socioeconômicas do domicílio. 
 No problema da conduta clínica, por sua vez, \(Y_i^{(1)}(t)\) seria a trajetória do sinal vital do paciente \(i\) caso essa conduta fosse aplicada na admissão, enquanto \(Y_i^{(0)}(t)\) seria a trajetória em uma situação de não-aplicação da conduta.
@@ -768,7 +768,7 @@ Formalizamos essa exigência adiante:
 
 \begin{definition}[Causalidade operacional e vazamento temporal]\label{def:vazamento}
     Seja \(f[k]\), \(k \in \{0, 1, \dots, T-1\}\), um sinal discreto e seja \(\mathcal{F}_k = \sigma\!\left(\{f[s] : s \leq k\}\right)\) a informação disponível até o instante \(k\).
-    Um operador de pré-processamento \(\mathcal{T}\) é \emph{operacionalmente causal} (equivalentemente, \emph{não antecipativo}, na terminologia de filtros causais \cite{oppenheim_discrete-time_2010}) se a saída \(\mathcal{T}(f)[k]\) depende apenas de \(\{f[s] : s \leq k\}\) para todo \(k\).
+    Um operador de pré-processamento \(\mathcal{P}\) é \emph{operacionalmente causal} (equivalentemente, \emph{não antecipativo}, na terminologia de filtros causais \cite{oppenheim_discrete-time_2010}) se a saída \(\mathcal{P}(f)[k]\) depende apenas de \(\{f[s] : s \leq k\}\) para todo \(k\).
     Quando essa condição falha, há vazamento temporal, e a informação vazada é a parte da saída em \(k\) que depende de observações futuras \(f[s]\), com \(s > k\).
 \end{definition}
 
