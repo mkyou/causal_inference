@@ -1,18 +1,76 @@
+# scripts/sim2_generate_artifacts.R
+
 library(data.table)
 library(ggplot2)
 
-# Configurações de caminhos
-input_dir = "output/sim2_final"
-output_dir = "output/sim2_final/plots"
+# =============================================================================
+# 1. SETUP
+# =============================================================================
 
-out_dir_main = file.path(output_dir, "texto_principal")
-out_dir_app  = file.path(output_dir, "apendice")
+script_dir <- tryCatch(
+  dirname(rstudioapi::getActiveDocumentContext()$path),
+  error = function(e) {
+    args <- commandArgs(trailingOnly = FALSE)
+    file_arg <- grep("^--file=", args, value = TRUE)
+    if (length(file_arg) > 0) {
+      dirname(normalizePath(sub("^--file=", "", file_arg)))
+    } else {
+      getwd()
+    }
+  }
+)
+if (basename(script_dir) == "scripts") {
+  setwd(dirname(script_dir))
+} else {
+  setwd(script_dir)
+}
 
-if (!dir.exists(out_dir_main)) dir.create(out_dir_main, recursive = TRUE)
-if (!dir.exists(out_dir_app))  dir.create(out_dir_app, recursive = TRUE)
+input_dir <- "output/sim2_final"
+dir.create(
+  file.path(input_dir, "plots/pt"),
+  recursive = TRUE, showWarnings = FALSE
+)
+dir.create(
+  file.path(input_dir, "plots/eng"),
+  recursive = TRUE, showWarnings = FALSE
+)
 
-# Tema base para todos os graficos harmonizado com LaTeX
-base_theme = theme_bw(base_size = 14) +
+SCENARIOS <- c("Bumps", "Doppler", "Heavisine", "Sigmoid")
+
+# =============================================================================
+# 2. SISTEMA VISUAL
+# =============================================================================
+
+LABELS <- list(
+  pt = list(
+    scenarios = c(
+      Bumps = "Bumps", Doppler = "Doppler",
+      Heavisine = "Escada", Sigmoid = "Sigmoide"
+    ),
+    dists = c(gaussian = "Gaussiano", t = "t (5 g.l.)"),
+    x_T = "Pontos na grade (T)",
+    x_t = "Tempo (t)",
+    y_nrmse_main = "NRMSE (Mediana e Quartis)",
+    y_nrmse_box = "NRMSE (Boxplot)",
+    y_latency = "Latência média (µs)",
+    method_on = "Ondaletas (Online)"
+  ),
+  eng = list(
+    scenarios = c(
+      Bumps = "Bumps", Doppler = "Doppler",
+      Heavisine = "Staircase", Sigmoid = "Sigmoid"
+    ),
+    dists = c(gaussian = "Gaussian", t = "t (5 d.f.)"),
+    x_T = "Grid points (T)",
+    x_t = "Time (t)",
+    y_nrmse_main = "NRMSE (Median and Quartiles)",
+    y_nrmse_box = "NRMSE (Boxplot)",
+    y_latency = "Mean latency (µs)",
+    method_on = "Wavelets (Online)"
+  )
+)
+
+base_theme <- theme_bw(base_size = 14) +
   theme(
     text = element_text(family = "serif"),
     plot.title = element_blank(),
@@ -22,137 +80,116 @@ base_theme = theme_bw(base_size = 14) +
     strip.text = element_text(margin = margin(5, 5, 5, 5), face = "bold")
   )
 
-# -----------------------------------------------------------------------------
-# 1. Gráficos de Boxplot do NRMSE Online por Cenário
-# -----------------------------------------------------------------------------
-cat("Gerando boxplots do NRMSE...\n")
-df_raw = fread(file.path(input_dir, "sim2_raw.csv"))
+# =============================================================================
+# 3. DADOS
+# =============================================================================
 
-for(scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
-    p_data = df_raw[Scenario == scen_name]
-    if(nrow(p_data) == 0) next
-    
-    # Label para o título do arquivo (Escada se Heavisine)
-    scen_label = ifelse(scen_name == "Heavisine", "Escada", scen_name)
+cat("Carregando dados...\n")
+df_raw <- fread(file.path(input_dir, "sim2_raw.csv"))
+df_latency <- fread(file.path(input_dir, "sim2_latency_curves.csv"))
 
-    # Preparação dos fatores
-    p_data[, N_label := factor(paste("N =", N), levels = paste("N =", sort(unique(N))))]
-    p_data[, T_factor := factor(T_pts, levels = sort(unique(T_pts)))]
-    p_data[, Method := "Ondaletas (Online)"]
+df_raw[, N_label := factor(
+  paste("N =", N),
+  levels = paste("N =", sort(unique(N)))
+)]
+df_raw[, T_factor := factor(T_pts, levels = sort(unique(T_pts)))]
 
-    # a. NRMSE
-    # Versão Texto Principal: Mediana e Quartis
-    p_main = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, color = Method)) +
-        stat_summary(fun.data = "median_hilow", geom = "pointrange", size = 0.8) +
-        facet_wrap(~ N_label, ncol = 3) +
-        scale_color_manual(values = c("Ondaletas (Online)" = "royalblue")) +
-        labs(x = "Pontos na grade (T)", y = "NRMSE online (Mediana e Quartis)") +
-        base_theme
-    
-    ggsave(
-        filename = file.path(out_dir_main, sprintf("nrmse_%s.png", scen_label)),
-        plot = p_main, width = 9, height = 5, dpi = 300
-    )
-
-    # Versão Apêndice: Boxplot padrão
-    p_app = ggplot(p_data, aes(x = T_factor, y = NRMSE_online, fill = Method)) +
-        geom_boxplot(color = "black", alpha = 0.8) +
-        facet_wrap(~ N_label, ncol = 3) +
-        scale_fill_manual(values = c("Ondaletas (Online)" = "royalblue")) +
-        labs(x = "Pontos na grade (T)", y = "NRMSE online (Boxplot)") +
-        base_theme
-
-    ggsave(
-        filename = file.path(out_dir_app, sprintf("boxplot_nrmse_%s.png", scen_label)),
-        plot = p_app, width = 9, height = 5, dpi = 300
-    )
-}
-
-# -----------------------------------------------------------------------------
-# 2. Gráficos do FATE Ponto a Ponto (Verdadeiro vs. Estimado Online)
-# -----------------------------------------------------------------------------
-cat("Gerando curvas do FATE...\n")
-df_curves = fread(file.path(input_dir, "sim2_curves.csv"))
-
-# Filtrar para um cenário ilustrativo de alta resolução
-p_data_curves = df_curves[N == 2000 & T_pts == 256]
-
-# Obter estimativa média empírica
-p_mean = p_data_curves[, .(
-  mean_online = mean(Est),
-  theta_true = mean(TrueCurve)
-), by = .(Scenario, t_val)]
-
-for (scen_name in c("Bumps", "Doppler", "Heavisine", "Sigmoid")) {
-  scen_data = p_mean[Scenario == scen_name]
-  if(nrow(scen_data) == 0) next
-  
-  scen_label = ifelse(scen_name == "Heavisine", "Escada", scen_name)
-
-  p = ggplot(scen_data, aes(x = t_val)) +
-    geom_line(aes(y = theta_true, color = "Verdadeiro"), linewidth = 0.8) +
-    geom_line(aes(y = mean_online, color = "Ondaletas (Online)"), linewidth = 0.8, linetype = "dashed") +
-    scale_color_manual(
-        values = c("Verdadeiro" = "black", "Ondaletas (Online)" = "royalblue")
-    ) +
-    labs(
-         x = "Tempo (t)",
-         y = expression(theta(t)),
-         color = NULL
-    ) +
-    base_theme
-
-  ggsave(
-      filename = file.path(out_dir_main, sprintf("fate_curves_%s.png", scen_label)),
-      plot = p,
-      width = 9,
-      height = 5,
-      dpi = 300
+df_latency[
+  ,
+  N_label := factor(
+    paste("N =", N),
+    levels = paste("N =", sort(unique(N)))
   )
+]
+df_latency[, T_factor := factor(T_pts, levels = sort(unique(T_pts)))]
+df_latency[
+  ,
+  ErrorDist_label := factor(
+    ifelse(ErrorDist == "gaussian", "Gaussiano", "t (5 g.l.)"),
+    levels = c("Gaussiano", "t (5 g.l.)")
+  )
+]
+
+# =============================================================================
+# 4. GERAÇÃO
+# =============================================================================
+
+for (lang in c("pt", "eng")) {
+  lbl <- LABELS[[lang]]
+  out_dir <- file.path(input_dir, "plots", lang)
+
+  df_raw[
+    ,
+    ErrorDist_label := factor(
+      lbl$dists[ErrorDist],
+      levels = unname(lbl$dists)
+    )
+  ]
+  df_latency[
+    , ErrorDist_label := factor(
+      lbl$dists[ErrorDist],
+      levels = unname(lbl$dists)
+    )
+  ]
+  df_raw[, Method := lbl$method_on]
+
+  # ── 4.1 NRMSE ──────────────────────────────────────────────────────────────
+  cat(sprintf("\n[%s | 4.1] NRMSE...\n", lang))
+  for (scen in SCENARIOS) {
+    p_data <- df_raw[Scenario == scen]
+    if (nrow(p_data) == 0) next
+
+    p_main <- ggplot(
+      p_data,
+      aes(x = T_factor, y = NRMSE_final, color = Method)
+    ) +
+      stat_summary(fun.data = "median_hilow", geom = "pointrange", size = 0.8) +
+      facet_wrap(~N_label, ncol = 3) +
+      scale_color_manual(values = setNames("royalblue", lbl$method_on)) +
+      labs(x = lbl$x_T, y = lbl$y_nrmse_main) +
+      base_theme
+    ggsave(
+      file.path(out_dir, sprintf("nrmse_%s.png", scen)),
+      p_main,
+      width = 9, height = 5, dpi = 300, bg = "white"
+    )
+    cat(sprintf("  -> %s/nrmse_%s.png\n", lang, scen))
+
+    p_box <- ggplot(p_data, aes(x = T_factor, y = NRMSE_final, fill = Method)) +
+      geom_boxplot(color = "black", alpha = 0.8) +
+      facet_wrap(~N_label, ncol = 3) +
+      scale_fill_manual(values = setNames("royalblue", lbl$method_on)) +
+      labs(x = lbl$x_T, y = lbl$y_nrmse_box) +
+      base_theme
+    ggsave(
+      file.path(out_dir, sprintf("boxplot_nrmse_%s.png", scen)),
+      p_box,
+      width = 9, height = 5, dpi = 300, bg = "white"
+    )
+    cat(sprintf("  -> %s/boxplot_nrmse_%s.png\n", lang, scen))
+  }
+
+  # ── 4.2 Curvas de latência ─────────────────────────────────────────────────
+  cat(sprintf("\n[%s | 4.2] Curvas de latência...\n", lang))
+  for (scen in SCENARIOS) {
+    lat_data <- df_latency[Scenario == scen]
+    if (nrow(lat_data) == 0) next
+
+    p <- ggplot(
+      lat_data,
+      aes(x = t_val, y = Latency_mean_us, color = T_factor, group = T_factor)
+    ) +
+      geom_line(linewidth = 0.7) +
+      facet_grid(ErrorDist_label ~ N_label, scales = "fixed") +
+      labs(x = lbl$x_t, y = lbl$y_latency, color = "T") +
+      base_theme
+    ggsave(
+      file.path(out_dir, sprintf("latency_%s.png", scen)),
+      p,
+      width = 9, height = 6, dpi = 300, bg = "white"
+    )
+    cat(sprintf("  -> %s/latency_%s.png\n", lang, scen))
+  }
 }
 
-# =============================================================================
-# 6. TABELA GERENCIAL SUMMARY
-# =============================================================================
-
-cat("Gerando tabela gerencial summary para Simulação 2...\\n")
-
-dt_summary = dt_raw[, .(
-  NRMSE_Mean = mean(NRMSE_online, na.rm = TRUE),
-  NRMSE_Median = median(NRMSE_online, na.rm = TRUE),
-  Latency_Mean_us = mean(Latency_mean_us, na.rm = TRUE),
-  Latency_Median_us = median(Latency_mean_us, na.rm = TRUE)
-), by = .(Scenario, N_label, T_factor)]
-
-setorder(dt_summary, Scenario, N_label, T_factor)
-fwrite(dt_summary, "output/sim2_final/sim2_summary.csv")
-
-cat("Artifact generation para a SIMULAÇÃO 2 concluída com sucesso.\\n")
-
-# -----------------------------------------------------------------------------
-# 3. Tabela Gerencial Summary
-# -----------------------------------------------------------------------------
-cat("Gerando tabela gerencial summary...\n")
-
-# Calcular RMSE Global e Bias Global por Simulação a partir das curvas
-agg_sim = df_curves[, .(
-  RMSE = sqrt(mean((Est - TrueCurve)^2)),
-  Bias = mean(Est - TrueCurve)
-), by = .(SimID, Scenario, N, T_pts)]
-
-# Adicionar RMSE e Bias ao df_raw para consolidação
-df_raw[agg_sim, c("RMSE", "Bias") := .(i.RMSE, i.Bias), on = .(SimID, Scenario, N, T_pts)]
-
-dt_summary = df_raw[, .(
-  NRMSE_Mean = mean(NRMSE_online, na.rm = TRUE),
-  NRMSE_Median = median(NRMSE_online, na.rm = TRUE),
-  NRMSE_SD = sd(NRMSE_online, na.rm = TRUE),
-  RMSE_Mean = mean(RMSE, na.rm = TRUE),
-  Bias_Mean = mean(Bias, na.rm = TRUE),
-  Latency_Mean_us = mean(Latency_mean_us, na.rm = TRUE)
-), by = .(Scenario, N, T_pts)]
-
-setorder(dt_summary, Scenario, N, T_pts)
-fwrite(dt_summary, file.path(input_dir, "sim2_summary.csv"))
-
-cat("Pronto! Artefatos salvos em", output_dir, "e", input_dir, "\n")
+cat("\nGeração de artefatos da Simulação 2 concluída.\n")
