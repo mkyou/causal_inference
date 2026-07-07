@@ -1,6 +1,7 @@
 \chapter{Estrutura de causalidade e a seta do tempo}\label{ap-dag-causalidade}
 
-Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade operacional no pré-processamento de dados funcionais. A Figura \ref{fig:dag-vazamento-temporal} ilustra o contraste entre as abordagens \emph{online} e \emph{offline} sob a ótica da dependência temporal.
+Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade operacional no pré-processamento de dados funcionais. 
+A Figura \ref{fig:dag-vazamento-temporal} ilustra o contraste entre as abordagens \emph{online} e \emph{offline} sob a ótica da dependência temporal.
 
 \begin{figure}[!ht]
     \centering
@@ -28,12 +29,12 @@ Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade
 
     % Camada de estimação
     \node[est] (ThetaOn) [below of=Yt, node distance=2.8cm, xshift=-1.6cm] {
-        $\hat{\theta}_t$ \textbf{(online)}\\
+        $\hat{\theta}_t$ \textbf{(\emph{online})}\\
         \scriptsize causalmente íntegro
     };
     
     \node[est] (ThetaOff) [below of=Yt, node distance=2.8cm, xshift=1.6cm] {
-        $\hat{\theta}_t$ \textbf{(offline)}\\
+        $\hat{\theta}_t$ \textbf{(\emph{offline})}\\
         \scriptsize vazamento futuro
     };
 
@@ -50,16 +51,31 @@ Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade
     \label{fig:dag-vazamento-temporal}
 \end{figure}
 
-Como discutido no Capítulo \ref{sec-metodologia}, a contaminação (representada pela seta vermelha na Figura \ref{fig:dag-vazamento-temporal}) faz com que o estimador \(\hat{\theta}(t)\) utilize informações que ainda não ocorreram cronologicamente para suavizar a trajetória no instante \(t\). Em contextos de monitoramento em tempo real, essa violação da seta do tempo invalidaria a detecção de anomalias ou a correta atribuição de causalidade, justificando o uso de métodos operacionalmente causais como a nossa proposta via \emph{lifting scheme}.
+Como discutido no Capítulo \ref{sec-metodologia}, a contaminação (representada pela seta vermelha na Figura \ref{fig:dag-vazamento-temporal}) faz com que o estimador \(\hat{\theta}(t)\) utilize informações que ainda não ocorreram cronologicamente para suavizar a trajetória no instante \(t\). 
+Em contextos de monitoramento em tempo real, essa violação da seta do tempo invalidaria a detecção de anomalias ou a correta atribuição de causalidade, justificando o uso de métodos operacionalmente causais como a nossa proposta via \emph{lifting scheme}.
 
 \chapter{Resultados detalhados das simulações}
 \label{ap-simulacoes-completas}
 
-Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico (\emph{boxplots}) que preservam a informação de \emph{outliers}.
+Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico.
 
-\section{Resultados exaustivos: simulação 1}
+\section{Resultados de diagnóstico: simulação 1}
 
 As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalham o desempenho de todos os métodos para todas as combinações de cenários, resoluções e tamanhos amostrais, sob distribuição gaussiana e \(t\text{-Student}(5)\), respectivamente.
+
+Para os estimadores de ondaletas, a largura das bandas decresce com \(N\) enquanto a cobertura simultânea permanece próxima do nível nominal em toda a amplitude amostral investigada.
+No cenário \emph{Sigmoide}, por exemplo, as bandas passam de cerca de 42 com \(N = 200\) para menos de 0{,}4 com \(N = 2000\), e a cobertura permanece sempre acima de 85\%.
+As bandas analíticas das \emph{splines} exibem o padrão oposto.
+Para \(N = 200\), são mais largas que as das ondaletas (52 a 58 contra 42), mas já insuficientes para atingir a cobertura nominal, ficando em torno de 40\%.
+Para \(N = 500\) e \(N = 2000\), colapsam abruptamente para menos de 6 e de 0{,}15, respectivamente, e a cobertura despenca para menos de 4\% e efetivamente zero.
+A regularização das \emph{splines} introduz um viés que as bandas analíticas, construídas sob hipótese de não-viés, não conseguem absorver.
+
+A comparação entre os estimadores \emph{online} e \emph{offline} mostra larguras praticamente indistinguíveis em todos os cenários, com diferenças inferiores a 0{,}03 com \(N = 2000\), e coberturas que raramente divergem em mais de um ponto percentual.
+A restrição causal não infla a incerteza pontual de forma detectável.
+
+Os métodos confundidos apresentam bandas ligeiramente mais largas que seus equivalentes sem confundimento, mas a queda de cobertura é dominada pelo viés do estimador.
+Para confundimento alto com \(N = 2000\) e \(T = 512\), a cobertura cai para valores próximos de zero nos cenários \emph{Bumps} e \emph{Escada}, mesmo com bandas marginalmente mais amplas.
+Por fim, sob distribuição \(t\text{-Student}(5)\), as larguras e coberturas são comparáveis às obtidas com ruído gaussiano, reafirmando que o bootstrap calibra adequadamente a incerteza mesmo com caudas mais pesadas.
 
 \begin{landscape}
 {\footnotesize
@@ -821,180 +837,233 @@ As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalha
 }
 \end{landscape}
 
-\section{Cobertura simultânea empírica: simulação 1}
-As Figuras \ref{fig:coverage_bumps_sim1}--\ref{fig:coverage_sigmoid_sim1} apresentam a cobertura simultânea empírica para os quatro cenários de efeito, em função de \(T\) para cada valor de \(N\) e distribuição do ruído. A linha tracejada indica o nível nominal de \(95\%\).
+\clearpage
 
-\begin{figure}[htbp]
+\subsection{Cobertura simultânea empírica}
+As Figuras \ref{fig:coverage_bd_sim1} e \ref{fig:coverage_hs_sim1} apresentam a cobertura simultânea empírica para os quatro cenários de efeito, em função de \(T\) para cada valor de \(N\) e distribuição do ruído. A linha tracejada indica o nível nominal de \(95\%\).
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Bumps}
-    \caption{Cobertura simultânea empírica --- cenário \emph{bumps}.}
-    \label{fig:coverage_bumps_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Bumps}
+        \caption{Cenário \emph{Bumps}.}
+        \label{fig:coverage_bumps_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Doppler}
+        \caption{Cenário \emph{Doppler}.}
+        \label{fig:coverage_doppler_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica --- cenários \emph{Bumps} e \emph{Doppler}.}
+    \label{fig:coverage_bd_sim1}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Doppler}
-    \caption{Cobertura simultânea empírica --- cenário \emph{doppler}.}
-    \label{fig:coverage_doppler_sim1}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Heavisine}
-    \caption{Cobertura simultânea empírica --- cenário \emph{escada}.}
-    \label{fig:coverage_heavisine_sim1}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Sigmoid}
-    \caption{Cobertura simultânea empírica --- cenário \emph{sigmoide}.}
-    \label{fig:coverage_sigmoid_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Heavisine}
+        \caption{Cenário \emph{Escada}.}
+        \label{fig:coverage_heavisine_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Sigmoid}
+        \caption{Cenário \emph{Sigmoide}.}
+        \label{fig:coverage_sigmoid_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica --- cenários \emph{Escada} e \emph{Sigmoide}.}
+    \label{fig:coverage_hs_sim1}
 \end{figure}
 
 \clearpage
 
-\section{Cobertura simultânea empírica do \(\mathrm{CFATE}\): simulação 1}
-As Figuras \ref{fig:cfate_coverage_bumps_sim1}--\ref{fig:cfate_coverage_sigmoid_sim1} apresentam a cobertura empírica da banda de confiança simultânea do \(\mathrm{CFATE}\) nos quatro cenários. Para os cenários \emph{bumps} e \emph{doppler}, observa-se um comportamento não-monotônico das \emph{splines} em relação a \(T\) para \(N = 500\), com pico intermediário na cobertura antes de colapsar a zero em \(N = 2000\).
+\subsection{Cobertura simultânea empírica do \(\mathrm{CFATE}\)}
+As Figuras \ref{fig:cfate_coverage_bd_sim1} e \ref{fig:cfate_coverage_hs_sim1} apresentam a cobertura empírica da banda de confiança simultânea do \(\mathrm{CFATE}\) nos quatro cenários. Para os cenários \emph{Bumps} e \emph{Doppler}, observa-se um comportamento não-monotônico das \emph{splines} em relação a \(T\) para \(N = 500\), com pico intermediário na cobertura antes de colapsar a zero em \(N = 2000\).
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Bumps}
-    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{bumps}.}
-    \label{fig:cfate_coverage_bumps_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Bumps}
+        \caption{Cenário \emph{Bumps}.}
+        \label{fig:cfate_coverage_bumps_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Doppler}
+        \caption{Cenário \emph{Doppler}.}
+        \label{fig:cfate_coverage_doppler_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenários \emph{Bumps} e \emph{Doppler}.}
+    \label{fig:cfate_coverage_bd_sim1}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Doppler}
-    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{doppler}.}
-    \label{fig:cfate_coverage_doppler_sim1}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Heavisine}
-    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{escada}.}
-    \label{fig:cfate_coverage_heavisine_sim1}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Sigmoid}
-    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{sigmoide}.}
-    \label{fig:cfate_coverage_sigmoid_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Heavisine}
+        \caption{Cenário \emph{Escada}.}
+        \label{fig:cfate_coverage_heavisine_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Sigmoid}
+        \caption{Cenário \emph{Sigmoide}.}
+        \label{fig:cfate_coverage_sigmoid_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenários \emph{Escada} e \emph{Sigmoide}.}
+    \label{fig:cfate_coverage_hs_sim1}
 \end{figure}
 
 \clearpage
 
-\section{\(\mathrm{NRMSE}\) pontual: simulação 1}
-As Figuras \ref{fig:ptwise_nrmse_best_sim1}--\ref{fig:ptwise_nrmse_worst_sim1} mostram o \(\mathrm{NRMSE}\) médio em cada instante do grid temporal para os casos melhor (\(N = 2000\), \(T = 512\)), intermediário (\(N = 500\), \(T = 256\)) e pior (\(N = 200\), \(T = 128\)). Conforme \(N\) e \(T\) crescem, os métodos baseados em ondaletas estabilizam rapidamente em erro próximo a zero; as \emph{splines} concentram o erro nos instantes próximos às descontinuidades dos cenários \emph{bumps} e \emph{escada}. No cenário \emph{doppler}, o estimador \emph{online} apresenta erro pontual persistentemente superior ao \emph{offline}, refletindo a convergência mais lenta observada nesse cenário.
+\subsection{\(\mathrm{NRMSE}\) pontual}
+As Figuras \ref{fig:ptwise_nrmse_best_sim1} e \ref{fig:ptwise_nrmse_mw_sim1} mostram o \(\mathrm{NRMSE}\) médio em cada instante do grid temporal para os casos melhor (\(N = 2000\), \(T = 512\)), intermediário (\(N = 500\), \(T = 256\)) e pior (\(N = 200\), \(T = 128\)). Conforme \(N\) e \(T\) crescem, os métodos baseados em ondaletas estabilizam rapidamente em erro próximo a zero; as \emph{splines} concentram o erro nos instantes próximos às descontinuidades dos cenários \emph{Bumps} e \emph{Escada}. No cenário \emph{Doppler}, o estimador \emph{online} apresenta erro pontual persistentemente superior ao \emph{offline}, refletindo a convergência mais lenta observada nesse cenário.
 
-\begin{figure}[htbp]
+A convergência mais lenta em \emph{Doppler} não é exclusiva do estimador \emph{online}. O \(\mathrm{NRMSE}\) pontual do estimador \emph{offline} nesse cenário também excede o dos demais, o que aponta para uma dificuldade de natureza espectral, não da restrição causal. O \emph{Doppler} é uma função com oscilações de frequência crescente ao longo do tempo. A janela de tamanho \(W\) precisa acompanhar frequências progressivamente mais altas, e a convergência fica mais lenta mesmo sem a restrição de causalidade operacional. As \emph{splines}, nesse cenário, chegam a apresentar \(\mathrm{NRMSE}\) pontual inferior ao das ondaletas em algumas regiões do tempo, pois o suavizamento global reduz o erro quadrático nas zonas de alta frequência, ainda que ao custo de cobertura nula. O erro das ondaletas em \emph{Doppler} não é desprezível nos tamanhos de amostra investigados, mas tende a diminuir assintoticamente. Aumentar \(T\), densificando o \emph{grid} temporal, tende a ser mais eficaz do que aumentar apenas \(N\), pois o obstáculo é de resolução temporal.
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_best}
+    \includegraphics[width=0.82\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_best}
     \caption{\(\mathrm{NRMSE}\) pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
     \label{fig:ptwise_nrmse_best_sim1}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_med}
-    \caption{\(\mathrm{NRMSE}\) pontual --- caso intermediário (\(N = 500\), \(T = 256\)).}
-    \label{fig:ptwise_nrmse_med_sim1}
-\end{figure}
+\clearpage
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_worst}
-    \caption{\(\mathrm{NRMSE}\) pontual --- pior caso (\(N = 200\), \(T = 128\)).}
-    \label{fig:ptwise_nrmse_worst_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_nrmse_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_nrmse_worst_sim1}
+    \end{subfigure}
+    \caption{\(\mathrm{NRMSE}\) pontual --- casos intermediário e pior.}
+    \label{fig:ptwise_nrmse_mw_sim1}
 \end{figure}
 
 \clearpage
 
-\section{Viés pontual: simulação 1}
-As Figuras \ref{fig:ptwise_bias_best_sim1}--\ref{fig:ptwise_bias_worst_sim1} mostram o viés médio pontual em cada instante do grid temporal. No melhor caso, as ondaletas apresentam viés próximo a zero em todos os cenários, enquanto as \emph{splines} exibem viés sistemático nos instantes de maior irregularidade. O estimador \emph{online} no cenário \emph{doppler} ainda acumula viés relevante no caso intermediário, confirmando que a sua convergência nesse cenário é mais lenta.
+\subsection{Viés pontual}
+As Figuras \ref{fig:ptwise_bias_best_sim1} e \ref{fig:ptwise_bias_mw_sim1} mostram o viés médio pontual em cada instante do grid temporal. 
+No melhor caso, as ondaletas apresentam viés próximo a zero em todos os cenários, enquanto as \emph{splines} exibem viés sistemático nos instantes de maior irregularidade. 
+O estimador \emph{online} no cenário \emph{Doppler} ainda acumula viés relevante no caso intermediário, confirmando que a sua convergência nesse cenário é mais lenta. 
+As mesmas considerações feitas para o \(\mathrm{NRMSE}\) pontual se aplicam: nos casos intermediário e pior, as ondaletas \emph{online} e \emph{offline} apresentam viés pontual praticamente idêntico em todos os cenários, exceto \emph{Doppler}, onde a convergência mais lenta se manifesta também no viés.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_best}
     \caption{Viés pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
     \label{fig:ptwise_bias_best_sim1}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_med}
-    \caption{Viés pontual --- caso intermediário (\(N = 500\), \(T = 256\)).}
-    \label{fig:ptwise_bias_med_sim1}
-\end{figure}
+\clearpage
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_worst}
-    \caption{Viés pontual --- pior caso (\(N = 200\), \(T = 128\)).}
-    \label{fig:ptwise_bias_worst_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_bias_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_bias_worst_sim1}
+    \end{subfigure}
+    \caption{Viés pontual --- casos intermediário e pior.}
+    \label{fig:ptwise_bias_mw_sim1}
 \end{figure}
 
 \clearpage
 
-\section{Largura pontual das bandas: simulação 1}
-As Figuras \ref{fig:ptwise_width_best_sim1}--\ref{fig:ptwise_width_worst_sim1} apresentam a largura pontual das bandas de confiança simultâneas nos três casos. No melhor caso, as ondaletas \emph{online} produzem bandas mais largas que as \emph{offline}, e as \emph{splines} produzem bandas mais estreitas --- o que explica sua cobertura insuficiente quando o efeito é irregular. As escalas dos casos intermediário e pior refletem a incerteza genuinamente maior com menos dados.
+\subsection{Largura pontual das bandas}
+As Figuras \ref{fig:ptwise_width_best_sim1} e \ref{fig:ptwise_width_mw_sim1} apresentam a largura pontual das bandas de confiança simultâneas nos três casos. 
+No melhor caso, o padrão entre \emph{online} e \emph{offline} varia por cenário: as ondaletas \emph{online} produzem bandas menores que as \emph{offline} nos cenários \emph{Escada} e \emph{Sigmoide}, e maiores nos cenários \emph{Doppler} e \emph{Bumps}. 
+Nos casos intermediário e pior, as larguras são praticamente indistinguíveis entre os dois estimadores. 
+Em todos os casos, as \emph{splines} produzem bandas mais estreitas que as ondaletas, o que explica sua cobertura insuficiente quando o efeito é irregular.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_best}
     \caption{Largura pontual das bandas de confiança simultâneas --- melhor caso (\(N = 2000\), \(T = 512\)).}
     \label{fig:ptwise_width_best_sim1}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_med}
-    \caption{Largura pontual das bandas de confiança simultâneas --- caso intermediário (\(N = 500\), \(T = 256\)).}
-    \label{fig:ptwise_width_med_sim1}
-\end{figure}
+\clearpage
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_worst}
-    \caption{Largura pontual das bandas de confiança simultâneas --- pior caso (\(N = 200\), \(T = 128\)).}
-    \label{fig:ptwise_width_worst_sim1}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_width_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_width_worst_sim1}
+    \end{subfigure}
+    \caption{Largura pontual das bandas de confiança simultâneas --- casos intermediário e pior.}
+    \label{fig:ptwise_width_mw_sim1}
 \end{figure}
 
 \clearpage
 
 \section{Resultados de diagnóstico: simulação 2}
 
-Para a simulação 2 (\emph{online}), apresentamos os boxplots de dispersão do erro (Figura \ref{fig:box_nrmse_sim2}).
+Para a simulação 2 (\emph{online}), apresentamos os \emph{boxplots} de dispersão do erro (Figura \ref{fig:box_nrmse_sim2}).
+Os \emph{boxplots} confirmam que o \(\mathrm{NRMSE}\) cai rapidamente com \(N\) em todos os cenários.
 
 \begin{figure}[ht]
     \centering
     \begin{subfigure}{0.45\textwidth}
         \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Bumps}
-        \caption{Bumps}
+        \caption{\emph{Bumps}}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\textwidth}
         \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Doppler}
-        \caption{Doppler}
+        \caption{\emph{Doppler}}
     \end{subfigure}
     \\
     \begin{subfigure}{0.45\textwidth}
         \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Heavisine}
-        \caption{Escada}
+        \caption{\emph{Escada}}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\textwidth}
         \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Sigmoid}
-        \caption{Sigmoide}
+        \caption{\emph{Sigmoide}}
     \end{subfigure}
     \caption{Distribuição do erro quadrático médio normalizado (\(\mathrm{NRMSE}\)) para o estimador \emph{online} na Simulação 2, demonstrando a robustez da precisão do rastreamento incremental mesmo na presença de ruído intenso e em diferentes níveis de resolução temporal $T$.}
     \label{fig:box_nrmse_sim2}
 \end{figure}
 
-A Tabela \ref{tab:resultados_sim2} consolida o desempenho estatístico e a latência de processamento do estimador \emph{online} para todas as combinações de cenário, \(N\) e \(T\), sob distribuição gaussiana e \(t\text{-Student}(5)\).
+A Tabela \ref{tab:resultados_sim2} consolida o desempenho estatístico e a latência de processamento do estimador \emph{online} para todas as combinações de cenário, \(N\) e \(T\), sob distribuição gaussiana e \(t\text{-Student}(5)\). 
+Os resultados são consistentes com o que foi discutido no texto principal: a latência por instante é compatível com o processamento em tempo real em todos os cenários investigados, e o \(\mathrm{NRMSE}\) sob distribuição \(t\text{-Student}(5)\) é comparável ao obtido com ruído gaussiano.
 
 {\scriptsize
 \begin{longtable}{@{}lccrrrr@{}}
@@ -1016,48 +1085,48 @@ Cenário & \(T\) & \(N\) & \(\mathrm{NRMSE}\) & Lat.\ (ms) & \(\mathrm{NRMSE}\) 
 \endfoot
 \bottomrule
 \endlastfoot
-Bumps & 128 & 200 & 0{,}039 & 0{,}41 & 0{,}046 & 0{,}15 \\
-Bumps & 128 & 500 & 0{,}003 & 0{,}37 & 0{,}003 & 0{,}72 \\
-Bumps & 128 & 2000 & 0{,}001 & 1{,}76 & 0{,}001 & 1{,}81 \\
-Bumps & 256 & 200 & 0{,}043 & 0{,}67 & 0{,}035 & 0{,}38 \\
-Bumps & 256 & 500 & 0{,}003 & 0{,}71 & 0{,}005 & 0{,}72 \\
-Bumps & 256 & 2000 & 0{,}001 & 3{,}64 & 0{,}001 & 3{,}70 \\
-Bumps & 512 & 200 & 0{,}035 & 0{,}85 & 0{,}026 & 0{,}70 \\
-Bumps & 512 & 500 & 0{,}012 & 1{,}70 & 0{,}003 & 1{,}64 \\
-Bumps & 512 & 2000 & 0{,}001 & 7{,}47 & 0{,}001 & 7{,}13 \\
-Doppler & 128 & 200 & 0{,}349 & 0{,}44 & 0{,}231 & 0{,}15 \\
-Doppler & 128 & 500 & 0{,}028 & 0{,}41 & 0{,}021 & 0{,}63 \\
-Doppler & 128 & 2000 & 0{,}012 & 1{,}88 & 0{,}012 & 1{,}80 \\
-Doppler & 256 & 200 & 0{,}202 & 0{,}62 & 0{,}222 & 0{,}33 \\
-Doppler & 256 & 500 & 0{,}037 & 0{,}87 & 0{,}012 & 0{,}82 \\
-Doppler & 256 & 2000 & 0{,}007 & 3{,}68 & 0{,}007 & 3{,}54 \\
-Doppler & 512 & 200 & 0{,}240 & 0{,}88 & 0{,}207 & 0{,}76 \\
-Doppler & 512 & 500 & 0{,}029 & 1{,}83 & 0{,}033 & 1{,}63 \\
-Doppler & 512 & 2000 & 0{,}003 & 7{,}35 & 0{,}003 & 7{,}13 \\
-Escada & 128 & 200 & 0{,}144 & 0{,}50 & 0{,}155 & 0{,}24 \\
-Escada & 128 & 500 & 0{,}006 & 0{,}44 & 0{,}036 & 0{,}57 \\
-Escada & 128 & 2000 & 0{,}002 & 1{,}77 & 0{,}002 & 1{,}87 \\
-Escada & 256 & 200 & 0{,}151 & 0{,}58 & 0{,}113 & 0{,}34 \\
-Escada & 256 & 500 & 0{,}006 & 0{,}85 & 0{,}008 & 0{,}80 \\
-Escada & 256 & 2000 & 0{,}001 & 3{,}75 & 0{,}002 & 3{,}57 \\
-Escada & 512 & 200 & 0{,}179 & 0{,}89 & 0{,}159 & 0{,}67 \\
-Escada & 512 & 500 & 0{,}008 & 1{,}72 & 0{,}022 & 1{,}55 \\
-Escada & 512 & 2000 & 0{,}001 & 7{,}50 & 0{,}002 & 7{,}18 \\
-Sigmoide & 128 & 200 & 1{,}355 & 0{,}44 & 1{,}381 & 0{,}18 \\
-Sigmoide & 128 & 500 & 0{,}038 & 0{,}50 & 0{,}028 & 0{,}61 \\
-Sigmoide & 128 & 2000 & 0{,}014 & 1{,}82 & 0{,}017 & 1{,}84 \\
-Sigmoide & 256 & 200 & 0{,}910 & 0{,}69 & 0{,}854 & 0{,}36 \\
-Sigmoide & 256 & 500 & 0{,}118 & 0{,}89 & 0{,}080 & 0{,}81 \\
-Sigmoide & 256 & 2000 & 0{,}011 & 3{,}76 & 0{,}014 & 3{,}70 \\
-Sigmoide & 512 & 200 & 0{,}762 & 0{,}92 & 1{,}226 & 0{,}63 \\
-Sigmoide & 512 & 500 & 0{,}177 & 1{,}75 & 0{,}097 & 1{,}70 \\
-Sigmoide & 512 & 2000 & 0{,}010 & 7{,}33 & 0{,}014 & 7{,}08 \\
+\emph{Bumps} & 128 & 200 & 0{,}039 & 0{,}41 & 0{,}046 & 0{,}15 \\
+\emph{Bumps} & 128 & 500 & 0{,}003 & 0{,}37 & 0{,}003 & 0{,}72 \\
+\emph{Bumps} & 128 & 2000 & 0{,}001 & 1{,}76 & 0{,}001 & 1{,}81 \\
+\emph{Bumps} & 256 & 200 & 0{,}043 & 0{,}67 & 0{,}035 & 0{,}38 \\
+\emph{Bumps} & 256 & 500 & 0{,}003 & 0{,}71 & 0{,}005 & 0{,}72 \\
+\emph{Bumps} & 256 & 2000 & 0{,}001 & 3{,}64 & 0{,}001 & 3{,}70 \\
+\emph{Bumps} & 512 & 200 & 0{,}035 & 0{,}85 & 0{,}026 & 0{,}70 \\
+\emph{Bumps} & 512 & 500 & 0{,}012 & 1{,}70 & 0{,}003 & 1{,}64 \\
+\emph{Bumps} & 512 & 2000 & 0{,}001 & 7{,}47 & 0{,}001 & 7{,}13 \\
+\emph{Doppler} & 128 & 200 & 0{,}349 & 0{,}44 & 0{,}231 & 0{,}15 \\
+\emph{Doppler} & 128 & 500 & 0{,}028 & 0{,}41 & 0{,}021 & 0{,}63 \\
+\emph{Doppler} & 128 & 2000 & 0{,}012 & 1{,}88 & 0{,}012 & 1{,}80 \\
+\emph{Doppler} & 256 & 200 & 0{,}202 & 0{,}62 & 0{,}222 & 0{,}33 \\
+\emph{Doppler} & 256 & 500 & 0{,}037 & 0{,}87 & 0{,}012 & 0{,}82 \\
+\emph{Doppler} & 256 & 2000 & 0{,}007 & 3{,}68 & 0{,}007 & 3{,}54 \\
+\emph{Doppler} & 512 & 200 & 0{,}240 & 0{,}88 & 0{,}207 & 0{,}76 \\
+\emph{Doppler} & 512 & 500 & 0{,}029 & 1{,}83 & 0{,}033 & 1{,}63 \\
+\emph{Doppler} & 512 & 2000 & 0{,}003 & 7{,}35 & 0{,}003 & 7{,}13 \\
+\emph{Escada} & 128 & 200 & 0{,}144 & 0{,}50 & 0{,}155 & 0{,}24 \\
+\emph{Escada} & 128 & 500 & 0{,}006 & 0{,}44 & 0{,}036 & 0{,}57 \\
+\emph{Escada} & 128 & 2000 & 0{,}002 & 1{,}77 & 0{,}002 & 1{,}87 \\
+\emph{Escada} & 256 & 200 & 0{,}151 & 0{,}58 & 0{,}113 & 0{,}34 \\
+\emph{Escada} & 256 & 500 & 0{,}006 & 0{,}85 & 0{,}008 & 0{,}80 \\
+\emph{Escada} & 256 & 2000 & 0{,}001 & 3{,}75 & 0{,}002 & 3{,}57 \\
+\emph{Escada} & 512 & 200 & 0{,}179 & 0{,}89 & 0{,}159 & 0{,}67 \\
+\emph{Escada} & 512 & 500 & 0{,}008 & 1{,}72 & 0{,}022 & 1{,}55 \\
+\emph{Escada} & 512 & 2000 & 0{,}001 & 7{,}50 & 0{,}002 & 7{,}18 \\
+\emph{Sigmoide} & 128 & 200 & 1{,}355 & 0{,}44 & 1{,}381 & 0{,}18 \\
+\emph{Sigmoide} & 128 & 500 & 0{,}038 & 0{,}50 & 0{,}028 & 0{,}61 \\
+\emph{Sigmoide} & 128 & 2000 & 0{,}014 & 1{,}82 & 0{,}017 & 1{,}84 \\
+\emph{Sigmoide} & 256 & 200 & 0{,}910 & 0{,}69 & 0{,}854 & 0{,}36 \\
+\emph{Sigmoide} & 256 & 500 & 0{,}118 & 0{,}89 & 0{,}080 & 0{,}81 \\
+\emph{Sigmoide} & 256 & 2000 & 0{,}011 & 3{,}76 & 0{,}014 & 3{,}70 \\
+\emph{Sigmoide} & 512 & 200 & 0{,}762 & 0{,}92 & 1{,}226 & 0{,}63 \\
+\emph{Sigmoide} & 512 & 500 & 0{,}177 & 1{,}75 & 0{,}097 & 1{,}70 \\
+\emph{Sigmoide} & 512 & 2000 & 0{,}010 & 7{,}33 & 0{,}014 & 7{,}08 \\
 \end{longtable}
 }
 
 \section{Resultados de diagnóstico: simulação 3}\label{ap-sim3-completa}
 
-As Tabelas \ref{tab:resultados_sim3_gauss_ap} e \ref{tab:resultados_sim3_t_ap} apresentam o conjunto completo de métricas da Simulação~3 para as distribuições gaussiana e \(t\text{-Student}(5)\), respectivamente.
+As Tabelas \ref{tab:resultados_sim3_gauss_ap} e \ref{tab:resultados_sim3_t_ap} apresentam o conjunto completo de métricas da Simulação 3 para as distribuições gaussiana e \(t\text{-Student}(5)\), respectivamente. As tabelas completas confirmam o padrão descrito no texto principal. Os deltas absolutos em relação à grade uniforme permanecem pequenos na grande maioria das combinações de cenário, \(N\) e \(T\), tanto para o \(\mathrm{NRMSE}\) quanto para as coberturas simultâneas do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\). Em vários casos, o \(\mathrm{NRMSE}\) sob amostragem irregular é nominalmente inferior ao da grade uniforme, efeito já atribuído no texto principal à capacidade do \emph{lifting scheme} de explorar localmente a densidade de amostragem. As coberturas simultâneas permanecem próximas do nível nominal em todos os cenários e graus de irregularidade, e os resultados sob distribuição \(t\text{-Student}(5)\) reproduzem os padrões gaussianos, confirmando que a robustez a caudas pesadas não é comprometida pela amostragem irregular.
 
 {\scriptsize
 \begin{longtable}{@{}lccl rrrr@{}}

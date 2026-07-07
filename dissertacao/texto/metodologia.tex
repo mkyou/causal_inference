@@ -318,7 +318,7 @@ diag = diagnose_wavelet(
 \subsection{Desempenho em exemplos controlados}\label{sec-rlifting-evidencia}
 
 Para ilustrar o desempenho do pacote em cenários práticos, realizamos dois experimentos comparativos de suavização. 
-No primeiro, utilizamos os quatro sinais de referência de Donoho e Johnstone (\emph{blocks}, \emph{bumps}, \emph{doppler} e \emph{heavisine}) em grade regular (\(T = 1024\), \(\sigma = 0{,}3\)), confrontando o \texttt{rLifting} com o \texttt{wavethresh}, o \texttt{adlift} e o \texttt{nlt}.\footnote{Os pacotes \texttt{waveslim} e \texttt{wavelets} foram desconsiderados por não aplicarem limiarização automática.} 
+No primeiro, utilizamos os quatro sinais de referência de Donoho e Johnstone (\emph{Blocks}, \emph{Bumps}, \emph{Doppler} e \emph{Heavisine}) em grade regular (\(T = 1024\), \(\sigma = 0{,}3\)), confrontando o \texttt{rLifting} com o \texttt{wavethresh}, o \texttt{adlift} e o \texttt{nlt}.\footnote{Os pacotes \texttt{waveslim} e \texttt{wavelets} foram desconsiderados por não aplicarem limiarização automática.} 
 No segundo, avaliamos sete sinais em grade irregular, os quatro sinais DJ reamostrados em posições não uniformes e três sinais de motivação física, comparando o \texttt{rLifting} com \texttt{adlift} e \texttt{nlt}, os únicos pacotes da comparação que suportam amostragem não uniforme nativamente. 
 Em ambos os casos, foram realizadas 1000 replicações de Monte Carlo por configuração. 
 O objetivo foi avaliar o balanço entre eficiência computacional e qualidade de reconstrução frente a outras bibliotecas do ecossistema \texttt{R}.
@@ -344,7 +344,7 @@ Já os pacotes baseados em \emph{lifting} adaptativo exigiram tempos na ordem de
 \end{table}
 
 Na configuração padrão, sem ajuste de parâmetros, o \texttt{rLifting} e o \texttt{wavethresh} obtêm qualidade estatística equivalente (MSE médio geométrico de 0,021 nos quatro sinais). 
-A Figura \ref{fig:rlifting-benchmark-mse} apresenta o MSE mediano na melhor configuração de cada pacote: otimizando-se cada biblioteca em seu próprio espaço de configuração, o \texttt{wavethresh} lidera em três dos quatro sinais, com MSE médio geométrico de 0,0096 contra 0,0113 do \texttt{rLifting} (diferença de cerca de 18\%); o \texttt{rLifting} lidera no sinal \emph{bumps}. 
+A Figura \ref{fig:rlifting-benchmark-mse} apresenta o MSE mediano na melhor configuração de cada pacote: otimizando-se cada biblioteca em seu próprio espaço de configuração, o \texttt{wavethresh} lidera em três dos quatro sinais, com MSE médio geométrico de 0,0096 contra 0,0113 do \texttt{rLifting} (diferença de cerca de 18\%); o \texttt{rLifting} lidera no sinal \emph{Bumps}. 
 Para atingir esse desempenho, porém, o \texttt{wavethresh} exige o maior esforço de ajuste fino entre os pacotes avaliados (2,17 vezes a qualidade do padrão, contra 1,84 vezes do \texttt{rLifting}). 
 Isso sugere que a estratégia de limiarização recursiva adotada pelo pacote é eficaz para capturar a estrutura do sinal sem necessidade de ajuste extenso. 
 Mais decisivo para o contexto desta dissertação é que o \texttt{wavethresh} não suporta grades irregulares nem processamento causal ou em fluxo. 

@@ -93,7 +93,7 @@ de modo que o \(\mathrm{FATE}\) verdadeiro é
 	\mathrm{FATE}(t) = \frac{\delta(t)}{K_1}\!\left(1 + \sum_{k=1}^{K} \bar{X}_k\right).
 \]
 
-Especificamos quatro cenários para \(\delta(t)\): \emph{sigmoide}, \emph{bumps}, \emph{doppler} e \emph{escada}, inspirados nas funções de teste de \citeonline{donoho_ideal_1994}. 
+Especificamos quatro cenários para \(\delta(t)\): \emph{Sigmoide}, \emph{Bumps}, \emph{Doppler} e \emph{Escada}, inspirados nas funções de teste de \citeonline{donoho_ideal_1994}. 
 Em todos eles, \(\delta(t) = 0\) para \(t < t_{\mathrm{treat}}\); isto é, antes da intervenção, todos os indivíduos têm desfecho segundo o processo da Equação \ref{eq:desfecho0}.
 
 Conquanto o PGD seja idêntico ao das simulações 1 e 2, na simulação 3 emulamos condições de amostragem temporal irregular, com os \(T\) instantes de observação, comuns a todos os indivíduos, gerados por três esquemas distintos. 
@@ -168,13 +168,13 @@ Para uma visualização mais extensiva dos artefatos provenientes das simulaçõ
 \subsection{Simulação 1}
 Apresentamos na Tabela \ref{tab:resultados_sim1} os resultados da simulação 1, sintetizando o desempenho dos métodos propostos para \(N \in \{200, 2000\}\), \(T \in \{128, 512\}\) e erro gaussiano.
 À medida que \(N\) e \(T\) crescem, os estimadores baseados em ondaletas melhoram em todas as métricas consideradas. 
-Assintoticamente, as versões \emph{online} e \emph{offline} apresentam desempenho equivalente em todos os cenários com exceção do \emph{doppler}. 
+Assintoticamente, as versões \emph{online} e \emph{offline} apresentam desempenho equivalente em todos os cenários com exceção do \emph{Doppler}. 
 No que se refere ao confundimento, níveis baixos de omissão de variáveis, e em alguns casos médios, não implicam perda de desempenho em \(\mathrm{NRMSE}\) e viés. 
 As coberturas das bandas de confiança dos métodos confundidos, por outro lado, foram consistente e negativamente afetadas.
 
-O cenário \emph{doppler} merece atenção à parte. 
+O cenário \emph{Doppler} merece atenção à parte. 
 Nele, a convergência do estimador \emph{online} foi consideravelmente mais lenta que a do \emph{offline}, mesmo quando este operava sob confundimento baixo ou médio (com a ressalva já feita às coberturas das bandas de confiança). 
-Pode-se dizer que, no \emph{doppler}, o custo de impor a causalidade operacional superou o custo do confundimento não mensurado.
+Pode-se dizer que, no \emph{Doppler}, o custo de impor a causalidade operacional superou o custo do confundimento não mensurado.
 
 Com \(N = 2000\) e \(T = 512\), as ondaletas \emph{offline} obtiveram bom desempenho nos quatro cenários de efeito; as \emph{online}, em três dos quatro; e as \emph{offline} com baixo confundimento, em dois dos quatro.
 
@@ -361,9 +361,9 @@ As bandas de confiança analíticas do \texttt{ffscb} não alcançaram cobertura
 
 A Figura \ref{fig:exemplar_best_sim1} ilustra uma simulação de cada um dos quatro cenários de efeito para ondaletas \emph{online} e \emph{offline} (sem omissão de covariáveis) e \emph{splines}, no melhor caso (\(N = 2000\), \(T = 512\)).
 A barra vertical indica o instante de atribuição do tratamento.
-De forma geral, os três métodos recuperam bem o \(\mathrm{FATE}\) verdadeiro; as exceções mais visíveis são as \emph{splines}, que subestimam as oscilações no cenário \emph{bumps} com maior informação, e os três métodos no cenário \emph{sigmoide} com menor informação, onde o sinal ainda emerge com dificuldade do ruído.
+De forma geral, os três métodos recuperam bem o \(\mathrm{FATE}\) verdadeiro; as exceções mais visíveis são as \emph{splines}, que subestimam as oscilações no cenário \emph{Bumps} com maior informação, e os três métodos no cenário \emph{Sigmoide} com menor informação, onde o sinal ainda emerge com dificuldade do ruído.
 A Figura \ref{fig:conf_cau_best_t_sim1} apresenta comparação análoga para as ondaletas \emph{online} e suas contrapartes confundidas, sob erros \(t\text{-Student}(5)\).
-Vemos que, para esta execução específica (isto é, um dos \(1000\) exemplos possíveis desta simulação), apenas as bandas de confiança do estimador altamente confundido para \emph{sigmoide} não cobrem o \(\mathrm{FATE}\) verdadeiro.
+Vemos que, para esta execução específica (isto é, um dos \(1000\) exemplos possíveis desta simulação), apenas as bandas de confiança do estimador altamente confundido para \emph{Sigmoide} não cobrem o \(\mathrm{FATE}\) verdadeiro.
 
 \begin{figure}[htbp]
     \centering
@@ -384,8 +384,8 @@ Vemos que, para esta execução específica (isto é, um dos \(1000\) exemplos p
 \end{figure}
 
 Finalmente, a Figura \ref{fig:cfate_exemplar_best_gauss} ilustra o \(\mathrm{CFATE}\) estimado pelos três métodos nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), com distribuição gaussiana.
-Nos cenários de efeito monotônico, \emph{escada} e \emph{sigmoide}, os três métodos recuperam bem a trajetória verdadeira; as bandas de confiança são estreitas e o acúmulo de efeito é capturado com precisão.
-Nos cenários oscilatórios, \emph{bumps} e \emph{doppler}, o estimador \emph{online} exibe maior variabilidade na estimativa acumulada, mas converge para o \(\mathrm{CFATE}\) verdadeiro.
+Nos cenários de efeito monotônico, \emph{Escada} e \emph{Sigmoide}, os três métodos recuperam bem a trajetória verdadeira; as bandas de confiança são estreitas e o acúmulo de efeito é capturado com precisão.
+Nos cenários oscilatórios, \emph{Bumps} e \emph{Doppler}, o estimador \emph{online} exibe maior variabilidade na estimativa acumulada, mas converge para o \(\mathrm{CFATE}\) verdadeiro.
 
 \begin{figure}[htbp]
     \centering
@@ -456,6 +456,11 @@ Na latência total acumulada, contudo, \(N\) deixa de ser desprezível: para \(T
     \end{subfigure}
     \caption{Curvas de latência média por instante de tempo nos cenários \emph{Escada} e \emph{Sigmoide} (Simulação 2).}
 \end{figure}
+
+O primeiro salto visível nas curvas corresponde ao instante em que a janela móvel de tamanho \(W\) é preenchida pela primeira vez.
+Antes disso, o estimador retorna a observação bruta sem suavização.
+O salto ocorre mais cedo nas curvas com \(T = 512\) (janela \(W = 128\), completada após 25\% das observações, em \(t \approx 35\)) do que nas de \(T = 128\) (janela \(W = 64\), completada após 50\% das observações, em \(t = 50\)).
+O salto é também mais pronunciado para \(T = 512\), pois a janela maior impõe custo de suavização mais elevado ao entrar em regime.
 
 Destacamos ainda, no painel Escada / \(T = 256\) / \(N = 2000\), um pico aparente de 26 µs próximo a \(t = 48\).
 Trata-se de um artefato de medição.
@@ -571,12 +576,10 @@ Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\De
 \end{longtable}
 }
 
-Em geral, os resultados são consistentes com os da grade uniforme nos três graus de irregularidade, com variações compatíveis com a flutuação amostral esperada. 
-O cenário \emph{Bumps} concentra os desvios mais pronunciados. 
-Com irregularidade severa e $N = 200$, o NRMSE aumenta em torno de $0{,}05$ em relação à grade regular, sem configurar um padrão sistemático de deterioração. 
-Nos cenários \emph{Doppler} e \emph{Sigmoide}, a irregularidade não prejudicou o estimador. 
-Em vários casos, o NRMSE foi nominalmente inferior ao obtido com grade regular, efeito que atribuímos à capacidade do esquema de \emph{lifting} de explorar localmente a densidade de amostragem para refinar a decomposição multirresolução. 
-As coberturas simultâneas permaneceram próximas do nível nominal em todos os cenários e graus de irregularidade, e o mesmo padrão geral se verifica para a distribuição $t\text{-Student}(5)$, indicando que a robustez a caudas pesadas não é comprometida pela amostragem irregular.
+Em geral, os resultados são consistentes com os da grade uniforme nos três graus de irregularidade, com variações compatíveis com a flutuação amostral esperada.
+Assintoticamente, a irregularidade não prejudicou o estimador.
+Embora em alguns casos uma degradação do \(\mathrm{NRMSE}\) possa ser observada, em vários outros o \(\mathrm{NRMSE}\) foi nominalmente inferior ao obtido com grade regular, efeito que atribuímos à capacidade do \emph{lifting scheme} de explorar localmente a densidade de amostragem para refinar a decomposição multirresolução.
+As coberturas simultâneas permaneceram próximas do nível nominal em todos os cenários e graus de irregularidade, e o mesmo padrão geral se verifica para a distribuição \(t\text{-Student}(5)\), indicando que a robustez a caudas pesadas não é comprometida pela amostragem irregular.
 
 \begin{figure}[H]
   \centering
@@ -625,5 +628,16 @@ Com irregularidade severa, as bandas de confiança são um pouco mais conservado
 A Figura \ref{fig:ptwise_nrmse_sim3} apresenta o \(\mathrm{NRMSE}\) pontual do \(\mathrm{FATE}\) ao longo do tempo.
 Pelas escalas das figuras, é possível notar que, como nas Simulações 1 e 2, os erros são mais pronunciados para o cenário \emph{Doppler} que para os demais.
 Além disso, especificamente nos cenários \emph{Escada} e \emph{Sigmoide}, observam-se \(\mathrm{NRMSE}\)s levemente maiores para erros distribuídos conforme a \(t\text{-Student}(5)\).
+Isso posto, é possível observar que este erro ainda é consideravelmente pequeno e controlado.
 
-Os três experimentos, tomados em conjunto, sustentam a viabilidade da abordagem proposta. Na Simulação 1, o estimador online foi comparável ao offline em praticamente todos os cenários e nas duas distribuições de erro testadas, mesmo que o processo gerador de dados não penalize muito, nesse contexto, a ausência de causalidade operacional. Isso indica que respeitar a seta do tempo não compromete significativamente a qualidade da estimação mesmo quando aplicado a situações que não exigem esse respeito. Ainda na Simulação 1, a estimação pontual do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) se mostrou consideravelmente robusta a níveis baixos e, por vezes, médios de confundimento, embora as bandas de confiança percam utilidade nesse regime. Na Simulação 2, o processamento operou em escala de microssegundos por instante, o que torna viável a atualização do \(\mathrm{FATE}\) em tempo real para os tamanhos de amostra investigados. Na Simulação 3, o lifting scheme estendeu o estimador a malhas discretas não uniformemente espaçadas sem perda expressiva de precisão. A substituição das splines pelas ondaletas mostrou-se benéfica em todos os cenários. Os resultados sob distribuição \(t\text{-Student}(5)\) indicam ainda que o método não depende de forma crítica da gaussianidade do ruído para produzir estimativas confiáveis. No próximo capítulo, voltamos aos dois exemplos que motivaram este trabalho desde a Introdução. No primeiro, acompanhamos o efeito de uma tarifa dinâmica de energia elétrica sobre o consumo de domicílios londrinos. No segundo, estimamos o impacto de uma conduta clínica sobre o sinal vital de pacientes de UTI, cenários em que a atualização em tempo real do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) é especialmente relevante na prática.
+Os três experimentos, tomados em conjunto, sustentam a viabilidade da abordagem proposta. 
+Na Simulação 1, o estimador \emph{online} foi comparável ao \emph{offline} em praticamente todos os cenários e nas duas distribuições de erro testadas, mesmo que o processo gerador de dados não penalize muito, nesse contexto, a ausência de causalidade operacional. 
+Isso indica que respeitar a seta do tempo não compromete significativamente a qualidade da estimação mesmo quando aplicado a situações que não exigem esse respeito.
+Por outro lado, vale reforçar que em cenários mais complexos, essa imposição pode ser o único modo de possibilitar a identificação causal da curva de efeito propriamente; sobretudo se dados de instantes futuros não estiverem disponíveis. 
+Ainda na Simulação 1, a estimação pontual do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) se mostrou consideravelmente robusta a níveis baixos e, por vezes, médios de confundimento, embora as bandas de confiança percam utilidade nesse regime. 
+Na Simulação 2, o processamento operou em escala de microssegundos por instante, o que torna viável a atualização do \(\mathrm{FATE}\) em tempo real para os tamanhos de amostra investigados. 
+Na Simulação 3, o \emph{lifting scheme} estendeu o estimador a malhas discretas não uniformemente espaçadas sem perda expressiva de precisão. 
+A substituição das splines pelas ondaletas mostrou-se benéfica em todos os cenários. Os resultados sob distribuição \(t\text{-Student}(5)\) indicam ainda que o método não depende de forma crítica da gaussianidade do ruído para produzir estimativas confiáveis. 
+No próximo capítulo, voltamos aos dois exemplos que motivaram este trabalho desde a Introdução. 
+No primeiro, acompanhamos o efeito de uma tarifa dinâmica de energia elétrica sobre o consumo de domicílios londrinos. 
+No segundo, estimamos o impacto de uma conduta clínica sobre o sinal vital de pacientes de UTI, cenários em que a atualização em tempo real do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) é especialmente relevante na prática.
