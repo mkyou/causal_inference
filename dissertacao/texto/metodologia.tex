@@ -12,7 +12,7 @@ A partir daqui, daremos a alcunha de \emph{online} para métodos de pré-process
 
 Para quantificar o ganho puro da substituição das \emph{splines} pelas ondaletas, propomos, na primeira contribuição, um estimador com pré-processamento \emph{offline}. 
 Ancorados no PGD de \citeonline{ecker_causal_2024}, que supõe intervenção única, covariáveis mensuradas pré-tratamento e acompanhamento do desfecho restrito ao período pós-intervenção, o viés de antecipação não compromete a identificabilidade do \(\mathrm{FATE}\), o que nos permite, assim como no trabalho original, dispensar a causalidade operacional.
-Assumiremos, para fins de exposição, uma malha discreta uniformemente espaçada, comum a todos os indivíduos.\footnote{Grades não uniformemente espaçadas são compatíveis com o \emph{lifting scheme}. A estimação ponto a ponto do \(\mathrm{FATE}\), no entanto, nos força a assumir, ao menos, que o espaçamento irregular seja compartilhado entre todos os indivíduos.}
+Assumiremos, para fins de exposição, uma malha discreta uniformemente espaçada, comum a todos os indivíduos.\footnote{Malhas discretas não uniformemente espaçadas são compatíveis com o \emph{lifting scheme}. A estimação ponto a ponto do \(\mathrm{FATE}\), no entanto, nos força a assumir, ao menos, que o espaçamento irregular seja compartilhado entre todos os indivíduos.}
 
 \section{Estimação do FATE}\label{sec-estimacao-fate}
 A escolha por basear nosso estimador no arcabouço de \citeonline{ecker_causal_2024}, preterindo \citeonline{testa_doubly-robust_2025} e \citeonline{sparkes_functional_2024}, se deve a motivos práticos e estruturais abordados anteriormente neste trabalho. 
@@ -102,7 +102,7 @@ Comparamos as duas estratégias de quantificação de incerteza na Seção \ref{
 Em comparação ao procedimento \emph{offline}, a abordagem \emph{online} nos permite relaxar a hipótese do PGD de \citeonline{ecker_causal_2024} de que o desfecho é observado apenas no período pós-intervenção. 
 Estendemos o acompanhamento a \(\mathcal{S} \supset \mathcal{T}\), janela que inclui o período pré-tratamento e que torna nossa estrutura de dados mais próxima do que representamos no Apêndice \ref{ap-dag-causalidade}. 
 O vazamento que daí decorre quando utilizamos métodos globais é da mesma natureza do que alertamos desde a Definição \ref{def:vazamento}; a diferença está na magnitude. 
-Neste PGD, com intervenção única e covariáveis pré-fixadas, o efeito restringe-se às proximidades do instante de atribuição do tratamento e seu impacto sobre o estimador \emph{offline} é examinado no Capítulo~\ref{sec-estudos-simulacao}. 
+Neste PGD, com intervenção única e covariáveis pré-fixadas, o efeito restringe-se às proximidades do instante de atribuição do tratamento e seu impacto sobre o estimador \emph{offline} é examinado no Capítulo \ref{sec-estudos-simulacao}. 
 Em PGDs mais complexos, com múltiplas atribuições de tratamento ou covariáveis variantes no tempo, o mesmo mecanismo contaminaria as estimativas do \(\mathrm{FATE}\) de forma muito mais severa.
 
 Com isso, aplicamos o procedimento de processamento da Seção \ref{sec-processamento-tempo-real} instante a instante, intercalando no fluxo a suavização causal e a atualização do \(\mathrm{FATE}\):

@@ -134,33 +134,38 @@ for (lang in c("pt", "eng")) {
   df_raw[, Method := lbl$method_on]
 
   # ── 4.1 NRMSE ──────────────────────────────────────────────────────────────
-  cat(sprintf("\n[%s | 4.1] NRMSE...\n", lang))
+  # Comentado: nrmse_* não renderiza dados (stat_summary retorna NA com um único
+  # método; descartado em favor do boxplot).
+  # cat(sprintf("\n[%s | 4.1] NRMSE...\n", lang))
+  # for (scen in SCENARIOS) {
+  #   p_data <- df_raw[Scenario == scen]
+  #   if (nrow(p_data) == 0) next
+  #   p_main <- ggplot(
+  #     p_data, aes(x = T_factor, y = NRMSE_final, color = Method)
+  #   ) +
+  #     stat_summary(fun.data = "median_hilow", geom = "pointrange", size = 0.8) +
+  #     facet_wrap(~N_label, ncol = 3) +
+  #     scale_color_manual(values = setNames("royalblue", lbl$method_on)) +
+  #     labs(x = lbl$x_T, y = lbl$y_nrmse_main) +
+  #     base_theme
+  #   ggsave(
+  #     file.path(out_dir, sprintf("nrmse_%s.png", scen)),
+  #     p_main, width = 9, height = 5, dpi = 300, bg = "white"
+  #   )
+  # }
+
+  cat(sprintf("\n[%s | 4.1] Boxplot NRMSE...\n", lang))
   for (scen in SCENARIOS) {
     p_data <- df_raw[Scenario == scen]
     if (nrow(p_data) == 0) next
-
-    p_main <- ggplot(
-      p_data,
-      aes(x = T_factor, y = NRMSE_final, color = Method)
-    ) +
-      stat_summary(fun.data = "median_hilow", geom = "pointrange", size = 0.8) +
-      facet_wrap(~N_label, ncol = 3) +
-      scale_color_manual(values = setNames("royalblue", lbl$method_on)) +
-      labs(x = lbl$x_T, y = lbl$y_nrmse_main) +
-      base_theme
-    ggsave(
-      file.path(out_dir, sprintf("nrmse_%s.png", scen)),
-      p_main,
-      width = 9, height = 5, dpi = 300, bg = "white"
-    )
-    cat(sprintf("  -> %s/nrmse_%s.png\n", lang, scen))
 
     p_box <- ggplot(p_data, aes(x = T_factor, y = NRMSE_final, fill = Method)) +
       geom_boxplot(color = "black", alpha = 0.8) +
       facet_wrap(~N_label, ncol = 3) +
       scale_fill_manual(values = setNames("royalblue", lbl$method_on)) +
       labs(x = lbl$x_T, y = lbl$y_nrmse_box) +
-      base_theme
+      base_theme +
+      theme(legend.position = "none")
     ggsave(
       file.path(out_dir, sprintf("boxplot_nrmse_%s.png", scen)),
       p_box,
@@ -170,6 +175,9 @@ for (lang in c("pt", "eng")) {
   }
 
   # ── 4.2 Curvas de latência ─────────────────────────────────────────────────
+  T_COLORS <- c("128" = "firebrick", "256" = "forestgreen", "512" = "royalblue")
+  T_LTYPES <- c("128" = "solid", "256" = "dashed", "512" = "dotdash")
+
   cat(sprintf("\n[%s | 4.2] Curvas de latência...\n", lang))
   for (scen in SCENARIOS) {
     lat_data <- df_latency[Scenario == scen]
@@ -177,11 +185,16 @@ for (lang in c("pt", "eng")) {
 
     p <- ggplot(
       lat_data,
-      aes(x = t_val, y = Latency_mean_us, color = T_factor, group = T_factor)
+      aes(
+        x = t_val, y = Latency_mean_us,
+        color = T_factor, linetype = T_factor, group = T_factor
+      )
     ) +
       geom_line(linewidth = 0.7) +
       facet_grid(ErrorDist_label ~ N_label, scales = "fixed") +
-      labs(x = lbl$x_t, y = lbl$y_latency, color = "T") +
+      scale_color_manual(values = T_COLORS) +
+      scale_linetype_manual(values = T_LTYPES) +
+      labs(x = lbl$x_t, y = lbl$y_latency, color = "T", linetype = "T") +
       base_theme
     ggsave(
       file.path(out_dir, sprintf("latency_%s.png", scen)),

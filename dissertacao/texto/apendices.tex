@@ -59,7 +59,7 @@ Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de
 
 \section{Resultados exaustivos: simulação 1}
 
-As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalham o desempenho de todos os métodos para todas as combinações de cenários, resoluções e tamanhos amostrais, sob distribuição gaussiana e t(5), respectivamente.
+As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalham o desempenho de todos os métodos para todas as combinações de cenários, resoluções e tamanhos amostrais, sob distribuição gaussiana e \(t\text{-Student}(5)\), respectivamente.
 
 \begin{landscape}
 {\footnotesize
@@ -444,12 +444,12 @@ As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalha
 \begin{landscape}
 {\footnotesize
 \begin{longtable}{@{}llccrrrcrcr@{}}
-\caption{Resultados completos da Simulação~1, distribuição t(5) (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_t} \\
+\caption{Resultados completos da Simulação~1, distribuição \(t\text{-Student}(5)\) (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_t} \\
 \toprule
  & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
 \midrule
 \endfirsthead
-\multicolumn{11}{l}{\itshape (continuação --- t(5))} \\
+\multicolumn{11}{l}{\itshape (continuação --- \(t\text{-Student}(5)\))} \\
 \toprule
  & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
 \midrule
@@ -821,57 +821,146 @@ As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalha
 }
 \end{landscape}
 
-\section{Visualização de diagnóstico: simulação 1}
-A seguir, apresentamos os \emph{boxplots} do \(\text{NRMSE}\) (Figura \ref{fig:box_nrmse_sim1}) e da largura de banda (Figura \ref{fig:box_width_sim1}) para todos os cenários da simulação 1.
+\section{Cobertura simultânea empírica: simulação 1}
+As Figuras \ref{fig:coverage_bumps_sim1}--\ref{fig:coverage_sigmoid_sim1} apresentam a cobertura simultânea empírica para os quatro cenários de efeito, em função de \(T\) para cada valor de \(N\) e distribuição do ruído. A linha tracejada indica o nível nominal de \(95\%\).
 
-\begin{figure}[h]
+\begin{figure}[htbp]
     \centering
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Bumps.png}
-        \caption{Bumps}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Doppler.png}
-        \caption{Doppler}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Escada.png}
-        \caption{Escada}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_nrmse_Sigmoid.png}
-        \caption{Sigmoide}
-    \end{subfigure}
-    \caption{Distribuição do erro quadrático médio normalizado (NRMSE) ao longo da Simulação 1 para todos os cenários funcionais, destacando a presença de \emph{outliers} e comparando a estabilidade da precisão entre os estimadores de ondaletas e o método de \emph{splines}.}
-    \label{fig:box_nrmse_sim1}
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Bumps}
+    \caption{Cobertura simultânea empírica --- cenário \emph{bumps}.}
+    \label{fig:coverage_bumps_sim1}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[htbp]
     \centering
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Bumps.png}
-        \caption{Bumps}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Doppler.png}
-        \caption{Doppler}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Escada.png}
-        \caption{Escada}
-    \end{subfigure}
-    \\
-    \begin{subfigure}{.6\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/apendice/boxplot_width_Sigmoid.png}
-        \caption{Sigmoide}
-    \end{subfigure}
-    \caption{Comparação da largura média das bandas de confiança simultâneas na Simulação 1, evidenciando o custo informacional (precisão vs. cobertura) de cada método para os cenários \emph{bumps}, \emph{doppler}, \emph{escada} e \emph{sigmoide}.}
-    \label{fig:box_width_sim1}
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Doppler}
+    \caption{Cobertura simultânea empírica --- cenário \emph{doppler}.}
+    \label{fig:coverage_doppler_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Heavisine}
+    \caption{Cobertura simultânea empírica --- cenário \emph{escada}.}
+    \label{fig:coverage_heavisine_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Sigmoid}
+    \caption{Cobertura simultânea empírica --- cenário \emph{sigmoide}.}
+    \label{fig:coverage_sigmoid_sim1}
+\end{figure}
+
+\clearpage
+
+\section{Cobertura simultânea empírica do \(\mathrm{CFATE}\): simulação 1}
+As Figuras \ref{fig:cfate_coverage_bumps_sim1}--\ref{fig:cfate_coverage_sigmoid_sim1} apresentam a cobertura empírica da banda de confiança simultânea do \(\mathrm{CFATE}\) nos quatro cenários. Para os cenários \emph{bumps} e \emph{doppler}, observa-se um comportamento não-monotônico das \emph{splines} em relação a \(T\) para \(N = 500\), com pico intermediário na cobertura antes de colapsar a zero em \(N = 2000\).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Bumps}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{bumps}.}
+    \label{fig:cfate_coverage_bumps_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Doppler}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{doppler}.}
+    \label{fig:cfate_coverage_doppler_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Heavisine}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{escada}.}
+    \label{fig:cfate_coverage_heavisine_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Sigmoid}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenário \emph{sigmoide}.}
+    \label{fig:cfate_coverage_sigmoid_sim1}
+\end{figure}
+
+\clearpage
+
+\section{\(\mathrm{NRMSE}\) pontual: simulação 1}
+As Figuras \ref{fig:ptwise_nrmse_best_sim1}--\ref{fig:ptwise_nrmse_worst_sim1} mostram o \(\mathrm{NRMSE}\) médio em cada instante do grid temporal para os casos melhor (\(N = 2000\), \(T = 512\)), intermediário (\(N = 500\), \(T = 256\)) e pior (\(N = 200\), \(T = 128\)). Conforme \(N\) e \(T\) crescem, os métodos baseados em ondaletas estabilizam rapidamente em erro próximo a zero; as \emph{splines} concentram o erro nos instantes próximos às descontinuidades dos cenários \emph{bumps} e \emph{escada}. No cenário \emph{doppler}, o estimador \emph{online} apresenta erro pontual persistentemente superior ao \emph{offline}, refletindo a convergência mais lenta observada nesse cenário.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_best}
+    \caption{\(\mathrm{NRMSE}\) pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_nrmse_best_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_med}
+    \caption{\(\mathrm{NRMSE}\) pontual --- caso intermediário (\(N = 500\), \(T = 256\)).}
+    \label{fig:ptwise_nrmse_med_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_worst}
+    \caption{\(\mathrm{NRMSE}\) pontual --- pior caso (\(N = 200\), \(T = 128\)).}
+    \label{fig:ptwise_nrmse_worst_sim1}
+\end{figure}
+
+\clearpage
+
+\section{Viés pontual: simulação 1}
+As Figuras \ref{fig:ptwise_bias_best_sim1}--\ref{fig:ptwise_bias_worst_sim1} mostram o viés médio pontual em cada instante do grid temporal. No melhor caso, as ondaletas apresentam viés próximo a zero em todos os cenários, enquanto as \emph{splines} exibem viés sistemático nos instantes de maior irregularidade. O estimador \emph{online} no cenário \emph{doppler} ainda acumula viés relevante no caso intermediário, confirmando que a sua convergência nesse cenário é mais lenta.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_best}
+    \caption{Viés pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_bias_best_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_med}
+    \caption{Viés pontual --- caso intermediário (\(N = 500\), \(T = 256\)).}
+    \label{fig:ptwise_bias_med_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_worst}
+    \caption{Viés pontual --- pior caso (\(N = 200\), \(T = 128\)).}
+    \label{fig:ptwise_bias_worst_sim1}
+\end{figure}
+
+\clearpage
+
+\section{Largura pontual das bandas: simulação 1}
+As Figuras \ref{fig:ptwise_width_best_sim1}--\ref{fig:ptwise_width_worst_sim1} apresentam a largura pontual das bandas de confiança simultâneas nos três casos. No melhor caso, as ondaletas \emph{online} produzem bandas mais largas que as \emph{offline}, e as \emph{splines} produzem bandas mais estreitas --- o que explica sua cobertura insuficiente quando o efeito é irregular. As escalas dos casos intermediário e pior refletem a incerteza genuinamente maior com menos dados.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_best}
+    \caption{Largura pontual das bandas de confiança simultâneas --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_width_best_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_med}
+    \caption{Largura pontual das bandas de confiança simultâneas --- caso intermediário (\(N = 500\), \(T = 256\)).}
+    \label{fig:ptwise_width_med_sim1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_worst}
+    \caption{Largura pontual das bandas de confiança simultâneas --- pior caso (\(N = 200\), \(T = 128\)).}
+    \label{fig:ptwise_width_worst_sim1}
 \end{figure}
 
 \clearpage
@@ -883,26 +972,421 @@ Para a simulação 2 (\emph{online}), apresentamos os boxplots de dispersão do 
 \begin{figure}[ht]
     \centering
     \begin{subfigure}{0.45\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Bumps.png}
+        \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Bumps}
         \caption{Bumps}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Doppler.png}
+        \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Doppler}
         \caption{Doppler}
     \end{subfigure}
     \\
     \begin{subfigure}{0.45\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Escada.png}
+        \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Heavisine}
         \caption{Escada}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/apendice/boxplot_nrmse_Sigmoid.png}
+        \includegraphics[width=\textwidth]{../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Sigmoid}
         \caption{Sigmoide}
     \end{subfigure}
-    \caption{Distribuição do erro quadrático médio normalizado (NRMSE) para o estimador \emph{online} na Simulação 2, demonstrando a robustez da precisão do rastreamento incremental mesmo na presença de ruído intenso e em diferentes níveis de resolução temporal $T$.}
+    \caption{Distribuição do erro quadrático médio normalizado (\(\mathrm{NRMSE}\)) para o estimador \emph{online} na Simulação 2, demonstrando a robustez da precisão do rastreamento incremental mesmo na presença de ruído intenso e em diferentes níveis de resolução temporal $T$.}
     \label{fig:box_nrmse_sim2}
 \end{figure}
 
-Como se tratava de uma simulação menor, já incluímos os resultados completos em formato tabular no Capítulo \ref{sec-estudos-simulacao} (Tabela \ref{tab:resultados_sim2}).
+A Tabela \ref{tab:resultados_sim2} consolida o desempenho estatístico e a latência de processamento do estimador \emph{online} para todas as combinações de cenário, \(N\) e \(T\), sob distribuição gaussiana e \(t\text{-Student}(5)\).
+
+{\scriptsize
+\begin{longtable}{@{}lccrrrr@{}}
+\caption{Resultados completos da Simulação~2 (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)).}\label{tab:resultados_sim2} \\
+\toprule
+ & & & \multicolumn{2}{c}{Gaussiana} & \multicolumn{2}{c}{\(t\text{-Student}(5)\)} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Cenário & \(T\) & \(N\) & \(\mathrm{NRMSE}\) & Lat.\ (ms) & \(\mathrm{NRMSE}\) & Lat.\ (ms) \\
+\midrule
+\endfirsthead
+\multicolumn{7}{l}{\itshape (continuação)} \\
+\toprule
+ & & & \multicolumn{2}{c}{Gaussiana} & \multicolumn{2}{c}{\(t\text{-Student}(5)\)} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Cenário & \(T\) & \(N\) & \(\mathrm{NRMSE}\) & Lat.\ (ms) & \(\mathrm{NRMSE}\) & Lat.\ (ms) \\
+\midrule
+\endhead
+\midrule \multicolumn{7}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+Bumps & 128 & 200 & 0{,}039 & 0{,}41 & 0{,}046 & 0{,}15 \\
+Bumps & 128 & 500 & 0{,}003 & 0{,}37 & 0{,}003 & 0{,}72 \\
+Bumps & 128 & 2000 & 0{,}001 & 1{,}76 & 0{,}001 & 1{,}81 \\
+Bumps & 256 & 200 & 0{,}043 & 0{,}67 & 0{,}035 & 0{,}38 \\
+Bumps & 256 & 500 & 0{,}003 & 0{,}71 & 0{,}005 & 0{,}72 \\
+Bumps & 256 & 2000 & 0{,}001 & 3{,}64 & 0{,}001 & 3{,}70 \\
+Bumps & 512 & 200 & 0{,}035 & 0{,}85 & 0{,}026 & 0{,}70 \\
+Bumps & 512 & 500 & 0{,}012 & 1{,}70 & 0{,}003 & 1{,}64 \\
+Bumps & 512 & 2000 & 0{,}001 & 7{,}47 & 0{,}001 & 7{,}13 \\
+Doppler & 128 & 200 & 0{,}349 & 0{,}44 & 0{,}231 & 0{,}15 \\
+Doppler & 128 & 500 & 0{,}028 & 0{,}41 & 0{,}021 & 0{,}63 \\
+Doppler & 128 & 2000 & 0{,}012 & 1{,}88 & 0{,}012 & 1{,}80 \\
+Doppler & 256 & 200 & 0{,}202 & 0{,}62 & 0{,}222 & 0{,}33 \\
+Doppler & 256 & 500 & 0{,}037 & 0{,}87 & 0{,}012 & 0{,}82 \\
+Doppler & 256 & 2000 & 0{,}007 & 3{,}68 & 0{,}007 & 3{,}54 \\
+Doppler & 512 & 200 & 0{,}240 & 0{,}88 & 0{,}207 & 0{,}76 \\
+Doppler & 512 & 500 & 0{,}029 & 1{,}83 & 0{,}033 & 1{,}63 \\
+Doppler & 512 & 2000 & 0{,}003 & 7{,}35 & 0{,}003 & 7{,}13 \\
+Escada & 128 & 200 & 0{,}144 & 0{,}50 & 0{,}155 & 0{,}24 \\
+Escada & 128 & 500 & 0{,}006 & 0{,}44 & 0{,}036 & 0{,}57 \\
+Escada & 128 & 2000 & 0{,}002 & 1{,}77 & 0{,}002 & 1{,}87 \\
+Escada & 256 & 200 & 0{,}151 & 0{,}58 & 0{,}113 & 0{,}34 \\
+Escada & 256 & 500 & 0{,}006 & 0{,}85 & 0{,}008 & 0{,}80 \\
+Escada & 256 & 2000 & 0{,}001 & 3{,}75 & 0{,}002 & 3{,}57 \\
+Escada & 512 & 200 & 0{,}179 & 0{,}89 & 0{,}159 & 0{,}67 \\
+Escada & 512 & 500 & 0{,}008 & 1{,}72 & 0{,}022 & 1{,}55 \\
+Escada & 512 & 2000 & 0{,}001 & 7{,}50 & 0{,}002 & 7{,}18 \\
+Sigmoide & 128 & 200 & 1{,}355 & 0{,}44 & 1{,}381 & 0{,}18 \\
+Sigmoide & 128 & 500 & 0{,}038 & 0{,}50 & 0{,}028 & 0{,}61 \\
+Sigmoide & 128 & 2000 & 0{,}014 & 1{,}82 & 0{,}017 & 1{,}84 \\
+Sigmoide & 256 & 200 & 0{,}910 & 0{,}69 & 0{,}854 & 0{,}36 \\
+Sigmoide & 256 & 500 & 0{,}118 & 0{,}89 & 0{,}080 & 0{,}81 \\
+Sigmoide & 256 & 2000 & 0{,}011 & 3{,}76 & 0{,}014 & 3{,}70 \\
+Sigmoide & 512 & 200 & 0{,}762 & 0{,}92 & 1{,}226 & 0{,}63 \\
+Sigmoide & 512 & 500 & 0{,}177 & 1{,}75 & 0{,}097 & 1{,}70 \\
+Sigmoide & 512 & 2000 & 0{,}010 & 7{,}33 & 0{,}014 & 7{,}08 \\
+\end{longtable}
+}
+
+\section{Resultados de diagnóstico: simulação 3}\label{ap-sim3-completa}
+
+As Tabelas \ref{tab:resultados_sim3_gauss_ap} e \ref{tab:resultados_sim3_t_ap} apresentam o conjunto completo de métricas da Simulação~3 para as distribuições gaussiana e \(t\text{-Student}(5)\), respectivamente.
+
+{\scriptsize
+\begin{longtable}{@{}lccl rrrr@{}}
+\caption{Simulação~3 (gaussiana, resultados exaustivos): todas as métricas por nível de irregularidade. Entre parênteses: variação absoluta em relação à grade uniformemente espaçada.}\label{tab:resultados_sim3_gauss_ap} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\itshape (continuação)} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endhead
+\midrule \multicolumn{8}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}045 & 0{,}049~(+0{,}004) & 0{,}043~(-0{,}002) & 0{,}096~(+0{,}051) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}6 & 86{,}9~(+1{,}3) & 86{,}2~(+0{,}6) & 85{,}3~(-0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 92{,}84~(-0{,}66) & 92{,}76~(-0{,}74) & 92{,}54~(-0{,}96) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}459 & 0{,}290~(-0{,}169) & 0{,}125~(-0{,}334) & 0{,}160~(-0{,}299) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}22 & 40{,}98~(-0{,}24) & 41{,}00~(-0{,}22) & 41{,}01~(-0{,}21) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}129 & 1{,}580~(+0{,}451) & 0{,}867~(-0{,}262) & 0{,}753~(-0{,}376) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}4~(+0{,}4) & 86{,}5~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}47~(+2{,}77) & 96{,}08~(+2{,}38) & 97{,}68~(+3{,}98) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}037 & 0{,}039~(+0{,}002) & 0{,}050~(+0{,}013) & 0{,}050~(+0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 88{,}1 & 87{,}3~(-0{,}8) & 83{,}7~(-4{,}4) & 84{,}8~(-3{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 94{,}00 & 94{,}30~(+0{,}30) & 91{,}58~(-2{,}42) & 91{,}37~(-2{,}63) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}201 & 0{,}068~(-0{,}133) & 0{,}310~(+0{,}109) & 0{,}545~(+0{,}344) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 43{,}09 & 42{,}00~(-1{,}09) & 41{,}01~(-2{,}08) & 41{,}74~(-1{,}35) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}108 & 1{,}152~(+0{,}044) & 1{,}385~(+0{,}277) & 1{,}518~(+0{,}410) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 89{,}1 & 87{,}5~(-1{,}6) & 83{,}5~(-5{,}6) & 83{,}5~(-5{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 94{,}10 & 97{,}23~(+3{,}13) & 96{,}14~(+2{,}04) & 97{,}21~(+3{,}11) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}002~(+0{,}001) & 0{,}002~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}9 & 95{,}0~(+1{,}1) & 96{,}2~(+2{,}3) & 95{,}8~(+1{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}95~(+0{,}05) & 99{,}97~(+0{,}07) & 99{,}97~(+0{,}07) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}009 & -0{,}008~(+0{,}001) & -0{,}024~(-0{,}015) & -0{,}013~(-0{,}004) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}35 & 0{,}37~(+0{,}02) & 0{,}94~(+0{,}59) & 0{,}47~(+0{,}12) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}011 & 0{,}018~(+0{,}007) & 0{,}014~(+0{,}003) & 0{,}008~(-0{,}003) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 94{,}6~(-0{,}3) & 95{,}2~(+0{,}3) & 95{,}4~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}40 & 99{,}20~(+0{,}80) & 99{,}38~(+0{,}98) & 99{,}60~(+1{,}20) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}6 & 93{,}9~(-0{,}7) & 94{,}2~(-0{,}4) & 95{,}0~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}002~(+0{,}001) & 0{,}001~(+0{,}000) & -0{,}005~(-0{,}006) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}38 & 0{,}32~(-0{,}06) & 0{,}43~(+0{,}05) & 0{,}34~(-0{,}04) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}010 & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) & 0{,}012~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}7 & 94{,}2~(-0{,}5) & 93{,}0~(-1{,}7) & 94{,}9~(+0{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}44~(+0{,}24) & 99{,}39~(+0{,}19) & 99{,}56~(+0{,}36) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}264 & 0{,}245~(-0{,}019) & 0{,}275~(+0{,}011) & 0{,}244~(-0{,}020) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}1 & 88{,}8~(+2{,}7) & 86{,}9~(+0{,}8) & 87{,}6~(+1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 92{,}56~(-0{,}94) & 93{,}03~(-0{,}47) & 93{,}71~(+0{,}21) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}213 & 0{,}419~(+0{,}206) & 0{,}156~(-0{,}057) & 0{,}239~(+0{,}026) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}97 & 42{,}33~(+0{,}36) & 42{,}34~(+0{,}37) & 43{,}59~(+1{,}62) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}951 & 2{,}659~(+0{,}708) & 2{,}518~(+0{,}567) & 2{,}083~(+0{,}132) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}9 & 88{,}3~(+2{,}4) & 86{,}0~(+0{,}1) & 87{,}1~(+1{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}50 & 96{,}37~(+2{,}87) & 96{,}11~(+2{,}61) & 98{,}04~(+4{,}54) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}248 & 0{,}238~(-0{,}010) & 0{,}256~(+0{,}008) & 0{,}235~(-0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}3~(+0{,}3) & 86{,}5~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 93{,}21~(-0{,}29) & 92{,}99~(-0{,}51) & 93{,}52~(+0{,}02) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}284 & 0{,}143~(-0{,}141) & 0{,}502~(+0{,}218) & 0{,}150~(-0{,}134) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}86 & 42{,}26~(-0{,}60) & 41{,}41~(-1{,}45) & 42{,}57~(-0{,}29) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}933 & 2{,}616~(+0{,}683) & 3{,}011~(+1{,}078) & 2{,}673~(+0{,}740) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}3 & 86{,}9~(+0{,}6) & 86{,}2~(-0{,}1) & 87{,}0~(+0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}66~(+2{,}96) & 96{,}76~(+3{,}06) & 97{,}89~(+4{,}19) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}042 & 0{,}039~(-0{,}003) & 0{,}035~(-0{,}007) & 0{,}019~(-0{,}023) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 94{,}7~(+0{,}0) & 94{,}8~(+0{,}1) & 94{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}034 & -0{,}039~(-0{,}005) & -0{,}064~(-0{,}030) & -0{,}085~(-0{,}051) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 2{,}30 & 1{,}90~(-0{,}40) & 2{,}70~(+0{,}40) & 1{,}43~(-0{,}87) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}068 & 0{,}088~(+0{,}020) & 0{,}094~(+0{,}026) & 0{,}070~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 95{,}8~(+1{,}5) & 95{,}6~(+1{,}3) & 93{,}6~(-0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}70 & 99{,}88~(+0{,}18) & 99{,}86~(+0{,}16) & 99{,}89~(+0{,}19) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}022 & 0{,}022~(+0{,}000) & 0{,}012~(-0{,}010) & 0{,}012~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}4 & 95{,}9~(+1{,}5) & 95{,}0~(+0{,}6) & 95{,}7~(+1{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}99~(+0{,}09) & 99{,}99~(+0{,}09) & 99{,}99~(+0{,}09) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}032 & -0{,}026~(+0{,}006) & -0{,}007~(+0{,}025) & -0{,}025~(+0{,}007) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 1{,}14 & 1{,}17~(+0{,}03) & 0{,}99~(-0{,}15) & 1{,}29~(+0{,}15) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}042 & 0{,}053~(+0{,}011) & 0{,}031~(-0{,}011) & 0{,}032~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 95{,}8~(+1{,}6) & 94{,}4~(+0{,}2) & 95{,}3~(+1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}90~(+0{,}30) & 99{,}77~(+0{,}17) & 99{,}88~(+0{,}28) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}144 & 0{,}126~(-0{,}018) & 0{,}138~(-0{,}006) & 0{,}136~(-0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 89{,}0~(+1{,}8) & 87{,}1~(-0{,}1) & 87{,}3~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}20 & 94{,}84~(+1{,}64) & 92{,}65~(-0{,}55) & 93{,}66~(+0{,}46) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}285 & 0{,}125~(-0{,}160) & 0{,}045~(-0{,}240) & 0{,}233~(-0{,}052) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}05 & 42{,}59~(+0{,}54) & 42{,}92~(+0{,}87) & 42{,}94~(+0{,}89) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}070 & 0{,}063~(-0{,}007) & 0{,}067~(-0{,}003) & 0{,}069~(-0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}3 & 89{,}5~(+2{,}2) & 86{,}8~(-0{,}5) & 87{,}4~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}40 & 97{,}49~(+4{,}09) & 96{,}03~(+2{,}63) & 98{,}02~(+4{,}62) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}134 & 0{,}141~(+0{,}007) & 0{,}129~(-0{,}005) & 0{,}141~(+0{,}007) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 88{,}0~(+0{,}8) & 87{,}7~(+0{,}5) & 86{,}1~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}30 & 93{,}28~(-0{,}02) & 93{,}36~(+0{,}06) & 92{,}61~(-0{,}69) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}086 & 0{,}178~(+0{,}264) & -0{,}022~(+0{,}064) & 0{,}161~(+0{,}247) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}19 & 42{,}25~(+0{,}06) & 42{,}81~(+0{,}62) & 42{,}77~(+0{,}58) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}066 & 0{,}070~(+0{,}004) & 0{,}066~(+0{,}000) & 0{,}071~(+0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}7 & 87{,}9~(+0{,}2) & 88{,}4~(+0{,}7) & 86{,}2~(-1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}40 & 96{,}72~(+3{,}32) & 96{,}95~(+3{,}55) & 97{,}62~(+4{,}22) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 95{,}5~(+0{,}8) & 95{,}3~(+0{,}6) & 93{,}7~(-1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}005 & -0{,}002~(+0{,}003) & 0{,}002~(+0{,}007) & -0{,}004~(+0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}32 & 0{,}45~(+0{,}13) & 0{,}56~(+0{,}24) & 0{,}39~(+0{,}07) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}3 & 94{,}8~(-0{,}5) & 95{,}6~(+0{,}3) & 95{,}0~(-0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}44~(+0{,}34) & 99{,}50~(+0{,}40) & 99{,}58~(+0{,}48) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}3 & 94{,}7~(+0{,}4) & 94{,}9~(+0{,}6) & 93{,}5~(-0{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}001 & -0{,}001~(+0{,}000) & -0{,}003~(-0{,}002) & -0{,}002~(-0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}17 & 0{,}20~(+0{,}03) & 0{,}40~(+0{,}23) & 0{,}25~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 94{,}6~(+0{,}4) & 94{,}3~(+0{,}1) & 94{,}1~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}00 & 99{,}49~(+0{,}49) & 99{,}46~(+0{,}46) & 99{,}64~(+0{,}64) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}225 & 1{,}187~(-0{,}038) & 1{,}157~(-0{,}068) & 1{,}200~(-0{,}025) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}7 & 86{,}2~(+0{,}5) & 88{,}0~(+2{,}3) & 87{,}9~(+2{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}60 & 92{,}69~(+0{,}09) & 93{,}27~(+0{,}67) & 93{,}68~(+1{,}08) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}531 & 0{,}465~(-0{,}066) & 0{,}185~(-0{,}346) & 0{,}328~(-0{,}203) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}72 & 42{,}42~(-0{,}30) & 42{,}27~(-0{,}45) & 41{,}99~(-0{,}73) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}312 & 0{,}304~(-0{,}008) & 0{,}304~(-0{,}008) & 0{,}307~(-0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}6 & 86{,}6~(+0{,}0) & 87{,}5~(+0{,}9) & 88{,}2~(+1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}80 & 96{,}45~(+3{,}65) & 96{,}36~(+3{,}56) & 98{,}04~(+5{,}24) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}186 & 1{,}223~(+0{,}037) & 1{,}250~(+0{,}064) & 1{,}036~(-0{,}150) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}5 & 86{,}6~(+0{,}1) & 86{,}5~(+0{,}0) & 88{,}3~(+1{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}80 & 92{,}30~(-0{,}50) & 92{,}10~(-0{,}70) & 93{,}08~(+0{,}28) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}206 & 0{,}357~(+0{,}151) & 0{,}311~(+0{,}105) & 0{,}372~(+0{,}166) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}08 & 42{,}69~(+0{,}61) & 42{,}05~(-0{,}03) & 41{,}71~(-0{,}37) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}308 & 0{,}323~(+0{,}015) & 0{,}333~(+0{,}025) & 0{,}275~(-0{,}033) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}2 & 85{,}9~(-0{,}3) & 86{,}8~(+0{,}6) & 88{,}1~(+1{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}00 & 96{,}24~(+3{,}24) & 96{,}37~(+3{,}37) & 97{,}78~(+4{,}78) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}014 & 0{,}014~(+0{,}000) & 0{,}015~(+0{,}001) & 0{,}015~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}0 & 93{,}1~(+0{,}1) & 93{,}6~(+0{,}6) & 93{,}8~(+0{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}80 & 99{,}74~(-0{,}06) & 99{,}95~(+0{,}15) & 99{,}95~(+0{,}15) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}018 & 0{,}016~(-0{,}002) & 0{,}017~(-0{,}001) & 0{,}004~(-0{,}014) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}19 & 0{,}18~(-0{,}01) & 0{,}31~(+0{,}12) & 0{,}30~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}004~(+0{,}001) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 93{,}5~(-0{,}8) & 93{,}5~(-0{,}8) & 95{,}4~(+1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}90 & 99{,}38~(+0{,}48) & 99{,}48~(+0{,}58) & 99{,}73~(+0{,}83) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}010 & 0{,}011~(+0{,}001) & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}2 & 93{,}6~(-0{,}6) & 96{,}1~(+1{,}9) & 94{,}9~(+0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}80 & 99{,}63~(-0{,}17) & 99{,}86~(+0{,}06) & 99{,}76~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}006 & 0{,}007~(+0{,}001) & 0{,}005~(-0{,}001) & 0{,}006~(+0{,}000) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}15 & 0{,}15~(+0{,}00) & 0{,}16~(+0{,}01) & 0{,}15~(+0{,}00) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 93{,}9~(-1{,}0) & 96{,}7~(+1{,}8) & 95{,}9~(+1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}45~(+0{,}25) & 99{,}66~(+0{,}46) & 99{,}80~(+0{,}60) \\*
+\end{longtable}
+}
+
+{\scriptsize
+\begin{longtable}{@{}lccl rrrr@{}}
+\caption{Simulação~3 (\(t\text{-Student}(5)\), resultados exaustivos): todas as métricas por nível de irregularidade. Entre parênteses: variação absoluta em relação à grade uniformemente espaçada.}\label{tab:resultados_sim3_t_ap} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\itshape (continuação)} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endhead
+\midrule \multicolumn{8}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}049 & 0{,}052~(+0{,}003) & 0{,}045~(-0{,}004) & 0{,}080~(+0{,}031) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 83{,}7 & 86{,}0~(+2{,}3) & 85{,}2~(+1{,}5) & 87{,}3~(+3{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 91{,}90 & 92{,}97~(+1{,}07) & 91{,}85~(-0{,}05) & 93{,}35~(+1{,}45) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}275 & 0{,}338~(+0{,}063) & 0{,}294~(+0{,}019) & 0{,}254~(-0{,}021) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 40{,}39 & 42{,}18~(+1{,}79) & 41{,}45~(+1{,}06) & 43{,}00~(+2{,}61) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}203 & 1{,}670~(+0{,}467) & 0{,}897~(-0{,}306) & 0{,}627~(-0{,}576) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 83{,}6 & 86{,}5~(+2{,}9) & 85{,}8~(+2{,}2) & 86{,}8~(+3{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}58~(+4{,}48) & 95{,}60~(+3{,}50) & 97{,}96~(+5{,}86) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}041 & 0{,}040~(-0{,}001) & 0{,}041~(+0{,}000) & 0{,}044~(+0{,}003) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}6 & 86{,}3~(-1{,}3) & 86{,}4~(-1{,}2) & 86{,}5~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}40 & 92{,}38~(-1{,}02) & 92{,}71~(-0{,}69) & 92{,}87~(-0{,}53) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}215 & 0{,}260~(+0{,}045) & 0{,}329~(+0{,}114) & 0{,}410~(+0{,}195) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}46 & 42{,}04~(-0{,}42) & 41{,}64~(-0{,}82) & 42{,}44~(-0{,}02) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}214 & 1{,}192~(-0{,}022) & 1{,}114~(-0{,}100) & 1{,}322~(+0{,}108) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}5 & 86{,}9~(-0{,}6) & 86{,}6~(-0{,}9) & 86{,}2~(-1{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}60 & 96{,}29~(+2{,}69) & 96{,}69~(+3{,}09) & 97{,}71~(+4{,}11) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}002~(+0{,}001) & 0{,}002~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 95{,}7 & 93{,}8~(-1{,}9) & 94{,}0~(-1{,}7) & 94{,}1~(-1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}93~(-0{,}07) & 99{,}95~(-0{,}05) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}011 & -0{,}010~(+0{,}001) & -0{,}026~(-0{,}015) & -0{,}015~(-0{,}004) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}42 & 0{,}40~(-0{,}02) & 0{,}96~(+0{,}54) & 0{,}50~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}014 & 0{,}021~(+0{,}007) & 0{,}015~(+0{,}001) & 0{,}009~(-0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}7 & 94{,}0~(-1{,}7) & 93{,}7~(-2{,}0) & 93{,}9~(-1{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}90 & 99{,}21~(+0{,}31) & 99{,}02~(+0{,}12) & 99{,}50~(+0{,}60) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 95{,}0 & 95{,}2~(+0{,}2) & 93{,}7~(-1{,}3) & 94{,}5~(-0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}001 & 0{,}004~(+0{,}005) & 0{,}001~(+0{,}002) & -0{,}004~(-0{,}003) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}42 & 0{,}35~(-0{,}07) & 0{,}45~(+0{,}03) & 0{,}36~(-0{,}06) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}013 & 0{,}013~(+0{,}000) & 0{,}012~(-0{,}001) & 0{,}014~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}3 & 94{,}8~(-0{,}5) & 93{,}2~(-2{,}1) & 94{,}2~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}56~(+0{,}36) & 99{,}42~(+0{,}22) & 99{,}58~(+0{,}38) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}280 & 0{,}250~(-0{,}030) & 0{,}304~(+0{,}024) & 0{,}286~(+0{,}006) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}7 & 87{,}6~(+1{,}9) & 84{,}3~(-1{,}4) & 85{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}00 & 93{,}53~(+1{,}53) & 91{,}27~(-0{,}73) & 92{,}36~(+0{,}36) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}155 & 0{,}132~(-0{,}023) & 0{,}343~(+0{,}188) & 0{,}259~(+0{,}104) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}50 & 41{,}41~(-0{,}09) & 40{,}76~(-0{,}74) & 42{,}29~(+0{,}79) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 2{,}090 & 2{,}726~(+0{,}636) & 2{,}813~(+0{,}723) & 2{,}459~(+0{,}369) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}7 & 87{,}6~(+1{,}9) & 83{,}7~(-2{,}0) & 85{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}85~(+4{,}75) & 95{,}12~(+3{,}02) & 97{,}64~(+5{,}54) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}235 & 0{,}249~(+0{,}014) & 0{,}241~(+0{,}006) & 0{,}256~(+0{,}021) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}8 & 85{,}3~(-2{,}5) & 86{,}7~(-1{,}1) & 86{,}7~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}00 & 93{,}15~(+0{,}15) & 93{,}55~(+0{,}55) & 93{,}40~(+0{,}40) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}225 & 0{,}280~(+0{,}055) & 0{,}094~(-0{,}131) & 0{,}046~(-0{,}179) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}89 & 41{,}98~(-0{,}91) & 42{,}13~(-0{,}76) & 41{,}05~(-1{,}84) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}846 & 2{,}761~(+0{,}915) & 2{,}827~(+0{,}981) & 2{,}932~(+1{,}086) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}9 & 85{,}4~(-2{,}5) & 87{,}5~(-0{,}4) & 86{,}2~(-1{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}10 & 96{,}65~(+3{,}55) & 97{,}05~(+3{,}95) & 97{,}88~(+4{,}78) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}042 & 0{,}040~(-0{,}002) & 0{,}035~(-0{,}007) & 0{,}019~(-0{,}023) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 93{,}6~(-1{,}2) & 95{,}0~(+0{,}2) & 94{,}7~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}94~(-0{,}06) & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}042 & -0{,}047~(-0{,}005) & -0{,}065~(-0{,}023) & -0{,}086~(-0{,}044) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 2{,}28 & 1{,}91~(-0{,}37) & 2{,}70~(+0{,}42) & 1{,}47~(-0{,}81) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}068 & 0{,}089~(+0{,}021) & 0{,}097~(+0{,}029) & 0{,}073~(+0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}8 & 94{,}9~(+0{,}1) & 94{,}9~(+0{,}1) & 94{,}6~(-0{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}83~(+0{,}23) & 99{,}84~(+0{,}24) & 99{,}89~(+0{,}29) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}022 & 0{,}022~(+0{,}000) & 0{,}013~(-0{,}009) & 0{,}012~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 96{,}1 & 93{,}3~(-2{,}8) & 94{,}6~(-1{,}5) & 94{,}7~(-1{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}030 & -0{,}028~(+0{,}002) & -0{,}008~(+0{,}022) & -0{,}025~(+0{,}005) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 1{,}16 & 1{,}18~(+0{,}02) & 1{,}01~(-0{,}15) & 1{,}29~(+0{,}13) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}042 & 0{,}057~(+0{,}015) & 0{,}037~(-0{,}005) & 0{,}038~(-0{,}004) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}9 & 94{,}3~(-1{,}6) & 94{,}4~(-1{,}5) & 96{,}0~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}71~(+0{,}11) & 99{,}65~(+0{,}05) & 99{,}86~(+0{,}26) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}151 & 0{,}140~(-0{,}011) & 0{,}141~(-0{,}010) & 0{,}159~(+0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}9 & 86{,}8~(+0{,}9) & 87{,}7~(+1{,}8) & 85{,}5~(-0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}00 & 92{,}75~(-0{,}25) & 92{,}60~(-0{,}40) & 91{,}47~(-1{,}53) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}075 & 0{,}240~(+0{,}315) & 0{,}370~(+0{,}445) & 0{,}210~(+0{,}285) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}30 & 43{,}73~(+2{,}43) & 41{,}49~(+0{,}19) & 41{,}41~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}073 & 0{,}070~(-0{,}003) & 0{,}068~(-0{,}005) & 0{,}081~(+0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}7 & 87{,}8~(+2{,}1) & 87{,}8~(+2{,}1) & 85{,}3~(-0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}10 & 96{,}50~(+3{,}40) & 96{,}02~(+2{,}92) & 97{,}41~(+4{,}31) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}143 & 0{,}149~(+0{,}006) & 0{,}146~(+0{,}003) & 0{,}129~(-0{,}014) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 85{,}9~(-1{,}3) & 87{,}3~(+0{,}1) & 87{,}8~(+0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 94{,}30 & 92{,}73~(-1{,}57) & 92{,}97~(-1{,}33) & 93{,}53~(-0{,}77) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}113 & 0{,}043~(-0{,}070) & 0{,}353~(+0{,}240) & 0{,}205~(+0{,}092) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 43{,}10 & 40{,}88~(-2{,}22) & 42{,}78~(-0{,}32) & 41{,}62~(-1{,}48) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}069 & 0{,}074~(+0{,}005) & 0{,}074~(+0{,}005) & 0{,}065~(-0{,}004) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}3 & 85{,}6~(-1{,}7) & 88{,}2~(+0{,}9) & 87{,}6~(+0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 94{,}40 & 96{,}46~(+2{,}06) & 96{,}80~(+2{,}40) & 97{,}93~(+3{,}53) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}003~(+0{,}001) & 0{,}003~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 94{,}5~(-0{,}3) & 93{,}1~(-1{,}7) & 93{,}9~(-0{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}95~(-0{,}05) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}005 & -0{,}005~(+0{,}000) & -0{,}000~(+0{,}005) & -0{,}005~(+0{,}000) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}36 & 0{,}48~(+0{,}12) & 0{,}59~(+0{,}23) & 0{,}42~(+0{,}06) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 94{,}4~(+0{,}1) & 93{,}9~(-0{,}4) & 94{,}7~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}52~(+0{,}42) & 99{,}49~(+0{,}39) & 99{,}61~(+0{,}51) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 94{,}1~(-0{,}6) & 95{,}9~(+1{,}2) & 93{,}2~(-1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}97~(+0{,}07) & 99{,}99~(+0{,}09) & 99{,}98~(+0{,}08) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}000 & -0{,}000~(+0{,}000) & -0{,}001~(-0{,}001) & -0{,}002~(-0{,}002) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}20 & 0{,}23~(+0{,}03) & 0{,}39~(+0{,}19) & 0{,}28~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}1 & 94{,}5~(-0{,}6) & 95{,}9~(+0{,}8) & 94{,}5~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}57~(+0{,}47) & 99{,}54~(+0{,}44) & 99{,}63~(+0{,}53) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}155 & 1{,}160~(+0{,}005) & 1{,}127~(-0{,}028) & 1{,}342~(+0{,}187) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}3 & 87{,}8~(+0{,}5) & 87{,}2~(-0{,}1) & 86{,}3~(-1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 93{,}42~(-0{,}08) & 93{,}64~(+0{,}14) & 92{,}49~(-1{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}019 & 0{,}231~(+0{,}212) & 0{,}005~(-0{,}014) & 0{,}320~(+0{,}301) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}35 & 41{,}98~(+0{,}63) & 41{,}30~(-0{,}05) & 41{,}71~(+0{,}36) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}289 & 0{,}297~(+0{,}008) & 0{,}296~(+0{,}007) & 0{,}344~(+0{,}055) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}9 & 87{,}2~(+0{,}3) & 86{,}8~(-0{,}1) & 85{,}7~(-1{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}84~(+3{,}14) & 96{,}59~(+2{,}89) & 97{,}69~(+3{,}99) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}315 & 1{,}128~(-0{,}187) & 1{,}236~(-0{,}079) & 1{,}327~(+0{,}012) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 84{,}8 & 87{,}1~(+2{,}3) & 86{,}8~(+2{,}0) & 83{,}2~(-1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 91{,}90 & 92{,}00~(+0{,}10) & 93{,}80~(+1{,}90) & 91{,}76~(-0{,}14) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}342 & -0{,}095~(-0{,}437) & 0{,}170~(-0{,}172) & 0{,}228~(-0{,}114) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 40{,}03 & 41{,}98~(+1{,}95) & 41{,}42~(+1{,}39) & 40{,}77~(+0{,}74) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}339 & 0{,}297~(-0{,}042) & 0{,}329~(-0{,}010) & 0{,}352~(+0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 84{,}3 & 87{,}4~(+3{,}1) & 87{,}1~(+2{,}8) & 83{,}7~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}13~(+4{,}03) & 97{,}16~(+5{,}06) & 97{,}36~(+5{,}26) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}016 & 0{,}016~(+0{,}000) & 0{,}017~(+0{,}001) & 0{,}017~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}1 & 93{,}8~(-0{,}3) & 93{,}5~(-0{,}6) & 93{,}5~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}70 & 99{,}81~(+0{,}11) & 99{,}95~(+0{,}25) & 99{,}95~(+0{,}25) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}018 & 0{,}018~(+0{,}000) & 0{,}018~(+0{,}000) & 0{,}004~(-0{,}014) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}21 & 0{,}22~(+0{,}01) & 0{,}33~(+0{,}12) & 0{,}32~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}004 & 0{,}004~(+0{,}000) & 0{,}004~(+0{,}000) & 0{,}003~(-0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}8 & 94{,}8~(+0{,}0) & 92{,}7~(-2{,}1) & 95{,}2~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}00 & 99{,}54~(+0{,}54) & 99{,}45~(+0{,}45) & 99{,}70~(+0{,}70) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}013 & 0{,}013~(+0{,}000) & 0{,}013~(+0{,}000) & 0{,}013~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 94{,}1~(-0{,}7) & 94{,}2~(-0{,}6) & 95{,}3~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}70 & 99{,}63~(-0{,}07) & 99{,}66~(-0{,}04) & 99{,}66~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}009 & 0{,}008~(-0{,}001) & 0{,}005~(-0{,}004) & 0{,}008~(-0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}19 & 0{,}19~(+0{,}00) & 0{,}19~(+0{,}00) & 0{,}18~(-0{,}01) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}004~(+0{,}001) & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}7 & 94{,}3~(-0{,}4) & 94{,}5~(-0{,}2) & 95{,}1~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}45~(+0{,}35) & 99{,}46~(+0{,}36) & 99{,}68~(+0{,}58) \\*
+\end{longtable}
+}

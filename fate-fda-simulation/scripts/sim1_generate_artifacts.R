@@ -496,19 +496,21 @@ for (lang in c("pt", "eng")) {
   cat(sprintf("\n[%s | 5.1] NRMSE e cobertura...\n", lang))
   for (scen in names(lbl$scenarios)) {
     dt_s = dt_r[Scenario == scen]
-    save_plot(
-      plot_nrmse(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN, lbl),
-      sprintf("nrmse_%s.png", scen), lang
-    )
+    # Comentado: artefato de IQR nos painéis N=200 (quartil superior explode).
+    # save_plot(
+    #   plot_nrmse(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN, lbl),
+    #   sprintf("nrmse_%s.png", scen), lang
+    # )
     save_plot(
       plot_coverage(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN, lbl),
       sprintf("coverage_%s.png", scen), lang
     )
     if (has_cfate) {
-      save_plot(
-        plot_cfate_nrmse(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN, lbl),
-        sprintf("cfate_nrmse_%s.png", scen), lang
-      )
+      # Comentado: mesmo artefato de IQR nos painéis N=200.
+      # save_plot(
+      #   plot_cfate_nrmse(dt_s, MAIN_METHODS, LT_MAIN, SH_MAIN, lbl),
+      #   sprintf("cfate_nrmse_%s.png", scen), lang
+      # )
       save_plot(
         plot_coverage(
           dt_s, MAIN_METHODS, LT_MAIN,

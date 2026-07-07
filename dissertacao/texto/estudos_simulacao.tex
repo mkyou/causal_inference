@@ -20,8 +20,8 @@ Medimos, principalmente, a latência computacional média por instante de tempo.
 Finalmente, em nossa última simulação, avaliamos o estimador \emph{online} em grades temporais não uniformemente espaçadas, com três graus de irregularidade (leve, moderado e severo) compartilhados por todos os indivíduos.
 Verificamos que o \texttt{rLifting} e o estimador do \(\mathrm{FATE}\) mantém suas propriedades estatísticas mesmo nessas situações.
 Detalhamos o PGD e as regras empregadas nas simulações mais adiante.
-Conduzimos os três estudos em um computador com processador Intel Core i5-13420H (13ª geração) e 16 GB de memória RAM.
-Paralelizamos as simulações 1 e 3 em até 10 núcleos; a simulação 2 rodou sequencialmente, para que pudéssemos medir a latência de uma forma mais limpa.
+Conduzimos os três estudos em um computador com processador Intel Core i5-13420H (13ª geração) e 16 GB DDR4 de memória RAM.
+Paralelizamos as simulações 1 e 3; a simulação 2 rodou sequencialmente, para que pudéssemos medir a latência de uma forma mais limpa.
 
 Para as três simulações, geramos \(P = 9\) covariáveis pré-tratamento amostradas de distribuições Normal, Binomial e Poisson (Tabela \ref{tab:parametros_pgd}). 
 O domínio temporal cobre o intervalo \([20, 80]\), com o tratamento atribuído em \(t_{\mathrm{treat}} = 50\). 
@@ -82,7 +82,7 @@ Y_i^{(1)}(t) &= 2\log(t + 0{,}5) + \tfrac{\delta(t)}{K_1}
 	+ \Bigl[0{,}15 e^{-t} + \tfrac{\delta(t)}{K_1}\Bigr] X_{i9}
 	+ \varepsilon_i(t), \label{eq:desfecho1}
 \end{align}
-em que \(K_1 = 10\) e \(\varepsilon_i(t)\) é um processo de ruído com estrutura de covariância exponencial (\(\sigma = 0{,}5\), \(\rho = 0{,}8\)) e marginal gaussiana ou \(t(5)\), conforme a configuração. 
+em que \(K_1 = 10\) e \(\varepsilon_i(t)\) é um processo de ruído com estrutura de covariância exponencial (\(\sigma = 0{,}5\), \(\rho = 0{,}8\)) e marginal gaussiana ou \(t\text{-Student}(5)\)\footnote{Na configuração \(t\text{-Student}(5)\), cada trajetória de erros resulta de \(Z_i \sim \mathrm{GP}(0,\Sigma)\) dividido por \(\sqrt{V_i/5}\), onde \(V_i \sim \chi^2(5)\) é sorteado uma vez por indivíduo e mantido fixo ao longo do tempo. O fator individual \(V_i\) constante preserva a covariância exponencial entre instantes e induz marginal \(t\text{-Student}(5)\) em cada ponto da grade.}, conforme a configuração. 
 O desfecho observado é \(Y_i(t) = Y_i^{(A_i)}(t)\). 
 A diferença entre os regimes é imediata:
 \[
@@ -100,14 +100,14 @@ Conquanto o PGD seja idêntico ao das simulações 1 e 2, na simulação 3 emula
 No nível leve, partimos de um \emph{grid} de \(T\) pontos com espaçamento regular \(h = 60/(T-1)\) e deslocamos cada ponto por um valor sorteado uniformemente em \([-h/4,\, h/4]\), com os extremos \(20\) e \(80\) mantidos fixos. 
 No moderado, os \(T\) pontos são sorteados uniformemente em \([20, 80]\). 
 No severo, \(\lfloor 2T/3 \rfloor\) pontos são sorteados em \([20, 50]\) e os demais em \([50, 80]\). 
-O pós-tratamento, região em que o \(\mathrm{FATE}\) é definido, recebe apenas um terço dos pontos.
+O pós-tratamento, região em que o \(\mathrm{FATE}\) é, via de regra, não nulo, recebe apenas um terço dos pontos.
 
 Nas simulações 1 e 2, cruzamos os tamanhos de amostra \(N \in \{200, 500, 2000\}\) com as resoluções temporais \(T \in \{128, 256, 512\}\). 
 Na simulação 3, a grade é mais restrita: \(N \in \{200, 2000\}\) e \(T \in \{128, 512\}\). 
-Para todos os cenários, utilizamos a família de ondaletas Haar e adotamos \(n_{\mathrm{base}} = \min\bigl(\lfloor T/4 \rfloor, 100\bigr)\) funções de base B-\emph{spline} com \(\lambda = 0\) para o estimdor de \citeonline{ecker_causal_2024}.
+Para todos os cenários, utilizamos a família de ondaletas Haar e adotamos \(n_{\mathrm{base}} = \min\bigl(\lfloor T/4 \rfloor, 100\bigr)\) funções de base B-\emph{spline} com \(\lambda = 0\) para o estimador de \citeonline{ecker_causal_2024}.
 O leitor há de lembrar, conforme discutimos na Seção \ref{sec-inferencia-causal-funcional}, que a linearidade do estimador baseado em \emph{splines} é o que garante a convergência de \(\hat{\theta}(t)\) a um processo gaussiano e valida as bandas analíticas do \texttt{ffscb} \cite{lieblFastFairSimultaneous2023}. 
 Aplicar GCV aqui quebraria essa linearidade e invalidaria as bandas de confiança. 
-Convém registrar, de qualquer forma, que já esperávamos que os \emph{splines} se saíssem pior que as ondaletas neste contexto por conta (i) dos cenários com picos e oscilações localizadas e (ii) do ruído \(t(5)\) que viola a normalidade por construção e que foi empregado em metade dos cenários de simulação.
+Convém registrar, de qualquer forma, que já esperávamos que os \emph{splines} se saíssem pior que as ondaletas neste contexto por conta (i) dos cenários com picos e oscilações localizadas e (ii) do ruído \(t\text{-Student}(5)\) que viola a normalidade por construção e que foi empregado em metade dos cenários de simulação.
 Para o estimador \emph{online}, definimos as janelas de processamento causal com \(W = 64\) para \(T \in \{128, 256\}\) e \(W = 128\) para \(T = 512\).
 Os níveis de decomposição por ondaletas foram fixados em \(\lfloor \log_2 W \rfloor\) para o estimador \emph{online} (6 para \(W = 64\) e 7 para \(W = 128\)) e em \(\lfloor \log_2 T \rfloor\) para o \emph{offline} (7, 8 e 9 para \(T \in \{128, 256, 512\}\), respectivamente).
 As estimativas intervalares dos métodos baseados em ondaletas foram obtidas pelo procedimento da Seção \ref{sec-bootstrap-ic}, com \(N_{\mathrm{boot}} = N\) réplicas em todas as simulações. 
@@ -127,7 +127,7 @@ Em seguida, definimos as métricas globais para cada réplica \(r\), agregadas s
 	\begin{equation*}
 		\mathrm{RMSE}^{(r)} = \sqrt{\frac{1}{T}\sum_{k=0}^{T-1} \bigl(\hat{\theta}^{(r)}(t_k) - \theta(t_k)\bigr)^2}.
 	\end{equation*}
-	\item[Raíz quadrada do erro quadrático médio normalizado (NRMSE)] escalona o \text{RMSE} pela amplitude da trajetória verdadeira, facilitando a comparação entre cenários com diferentes magnitudes de efeito:
+	\item[Raíz quadrada do erro quadrático médio normalizado (\(\mathrm{NRMSE}\))] escalona o \(\mathrm{RMSE}\) pela amplitude da trajetória verdadeira, facilitando a comparação entre cenários com diferentes magnitudes de efeito:
 	\begin{equation*}
 		\mathrm{NRMSE}^{(r)} = \frac{\text{RMSE}^{(r)}}{\max_{t_k} \theta(t_k) - \min_{t_k} \theta(t_k)}.
 	\end{equation*}
@@ -152,7 +152,7 @@ Em seguida, definimos as métricas globais para cada réplica \(r\), agregadas s
 		\mathrm{NRMSE}_\Theta^{(r)} = \frac{\sqrt{\dfrac{1}{T_{\mathrm{post}}}\displaystyle\sum_{k:\, t_k \geq t_{\mathrm{treat}}} \bigl(\hat{\Theta}^{(r)}(t_k) - \Theta(t_k)\bigr)^2}}{\displaystyle\max_{t_k \geq t_{\mathrm{treat}}} |\Theta(t_k)|},
 	\end{equation*}
 	em que \(T_{\mathrm{post}}\) é o número de instantes pós-tratamento.
-	\item[Cobertura simultânea do CFATE] análoga à CobSim, avalia se a banda \emph{bootstrap} para \(\hat{\Theta}(t)\) contém \(\Theta(t)\) em todos os instantes pós-tratamento simultaneamente (não se aplica à simulação 2):
+	\item[Cobertura simultânea do \(\mathrm{CFATE}\)] análoga à CobSim, avalia se a banda \emph{bootstrap} para \(\hat{\Theta}(t)\) contém \(\Theta(t)\) em todos os instantes pós-tratamento simultaneamente (não se aplica à simulação 2):
 	\begin{equation*}
 		\mathrm{CobSim}_\Theta^{(r)} = \mathbb{I}\!\left(\forall\, k:\, t_k \geq t_{\mathrm{treat}} : \Theta(t_k) \in \bigl[\hat{\Theta}_{\mathrm{low}}^{(r)}(t_k),\, \hat{\Theta}_{\mathrm{up}}^{(r)}(t_k)\bigr]\right).
 	\end{equation*}
@@ -160,27 +160,30 @@ Em seguida, definimos as métricas globais para cada réplica \(r\), agregadas s
 
 Observamos que as métricas de latência reportadas, baseadas na expressão acima, podem variar de acordo com o \emph{hardware} utilizado na simulação. 
 
-Para fins de clareza e síntese no corpo principal deste trabalho, optamos por exibir uma seleção representativa dos cenários simulados. 
-Esta escolha permite observar os padrões de convergência e as vantagens competitivas da metodologia proposta sem sobrecarregar a leitura. 
-Os resultados exaustivos encontram-se detalhados no Apêndice \ref{ap-simulacoes-completas}. 
-
 \section{Resultados}
 Organizamos os resultados em três subseções, uma por simulação.
+A não ser que dito o contrário, estaremos, nesta seção, apresentando apenas uma síntese dos resultados. 
+Para uma visualização mais extensiva dos artefatos provenientes das simulações --- incluindo a largura pontual das bandas de confiança e os gráficos diagnósticos associados ---, o leitor é encaminhado para o Apêndice \ref{ap-simulacoes-completas}.
 
 \subsection{Simulação 1}
-Apresentamos na Tabela \ref{tab:resultados_sim1} os resultados da simulação 1, sintetizando o desempenho dos métodos propostos para \(N \in \{200, 2000\}\) e \(T \in \{128, 512\}\); a tabela completa, com todos os valores de \(N\) e \(T\), encontra-se no Apêndice \ref{ap-simulacoes-completas}.
-Em ambos os estimadores baseados em ondaletas e para todos os cenários, \(\mathrm{NRMSE}\) e vício globais reduzem-se substancialmente conforme \(N\) e \(T\) crescem.
-Vale adicionar que a simulação 1 contemplou ainda uma análise de sensibilidade ao confundimento não observado. 
-Re-estimamos o \(\mathrm{FATE}\) com três subconjuntos decrescentes das covariáveis: no nível baixo, omitimos \(X_{9}\); no nível médio, omitimos \(X_{7}\), \(X_{8}\) e \(X_{9}\); no nível alto, omitimos \(X_{5}\), \(X_{6}\), \(X_{7}\), \(X_{8}\) e \(X_{9}\). 
-Como cada uma dessas covariáveis integra simultaneamente o modelo de de atribuição de tratamento (Equação \ref{eq:propensao}) e o desfecho potencial (Equações \ref{eq:desfecho0} e \ref{eq:desfecho1}), é fácil ver que as variáveis omitidas atuam como confundidoras latentes não controladas.
+Apresentamos na Tabela \ref{tab:resultados_sim1} os resultados da simulação 1, sintetizando o desempenho dos métodos propostos para \(N \in \{200, 2000\}\), \(T \in \{128, 512\}\) e erro gaussiano.
+À medida que \(N\) e \(T\) crescem, os estimadores baseados em ondaletas melhoram em todas as métricas consideradas. 
+Assintoticamente, as versões \emph{online} e \emph{offline} apresentam desempenho equivalente em todos os cenários com exceção do \emph{doppler}. 
+No que se refere ao confundimento, níveis baixos de omissão de variáveis, e em alguns casos médios, não implicam perda de desempenho em \(\mathrm{NRMSE}\) e viés. 
+As coberturas das bandas de confiança dos métodos confundidos, por outro lado, foram consistente e negativamente afetadas.
 
-Em relação à comparação com \emph{splines}, convém notar o comportamento bimodal de desempenho apresentado na Tabela \ref{tab:resultados_sim1}. No cenário \emph{sigmoid} (alta regularidade), os três métodos apresentam métricas equivalentes. Todavia, a vantagem das ondaletas torna-se predominante conforme a irregularidade temporal aumenta.
+O cenário \emph{doppler} merece atenção à parte. 
+Nele, a convergência do estimador \emph{online} foi consideravelmente mais lenta que a do \emph{offline}, mesmo quando este operava sob confundimento baixo ou médio (com a ressalva já feita às coberturas das bandas de confiança). 
+Pode-se dizer que, no \emph{doppler}, o custo de impor a causalidade operacional superou o custo do confundimento não mensurado.
 
-Como destacado em negrito, no cenário \emph{doppler} com \(N=2000\) e \(T=512\), a versão \emph{offline} atingiu um \(\mathrm{NRMSE}\) de \(0{,}005\), um valor \(26\) vezes inferior ao obtido pelo método de Ecker (\(0{,}130\)). Esse ganho de precisão reflete-se na confiabilidade das bandas de confiança: enquanto nossas propostas mantêm coberturas simultâneas aderentes ao nível nominal (superiores a \(95\%\)), o método baseado em \emph{splines} apresenta coberturas nulas. Resultado similar é observado no cenário \emph{escada}, em que tanto a versão \emph{online} quanto a \emph{offline} das ondaletas sustentam erros baixíssimos (\(\mathrm{NRMSE}\) de \(0{,}001\)) e coberturas próximas das nominais (\(95{,}5\%\) e \(95{,}7\%\), respectivamente).
+Com \(N = 2000\) e \(T = 512\), as ondaletas \emph{offline} obtiveram bom desempenho nos quatro cenários de efeito; as \emph{online}, em três dos quatro; e as \emph{offline} com baixo confundimento, em dois dos quatro.
+
+Os métodos baseados em \emph{splines} ficaram aquém das ondaletas nos quatro cenários. 
+As bandas de confiança analíticas do \texttt{ffscb} não alcançaram cobertura de 60\% em quase nenhum deles, resultado esperado, pois a irregularidade dos efeitos simulados introduziu viés de regularização nas estimativas pontuais, que se propagou para as bandas de confiança. 
 
 {\footnotesize
 \begin{longtable}{@{}llccrrcrc@{}}
-\caption{Desempenho dos estimadores na Simulação~1, distribuição gaussiana (\(N \in \{200, 2000\}\), \(T \in \{128, 512\}\)). Conf.\ baixo/médio/alto omitem \(X_9\) / \(X_7\)--\(X_9\) / \(X_5\)--\(X_9\). Em negrito: valores de destaque positivo; em itálico: valores negativos a destacar. Resultados para t(5) e todos os \(N\), \(T\) no Apêndice~\ref{ap-simulacoes-completas}.}\label{tab:resultados_sim1} \\
+\caption{Desempenho dos estimadores na Simulação~1, distribuição gaussiana (\(N \in \{200, 2000\}\), \(T \in \{128, 512\}\)). Conf.\ baixo/médio/alto omitem \(X_9\) / \(X_7\)--\(X_9\) / \(X_5\)--\(X_9\). Em negrito: valores de destaque positivo; em itálico: valores negativos a destacar. Resultados para \(t\text{-Student}(5)\) e todos os \(N\), \(T\) no Apêndice \ref{ap-simulacoes-completas}.}\label{tab:resultados_sim1} \\
 \toprule
  & Método & $N$ & $T$ & NRMSE & Viés & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ \\
 \midrule
@@ -356,109 +359,271 @@ Como destacado em negrito, no cenário \emph{doppler} com \(N=2000\) e \(T=512\)
 \end{longtable}
 }
 
+A Figura \ref{fig:exemplar_best_sim1} ilustra uma simulação de cada um dos quatro cenários de efeito para ondaletas \emph{online} e \emph{offline} (sem omissão de covariáveis) e \emph{splines}, no melhor caso (\(N = 2000\), \(T = 512\)).
+A barra vertical indica o instante de atribuição do tratamento.
+De forma geral, os três métodos recuperam bem o \(\mathrm{FATE}\) verdadeiro; as exceções mais visíveis são as \emph{splines}, que subestimam as oscilações no cenário \emph{bumps} com maior informação, e os três métodos no cenário \emph{sigmoide} com menor informação, onde o sinal ainda emerge com dificuldade do ruído.
+A Figura \ref{fig:conf_cau_best_t_sim1} apresenta comparação análoga para as ondaletas \emph{online} e suas contrapartes confundidas, sob erros \(t\text{-Student}(5)\).
+Vemos que, para esta execução específica (isto é, um dos \(1000\) exemplos possíveis desta simulação), apenas as bandas de confiança do estimador altamente confundido para \emph{sigmoide} não cobrem o \(\mathrm{FATE}\) verdadeiro.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim1_final/plots/pt/exemplar_best_gaussian}
+        \caption{Trajetórias estimadas do \(\mathrm{FATE}\) e respectivas bandas de confiança simultâneas para uma execução individual nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), distribuição gaussiana.}
+        \label{fig:exemplar_best_sim1}
+    \end{subfigure}
+    \vspace{0.5em}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim1_final/plots/pt/conf_cau_exemplar_best_t}
+        \caption{Trajetórias estimadas do \(\mathrm{FATE}\) e respectivas bandas de confiança simultâneas para o estimador \emph{online} sem confundimento e com três níveis de omissão de covariáveis, para uma execução individual nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), distribuição \(t\text{-Student}(5)\).}
+        \label{fig:conf_cau_best_t_sim1}
+    \end{subfigure}
+    \caption{Execuções individuais representativas no melhor caso (\(N = 2000\), \(T = 512\)). A barra vertical indica o instante de atribuição do tratamento.}
+\end{figure}
+
+Finalmente, a Figura \ref{fig:cfate_exemplar_best_gauss} ilustra o \(\mathrm{CFATE}\) estimado pelos três métodos nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), com distribuição gaussiana.
+Nos cenários de efeito monotônico, \emph{escada} e \emph{sigmoide}, os três métodos recuperam bem a trajetória verdadeira; as bandas de confiança são estreitas e o acúmulo de efeito é capturado com precisão.
+Nos cenários oscilatórios, \emph{bumps} e \emph{doppler}, o estimador \emph{online} exibe maior variabilidade na estimativa acumulada, mas converge para o \(\mathrm{CFATE}\) verdadeiro.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../fate-fda-simulation/output/sim1_final/plots/pt/cfate_exemplar_best_gaussian}
+    \caption{\(\mathrm{CFATE}\) estimado e respectivas bandas de confiança simultâneas para uma execução individual nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), distribuição gaussiana.
+    A barra vertical indica o instante de atribuição do tratamento.}
+    \label{fig:cfate_exemplar_best_gauss}
+\end{figure}
+
+Para erros sob a distribuição \(t\text{-Student}(5)\), como é possível ver na Tabela \ref{tab:resultados_sim1_t} do Apêndice \ref{ap-simulacoes-completas}, os resultados são semelhantes aos aqui apresentados.
+O \(\mathrm{NRMSE}\) é ligeiramente superior na maioria dos cenários, refletindo as caudas mais pesadas, mas o ordenamento entre métodos e as conclusões qualitativas não se alteram.
+
+\FloatBarrier
 \subsection{Simulação 2}
-A Tabela \ref{tab:resultados_sim2} confirma que a latência computacional do estimador em tempo real manteve-se em patamares reduzidos, garantindo a viabilidade operacional do algoritmo para fluxos de dados contínuos.
-As propriedades estatísticas observadas na Simulação 1 traduzem-se adequadamente para a implementação \emph{online} — com um pouco menos de veemência para o cenário \emph{doppler}, possivelmente pela combinação da alta irregularidade temporal do sinal e da janela de informação mais restrita do estimador \emph{online}.
+A segunda simulação avalia a viabilidade do estimador \emph{online} em cenários de estimação em tempo real. 
+As observações de cada indivíduo foram processadas de forma estritamente sequencial, instante a instante, sem paralelização. 
+A latência média por instante mede o tempo entre a chegada de uma nova observação (de todos os indivíduos, já que o \(\mathrm{FATE}\) pressupõe que a malha discreta seja compartilhada) e a disponibilização da estimativa atualizada do \(\mathrm{FATE}\). 
+As bandas de confiança simultâneas não foram computadas por conta das restrições de velocidade de processamento discutidas na Seção \ref{sec-estimador-online}.
 
-\begin{table}[H]
-	\centering
-	\caption{Desempenho estatístico e eficiência computacional do estimador de ondaletas \emph{online} na Simulação 2, apresentando as métricas RMSE, NRMSE, vício e latência de processamento em microssegundos para diferentes combinações de $N$, $T$ e cenários funcionais.}
-	\label{tab:resultados_sim2}
-	\begin{tabular}{lcrrrrr}
-		\toprule
-		Cenário & \(T\) & \(N\) & \(\text{RMSE}\) & \(\text{NRMSE}\) & \(\text{Vício}\) & \(\text{Latência (µs)}\) \\
-		\midrule
-		\multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & 128 & 200 & 1{,}391 & 0{,}022 & 0{,}244 & 3{,}713 \\
-		 & 128 & 500 & 0{,}180 & 0{,}003 & 0{,}009 & 3{,}854 \\
-		 & 128 & 2000 & 0{,}116 & 0{,}002 & -0{,}015 & 4{,}079 \\
-		\cmidrule{2-7}
-		 & 256 & 200 & 1{,}323 & 0{,}020 & 0{,}041 & 4{,}250 \\
-		 & 256 & 500 & 0{,}208 & 0{,}003 & 0{,}028 & 4{,}246 \\
-		 & 256 & 2000 & 0{,}122 & 0{,}002 & -0{,}021 & 5{,}077 \\
-		\cmidrule{2-7}
-		 & 512 & 200 & 1{,}432 & 0{,}021 & -0{,}058 & 5{,}287 \\
-		 & 512 & 500 & 0{,}101 & 0{,}002 & 0{,}017 & 5{,}449 \\
-		 & 512 & 2000 & 0{,}040 & 0{,}001 & -0{,}002 & \textbf{6{,}855} \\
-		\cmidrule{2-7}
-		\midrule
-		\multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & 128 & 200 & 1{,}827 & 0{,}165 & 0{,}015 & 3{,}685 \\
-		 & 128 & 500 & 0{,}771 & 0{,}070 & -0{,}024 & 3{,}821 \\
-		 & 128 & 2000 & 0{,}736 & 0{,}066 & -0{,}024 & 4{,}058 \\
-		\cmidrule{2-7}
-		 & 256 & 200 & 1{,}937 & 0{,}175 & 0{,}048 & 4{,}245 \\
-		 & 256 & 500 & 0{,}952 & 0{,}086 & -0{,}049 & 4{,}238 \\
-		 & 256 & 2000 & 0{,}852 & 0{,}077 & -0{,}067 & 7{,}599 \\
-		\cmidrule{2-7}
-		 & 512 & 200 & 1{,}586 & 0{,}143 & 0{,}101 & 5{,}322 \\
-		 & 512 & 500 & 0{,}480 & 0{,}043 & 0{,}001 & 5{,}462 \\
-		 & 512 & 2000 & 0{,}405 & 0{,}036 & -0{,}008 & \textbf{8{,}681} \\
-		\cmidrule{2-7}
-		\midrule
-		\multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & 128 & 200 & 1{,}245 & 0{,}047 & 0{,}041 & 3{,}518 \\
-		 & 128 & 500 & 0{,}115 & 0{,}004 & 0{,}003 & 3{,}638 \\
-		 & 128 & 2000 & 0{,}049 & 0{,}002 & 0{,}008 & 3{,}906 \\
-		\cmidrule{2-7}
-		 & 256 & 200 & 1{,}457 & 0{,}055 & 0{,}119 & 3{,}990 \\
-		 & 256 & 500 & 0{,}114 & 0{,}004 & 0{,}001 & 3{,}987 \\
-		 & 256 & 2000 & 0{,}031 & 0{,}001 & 0{,}004 & 4{,}323 \\
-		\cmidrule{2-7}
-		 & 512 & 200 & 1{,}106 & 0{,}041 & 0{,}061 & 4{,}727 \\
-		 & 512 & 500 & 0{,}081 & 0{,}003 & 0{,}026 & 4{,}975 \\
-		 & 512 & 2000 & 0{,}023 & 0{,}001 & 0{,}001 & \textbf{5{,}226} \\
-		\cmidrule{2-7}
-		\midrule
-		\multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 128 & 200 & 1{,}315 & 0{,}591 & 0{,}046 & 3{,}574 \\
-		 & 128 & 500 & 0{,}093 & 0{,}042 & 0{,}006 & 3{,}607 \\
-		 & 128 & 2000 & 0{,}022 & 0{,}010 & -0{,}001 & 3{,}900 \\
-		\cmidrule{2-7}
-		 & 256 & 200 & 1{,}179 & 0{,}529 & 0{,}135 & 3{,}976 \\
-		 & 256 & 500 & 0{,}085 & 0{,}038 & 0{,}008 & 3{,}989 \\
-		 & 256 & 2000 & 0{,}022 & 0{,}010 & -0{,}002 & 4{,}681 \\
-		\cmidrule{2-7}
-		 & 512 & 200 & 1{,}295 & 0{,}582 & 0{,}083 & 4{,}743 \\
-		 & 512 & 500 & 0{,}105 & 0{,}047 & 0{,}028 & 4{,}961 \\
-		 & 512 & 2000 & 0{,}021 & 0{,}009 & 0{,}000 & \textbf{5{,}197} \\
-		\cmidrule{2-7}
-		\bottomrule
-	\end{tabular}
-\end{table}
+As Figuras \ref{fig:latency_bumps_sim2}--\ref{fig:latency_sigmoid_sim2} apresentam as curvas de latência média para cada cenário de efeito, distribuição do ruído e combinação de \(N\) e \(T\). 
+Em todos os cenários, a latência permanece entre 4 e 8 µs no período pré-tratamento, conforme \(N\) e \(T\), e sobe em \(t_{\mathrm{treat}} = 50\), quando o estimador ativa o cálculo incremental do \(\mathrm{FATE}\).
+Picos periódicos ocorrem em instantes diádicos do \emph{grid}, quando o algoritmo de \emph{lifting} reorganiza internamente a decomposição.
+Esses picos são regulares e não se acumulam. No pior caso medido (\(N = 2000\), \(T = 512\)), a latência pós-tratamento estabiliza em torno de 12 µs. 
+A qualidade estatística foi equivalente à do estimador \emph{online} na Simulação 1, o que era de se esperar, pois as duas implementações compartilham o mesmo código de suavização. 
+Os detalhes numéricos encontram-se na Tabela \ref{tab:resultados_sim2} do Apêndice \ref{ap-simulacoes-completas}. Essa tabela reporta a latência total acumulada por execução, em milissegundos, grandeza distinta da latência por instante exibida nas figuras.
 
-Para ilustrar o comportamento dinâmico dos estimadores, selecionamos execuções específicas que representam os limites de desempenho e a capacidade de rastreamento.
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim2_final/plots/pt/latency_Bumps}
+        \caption{Cenário \emph{Bumps}.}
+        \label{fig:latency_bumps_sim2}
+    \end{subfigure}
+    \vspace{0.5em}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim2_final/plots/pt/latency_Doppler}
+        \caption{Cenário \emph{Doppler}.}
+        \label{fig:latency_doppler_sim2}
+    \end{subfigure}
+    \caption{Curvas de latência média por instante de tempo nos cenários \emph{Bumps} e \emph{Doppler} (Simulação 2).}
+\end{figure}
+
+Algumas observações referentes às Figuras: o aumento de \(N\) tem efeito pequeno sobre a latência por instante.
+Para \(T = 128\), a latência pós-tratamento sobe de 7{,}70 µs (\(N = 200\)) para 8{,}42 µs (\(N = 2000\)).
+Isso faz sentido quando consideramos a estrutura do estimador.
+O custo de suavização por indivíduo depende apenas de \(W\), que é fixado por \(T\) e independente de \(N\).
+A etapa de regressão usa matrizes de projeção pré-computadas, de modo que a atualização a cada instante se reduz a uma multiplicação matricial.
+Com \(T\), observamos o oposto.
+Para \(N = 2000\), a latência pós-tratamento cresce de 8{,}42 µs (\(T = 128\)) para 11{,}22 µs (\(T = 512\)), acompanhando o custo da LWT sobre uma janela maior.
+Na latência total acumulada, contudo, \(N\) deixa de ser desprezível: para \(T = 128\), o tempo por execução sobe de 0{,}41\,ms (\(N = 200\)) para 1{,}76\,ms (\(N = 2000\)), e com \(T = 512\) e \(N = 2000\) chega a 7{,}47\,ms.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim2_final/plots/pt/latency_Heavisine}
+        \caption{Cenário \emph{Escada}.}
+        \label{fig:latency_heavisine_sim2}
+    \end{subfigure}
+    \vspace{0.5em}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim2_final/plots/pt/latency_Sigmoid}
+        \caption{Cenário \emph{Sigmoide}.}
+        \label{fig:latency_sigmoid_sim2}
+    \end{subfigure}
+    \caption{Curvas de latência média por instante de tempo nos cenários \emph{Escada} e \emph{Sigmoide} (Simulação 2).}
+\end{figure}
+
+Destacamos ainda, no painel Escada / \(T = 256\) / \(N = 2000\), um pico aparente de 26 µs próximo a \(t = 48\).
+Trata-se de um artefato de medição.
+O percentil 95 no mesmo instante é de 8{,}5 µs, compatível com todos os demais cenários, e a média foi inflacionada por interrupções do sistema operacional em poucas réplicas.
+
+\FloatBarrier
+\subsection{Simulação 3}
+
+A Tabela \ref{tab:resultados_sim3_gauss} apresenta, para a distribuição gaussiana, o \(\mathrm{NRMSE}\) e a cobertura simultânea do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\), comparando a grade uniformemente espaçada com os três níveis de irregularidade. 
+Os valores entre parênteses indicam a variação absoluta em relação à grade uniforme. 
+Resultados exaustivos para ambas as distribuições gaussiana e t\text{-Student}(5) constam nas Tabelas \ref{tab:resultados_sim3_gauss_ap} e \ref{tab:resultados_sim3_t_ap} do Apêndice \ref{ap-simulacoes-completas}.
+
+{\scriptsize
+\begin{longtable}{@{}lccl rrrr@{}}
+\caption{Simulação~3 (gaussiana): \(\mathrm{NRMSE}\) e cobertura simultânea do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) por nível de irregularidade. 
+Entre parênteses está a variação absoluta em relação à grade uniformemente espaçada.}\label{tab:resultados_sim3_gauss} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\itshape (continuação)} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endhead
+\midrule \multicolumn{8}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}045 & 0{,}049~(+0{,}004) & 0{,}043~(-0{,}002) & 0{,}096~(+0{,}051) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}6 & 86{,}9~(+1{,}3) & 86{,}2~(+0{,}6) & 85{,}3~(-0{,}3) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}129 & 1{,}580~(+0{,}451) & 0{,}867~(-0{,}262) & 0{,}753~(-0{,}376) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}4~(+0{,}4) & 86{,}5~(+0{,}5) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}037 & 0{,}039~(+0{,}002) & 0{,}050~(+0{,}013) & 0{,}050~(+0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 88{,}1 & 87{,}3~(-0{,}8) & 83{,}7~(-4{,}4) & 84{,}8~(-3{,}3) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}108 & 1{,}152~(+0{,}044) & 1{,}385~(+0{,}277) & 1{,}518~(+0{,}410) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 89{,}1 & 87{,}5~(-1{,}6) & 83{,}5~(-5{,}6) & 83{,}5~(-5{,}6) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}002~(+0{,}001) & 0{,}002~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}9 & 95{,}0~(+1{,}1) & 96{,}2~(+2{,}3) & 95{,}8~(+1{,}9) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}011 & 0{,}018~(+0{,}007) & 0{,}014~(+0{,}003) & 0{,}008~(-0{,}003) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 94{,}6~(-0{,}3) & 95{,}2~(+0{,}3) & 95{,}4~(+0{,}5) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}6 & 93{,}9~(-0{,}7) & 94{,}2~(-0{,}4) & 95{,}0~(+0{,}4) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}010 & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) & 0{,}012~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}7 & 94{,}2~(-0{,}5) & 93{,}0~(-1{,}7) & 94{,}9~(+0{,}2) \\*
+\midrule
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}264 & 0{,}245~(-0{,}019) & 0{,}275~(+0{,}011) & 0{,}244~(-0{,}020) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}1 & 88{,}8~(+2{,}7) & 86{,}9~(+0{,}8) & 87{,}6~(+1{,}5) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}951 & 2{,}659~(+0{,}708) & 2{,}518~(+0{,}567) & 2{,}083~(+0{,}132) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}9 & 88{,}3~(+2{,}4) & 86{,}0~(+0{,}1) & 87{,}1~(+1{,}2) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}248 & 0{,}238~(-0{,}010) & 0{,}256~(+0{,}008) & 0{,}235~(-0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}3~(+0{,}3) & 86{,}5~(+0{,}5) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}933 & 2{,}616~(+0{,}683) & 3{,}011~(+1{,}078) & 2{,}673~(+0{,}740) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}3 & 86{,}9~(+0{,}6) & 86{,}2~(-0{,}1) & 87{,}0~(+0{,}7) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}042 & 0{,}039~(-0{,}003) & 0{,}035~(-0{,}007) & 0{,}019~(-0{,}023) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 94{,}7~(+0{,}0) & 94{,}8~(+0{,}1) & 94{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}068 & 0{,}088~(+0{,}020) & 0{,}094~(+0{,}026) & 0{,}070~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 95{,}8~(+1{,}5) & 95{,}6~(+1{,}3) & 93{,}6~(-0{,}7) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}022 & 0{,}022~(+0{,}000) & 0{,}012~(-0{,}010) & 0{,}012~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}4 & 95{,}9~(+1{,}5) & 95{,}0~(+0{,}6) & 95{,}7~(+1{,}3) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}042 & 0{,}053~(+0{,}011) & 0{,}031~(-0{,}011) & 0{,}032~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 95{,}8~(+1{,}6) & 94{,}4~(+0{,}2) & 95{,}3~(+1{,}1) \\*
+\midrule
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}144 & 0{,}126~(-0{,}018) & 0{,}138~(-0{,}006) & 0{,}136~(-0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 89{,}0~(+1{,}8) & 87{,}1~(-0{,}1) & 87{,}3~(+0{,}1) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}070 & 0{,}063~(-0{,}007) & 0{,}067~(-0{,}003) & 0{,}069~(-0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}3 & 89{,}5~(+2{,}2) & 86{,}8~(-0{,}5) & 87{,}4~(+0{,}1) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}134 & 0{,}141~(+0{,}007) & 0{,}129~(-0{,}005) & 0{,}141~(+0{,}007) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 88{,}0~(+0{,}8) & 87{,}7~(+0{,}5) & 86{,}1~(-1{,}1) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}066 & 0{,}070~(+0{,}004) & 0{,}066~(+0{,}000) & 0{,}071~(+0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}7 & 87{,}9~(+0{,}2) & 88{,}4~(+0{,}7) & 86{,}2~(-1{,}5) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 95{,}5~(+0{,}8) & 95{,}3~(+0{,}6) & 93{,}7~(-1{,}0) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}3 & 94{,}8~(-0{,}5) & 95{,}6~(+0{,}3) & 95{,}0~(-0{,}3) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}3 & 94{,}7~(+0{,}4) & 94{,}9~(+0{,}6) & 93{,}5~(-0{,}8) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 94{,}6~(+0{,}4) & 94{,}3~(+0{,}1) & 94{,}1~(-0{,}1) \\*
+\midrule
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}225 & 1{,}187~(-0{,}038) & 1{,}157~(-0{,}068) & 1{,}200~(-0{,}025) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}7 & 86{,}2~(+0{,}5) & 88{,}0~(+2{,}3) & 87{,}9~(+2{,}2) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}312 & 0{,}304~(-0{,}008) & 0{,}304~(-0{,}008) & 0{,}307~(-0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}6 & 86{,}6~(+0{,}0) & 87{,}5~(+0{,}9) & 88{,}2~(+1{,}6) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}186 & 1{,}223~(+0{,}037) & 1{,}250~(+0{,}064) & 1{,}036~(-0{,}150) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}5 & 86{,}6~(+0{,}1) & 86{,}5~(+0{,}0) & 88{,}3~(+1{,}8) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}308 & 0{,}323~(+0{,}015) & 0{,}333~(+0{,}025) & 0{,}275~(-0{,}033) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}2 & 85{,}9~(-0{,}3) & 86{,}8~(+0{,}6) & 88{,}1~(+1{,}9) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}014 & 0{,}014~(+0{,}000) & 0{,}015~(+0{,}001) & 0{,}015~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}0 & 93{,}1~(+0{,}1) & 93{,}6~(+0{,}6) & 93{,}8~(+0{,}8) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}004~(+0{,}001) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 93{,}5~(-0{,}8) & 93{,}5~(-0{,}8) & 95{,}4~(+1{,}1) \\*
+\cmidrule{2-8}
+\multirow{4}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}010 & 0{,}011~(+0{,}001) & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}2 & 93{,}6~(-0{,}6) & 96{,}1~(+1{,}9) & 94{,}9~(+0{,}7) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 93{,}9~(-1{,}0) & 96{,}7~(+1{,}8) & 95{,}9~(+1{,}0) \\*
+\end{longtable}
+}
+
+Em geral, os resultados são consistentes com os da grade uniforme nos três graus de irregularidade, com variações compatíveis com a flutuação amostral esperada. 
+O cenário \emph{Bumps} concentra os desvios mais pronunciados. 
+Com irregularidade severa e $N = 200$, o NRMSE aumenta em torno de $0{,}05$ em relação à grade regular, sem configurar um padrão sistemático de deterioração. 
+Nos cenários \emph{Doppler} e \emph{Sigmoide}, a irregularidade não prejudicou o estimador. 
+Em vários casos, o NRMSE foi nominalmente inferior ao obtido com grade regular, efeito que atribuímos à capacidade do esquema de \emph{lifting} de explorar localmente a densidade de amostragem para refinar a decomposição multirresolução. 
+As coberturas simultâneas permaneceram próximas do nível nominal em todos os cenários e graus de irregularidade, e o mesmo padrão geral se verifica para a distribuição $t\text{-Student}(5)$, indicando que a robustez a caudas pesadas não é comprometida pela amostragem irregular.
 
 \begin{figure}[H]
-    \centering
-    \begin{subfigure}{0.75\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/texto_principal/exemplary_run_worst_case.png}
-        \caption{Pior caso (N=200, T=128)}
-    \end{subfigure}
-    \vspace{0.3cm}
-    \begin{subfigure}{0.75\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim1/texto_principal/exemplary_run_best_case.png}
-        \caption{Melhor caso (N=2000, T=512)}
-    \end{subfigure}
-    \caption{Comparação de trajetórias estimadas em execuções individuais da Simulação 1, ilustrando o comportamento do estimador nos cenários de pior caso (\(N=200\), \(T=128\)) e melhor caso (\(N=2000\), \(T=512\)) em relação à curva teórica e às bandas de confiança simultâneas.}
-    \label{fig:exemplos_sim1}
+  \centering
+  \includegraphics[width=0.85\linewidth]{../fate-fda-simulation/output/sim3_final/plots/pt/exemplar_best_gaussian}
+  \caption{Trajetórias estimadas do \(\mathrm{FATE}\) e respectivas bandas de confiança simultâneas para uma execução individual nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), distribuição gaussiana. A linha pontilhada preta representa a função verdadeira; a linha colorida com marcadores, a estimativa; a faixa sombreada, a banda de confiança simultânea. A linha vertical indica o instante de atribuição do tratamento.}
+  \label{fig:exemplar_best_sim3}
 \end{figure}
 
-Na Figura \ref{fig:exemplos_sim1}, detalhamos os casos de melhor e pior desempenho da simulação 1. Nota-se que (i) os estimadores baseados em ondaletas capturam a tendência central mesmo no pior cenário e (ii) apresentam larguras de confiança mais realistas conforme o aumento amostral.
+A Figura \ref{fig:exemplar_best_sim3} mostra execuções individuais no melhor caso (\(N = 2000\), \(T = 512\)) para os quatro cenários e os três graus de irregularidade.
+A estimativa do \(\mathrm{FATE}\) segue a trajetória verdadeira de perto em todos os painéis, com bandas de confiança simultâneas cobrindo a função em todo o domínio.
+No cenário \emph{Bumps} sob irregularidade severa, as bandas ficam mais largas nas vizinhanças das descontinuidades, onde a concentração irregular de observações introduz maior incerteza local.
+A estimativa pontual, ainda assim, acompanha o sinal.
+Nos demais cenários, o efeito da irregularidade sobre o resultado visual é negligenciável.
 
-A Figura \ref{fig:fate_sim2} reforça essa percepção para a simulação 2, ilustrando o rastreamento \emph{online} nos cenários \emph{bumps} e \emph{doppler}. A precisão com que o estimador iterativo acompanha a curva teórica valida sua aplicabilidade operacional em fluxos contínuos.
-
-\begin{figure}[ht]
-    \centering
-    \begin{subfigure}{0.85\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/texto_principal/fate_curves_Bumps.png}
-        \caption{Cenário Bumps}
-    \end{subfigure}
-    \vspace{0.3cm}
-    \begin{subfigure}{0.85\textwidth}
-        \includegraphics[width=\textwidth]{figuras/sim2/texto_principal/fate_curves_Doppler.png}
-        \caption{Cenário Doppler}
-    \end{subfigure}
-    \caption{Rastreamento dinâmico das trajetórias do \(\mathrm{FATE}\) na Simulação 2 para os cenários \emph{bumps} e \emph{doppler}, demonstrando a capacidade do estimador \emph{online} em acompanhar a evolução temporal do efeito à medida que novos dados são observados. Resultados selecionados.}
-    \label{fig:fate_sim2}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\linewidth]{../fate-fda-simulation/output/sim3_final/plots/pt/cfate_exemplar_best_gaussian}
+  \caption{\(\mathrm{CFATE}\) estimado e respectivas bandas de confiança simultâneas para uma execução individual nos quatro cenários de efeito, no melhor caso (\(N = 2000\), \(T = 512\)), distribuição gaussiana. A linha pontilhada preta representa o \(\mathrm{CFATE}\) verdadeiro. A linha vertical indica o instante de atribuição do tratamento.}
+  \label{fig:cfate_exemplar_best_sim3}
 \end{figure}
 
-Em suma, os resultados das simulações 1 e 2 consolidam a robustez da metodologia baseada em ondaletas. Enquanto abordagens tradicionais baseadas em \emph{splines} mostram-se adequadas para cenários de alta regularidade, nossa proposta domina em precisão e confiabilidade estatística quando confrontada com irregularidades temporais, picos de frequência e descontinuidades. Mais importante ainda, a transição para o regime \emph{online} preserva a integridade dessas propriedades com uma latência computacional tolerável, oferecendo uma solução viável e escalável para a inferência causal funcional em fluxos contínuos de dados.
+A Figura \ref{fig:cfate_exemplar_best_sim3} mostra o \(\mathrm{CFATE}\) para o mesmo caso.
+A integração temporal atenua flutuações pontuais: nos cenários \emph{Escada} e \emph{Sigmoide}, as trajetórias estimadas são praticamente indistinguíveis da verdadeira nos três graus de irregularidade.
+Em \emph{Bumps}, com irregularidade leve e moderada, as estimativas desviam brevemente da curva verdadeira no fim do período de acompanhamento (ainda assim, corretamente cobertas pelas bandas de confiança).
+Com irregularidade severa, as bandas de confiança são um pouco mais conservadoras, mas a estimativa pontual mantém a direção correta do efeito acumulado.
 
-\subsection{Simulação 3}
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim3_final/plots/pt/ptwise_nrmse_best}
+    \caption{Melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_nrmse_best_sim3}
+  \end{subfigure}
+  \par\bigskip
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=0.78\linewidth]{../fate-fda-simulation/output/sim3_final/plots/pt/ptwise_nrmse_worst}
+    \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+    \label{fig:ptwise_nrmse_worst_sim3}
+  \end{subfigure}
+  \caption{NRMSE pontual do \(\mathrm{FATE}\) ao longo do tempo para os três níveis de irregularidade, nas distribuições gaussiana e \(t\text{-Student}(5)\). A linha vertical indica o instante de atribuição do tratamento.}
+  \label{fig:ptwise_nrmse_sim3}
+\end{figure}
+
+A Figura \ref{fig:ptwise_nrmse_sim3} apresenta o \(\mathrm{NRMSE}\) pontual do \(\mathrm{FATE}\) ao longo do tempo.
+Pelas escalas das figuras, é possível notar que, como nas Simulações 1 e 2, os erros são mais pronunciados para o cenário \emph{Doppler} que para os demais.
+Além disso, especificamente nos cenários \emph{Escada} e \emph{Sigmoide}, observam-se \(\mathrm{NRMSE}\)s levemente maiores para erros distribuídos conforme a \(t\text{-Student}(5)\).
+
+Os três experimentos, tomados em conjunto, sustentam a viabilidade da abordagem proposta. Na Simulação 1, o estimador online foi comparável ao offline em praticamente todos os cenários e nas duas distribuições de erro testadas, mesmo que o processo gerador de dados não penalize muito, nesse contexto, a ausência de causalidade operacional. Isso indica que respeitar a seta do tempo não compromete significativamente a qualidade da estimação mesmo quando aplicado a situações que não exigem esse respeito. Ainda na Simulação 1, a estimação pontual do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) se mostrou consideravelmente robusta a níveis baixos e, por vezes, médios de confundimento, embora as bandas de confiança percam utilidade nesse regime. Na Simulação 2, o processamento operou em escala de microssegundos por instante, o que torna viável a atualização do \(\mathrm{FATE}\) em tempo real para os tamanhos de amostra investigados. Na Simulação 3, o lifting scheme estendeu o estimador a malhas discretas não uniformemente espaçadas sem perda expressiva de precisão. A substituição das splines pelas ondaletas mostrou-se benéfica em todos os cenários. Os resultados sob distribuição \(t\text{-Student}(5)\) indicam ainda que o método não depende de forma crítica da gaussianidade do ruído para produzir estimativas confiáveis. No próximo capítulo, voltamos aos dois exemplos que motivaram este trabalho desde a Introdução. No primeiro, acompanhamos o efeito de uma tarifa dinâmica de energia elétrica sobre o consumo de domicílios londrinos. No segundo, estimamos o impacto de uma conduta clínica sobre o sinal vital de pacientes de UTI, cenários em que a atualização em tempo real do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\) é especialmente relevante na prática.
