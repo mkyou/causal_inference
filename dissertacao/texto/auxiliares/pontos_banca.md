@@ -8,6 +8,8 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 ## Geral
 - Uso do termo "tempo real" vs. "tempo quase real". **[X]** — "tempo real" usado de forma consistente em todo o texto; nenhuma ocorrência de "tempo quase real".
 - **Notação \(\mathcal{T}\) vs. \(\mathcal{S}\)** **[X]** — \(\mathcal{T}\) mantido como domínio pós-intervenção (conforme Ecker) em toda a revisão e metodologia; clarificação adicionada na revisão (linha 67) e no parágrafo introdutório do PGD do Cap. 3. \(\mathcal{S} \supset \mathcal{T}\) introduzido na seção do estimador online como relaxação explícita da hipótese de Ecker.
+- Em vez de t(5) fica mais claro se usarmos 't-Student(5)'. **[X]**
+- Descrever melhor a aplicação da UTI ao longo do texto (tratamento, janela temporal, variável desfecho). **[ ]** — aguardar credenciamento PhysioNet e definição do protocolo MIMIC antes de refinar.
 
 ## Cap. 1 — Introdução
 **Status:** Concluído.
@@ -55,23 +57,20 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 ---
 
 ## Cap. 4 — Estudos de Simulação
-**Status:** Em andamento (DGP a reescrever; simulação em curso).
+**Status:** Concluído.
 
-*Quatro sintomas do mesmo problema (descrição do DGP incompleta); uma reescrita detalhada com pseudocódigo resolve.*
-
+- Viés(t_k) vs. Viés Global: pontual usado nas figuras do Apêndice; global é a quantidade tabulada. **[X]**
 - **O-5** — explicitar se os dados são observacionais ou aleatorizados + implicação para identificabilidade. **[R]**
-- **T-18** (p.55) — esclarecer "distribuímos o efeito total uniformemente" (conflita com Tabela 2). **[A]**
-- **T-19** (p.55) — geração dos dados: desfecho preexiste à intervenção. **[A]** (pronto na simulação, falta atualizar no texto)
-- **T-20** (p.56) — papel dos escores de propensão na Tabela 2 (ou remover). **[A]** (acho que irei remover e escrever a fórmula de confusão explicitamente)
-- **T-21** (p.58) — documentar critério de resolução máxima (ondaletas) e nº de nós (B-splines). **[A]**
-- **T-10** (p.20) — sensibilidade a confundimento não observado (via `CONF_LEVELS`, 3 níveis). **[A]** (feito na simulação, falta atualizar o texto)
-- **P-2** — ruído não gaussiano (caudas pesadas, heteroscedasticidade); contraste com splines. **[A]**
-- **T-Q4** — reforçar a importância do bootstrap no cenário não gaussiano: com ruído de caudas pesadas, bandas analíticas não se aplicam e o bootstrap se justifica plenamente (complementa a justificativa do Cap. 3). **[A]**
-- **P-1e** — amostragem irregular. **[A]** Isso aqui é a atual simulação 3, que precisa ser vista com mais carinho. Vamos ver como vamos lidar com o PGD e o que vamos estimar.
-- **P-2** — reforçar simulação 2 com mais métodos e/ou cenários de dados. **[A]**
-- **T-Q1** — cálculo do CFATE integrando réplicas bootstrap existentes (barato por construção). **[A]** (feito na simulação, falta texto)
-
-*Prioridade: P-2 > P-1e > T-Q1 > T-10.*
+- **T-18** (p.55) — PGD: fórmula explícita substitui descrição informal; "Tabela 2" removida. **[X]**
+- **T-19** (p.55) — desfecho preexiste à intervenção: δ(t)=0 para t < t_treat explicitado. **[X]**
+- **T-20** (p.56) — escores de propensão: modelo logístico com coeficientes explícitos. **[X]**
+- **T-21** (p.58) — critério de resolução máxima (ondaletas) e nº de nós (B-splines) documentados. **[X]**
+- **T-10** (p.20) — confundimento não observado: três níveis discutidos e tabelados. **[X]**
+- **P-2** — ruído não gaussiano: simulações t-Student(5), contraste com splines. **[X]**
+- **P-2** — reforçar simulação 2 com mais métodos. **[R]**
+- **T-Q4** — importância do bootstrap com ruído não gaussiano: justificativa no texto. **[X]**
+- **T-Q1** — CFATE via réplicas bootstrap existentes: mencionado no encerramento do cap. **[X]**
+- **P-1e** — amostragem irregular: Simulação 3 com três graus de irregularidade, lifting scheme, tabelas e análise textual. **[X]**
 
 ---
 
@@ -92,6 +91,11 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 - **T-Q1** — CFATE online como monitor de efeito acumulado em tempo real. **[A]**
 ---
 
+## Apêndice
+- Revisão geral do Apêndice. **[P]** — Sim1: hierarquia seção/subseção, parágrafos analíticos (cobertura, NRMSE, viés, largura), figuras pareadas; Sim2: texto boxplots + remissão ao texto principal; Sim3: texto confirmando padrões do texto principal. Nomes de cenários padronizados (capitalizados + `\emph{}`) em todo o apêndice e nos capítulos 3 e 4. Revisão final pendente após Cap. 5 (Apêndice C de aplicações a adicionar).
+
+---
+
 ## Transversal
 - **O-1** — lista de conceitos pré-textual (aguardar estabilização da terminologia). **[A]**
 - **O-6** — declaração de uso de IA (norma CCPG/UNICAMP). **[A]**
@@ -107,7 +111,7 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 | Cap. 1 Introdução | ✅ Concluído |
 | Cap. 2 Revisão | ✅ Concluído (T-16/O-7 parciais por decisão) |
 | Cap. 3 Metodologia | ✅ Concluído |
-| Cap. 4 Simulação | ⏳ Em andamento |
+| Cap. 4 Simulação | ✅ Concluído |
 | Cap. 5 Aplicações | 📝 Redação pendente |
 | Cap. 6 Conclusão | 📝 Redação pendente |
 | Transversal | ⏳ A discutir |
