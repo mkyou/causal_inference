@@ -6,10 +6,13 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 ---
 
 ## Geral
-- Uso do termo "tempo real" vs. "tempo quase real". **[X]** — "tempo real" usado de forma consistente em todo o texto; nenhuma ocorrência de "tempo quase real".
-- **Notação \(\mathcal{T}\) vs. \(\mathcal{S}\)** **[X]** — \(\mathcal{T}\) mantido como domínio pós-intervenção (conforme Ecker) em toda a revisão e metodologia; clarificação adicionada na revisão (linha 67) e no parágrafo introdutório do PGD do Cap. 3. \(\mathcal{S} \supset \mathcal{T}\) introduzido na seção do estimador online como relaxação explícita da hipótese de Ecker.
-- Em vez de t(5) fica mais claro se usarmos 't-Student(5)'. **[X]**
-- Descrever melhor a aplicação da UTI ao longo do texto (tratamento, janela temporal, variável desfecho). **[ ]** — aguardar credenciamento PhysioNet e definição do protocolo MIMIC antes de refinar.
+- Verificar uso do termo "tempo real" vs. "tempo quase real". Preferimos "tempo real". Necessário checar se está padronizado. **[]**
+- **Notação \(\mathcal{T}\) vs. \(\mathcal{S}\). Verificar padronização em texto. \(\mathcal{S}\) contém \(\mathcal{T}\) unindo ao período pré-tratamento. Checar se isso segue limpo no texto. **[]**. 
+- Verificar se uso de t-Student(5) está padronizado. Ocorrências de t(5) devem ser substituídas de acordo com a primeira.
+- Verificar uso de ~x, em que "x" representa um número (ex: Figura ~\ref{fig}). Padronizamos o não uso do "~". 
+- Verificar se termos como FATE, NRMSE, CFATE e afins estão envoltos do \mathrm ao longo de todo o texto.
+- Verificar lista de siglas. Checar se cobre todas as siglas empregadas. Checar se está correto. Averiguar mudanças e decidir.
+- Verificar conceitos plausíveis para "lista de conceitos" sugeridos pela banca.
 
 ## Cap. 1 — Introdução
 **Status:** Concluído.
@@ -76,10 +79,8 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 
 ## Cap. 5 — Aplicações
 **Status:** Decidido; redação pendente.
-- **T-Q5** — Low Carbon London (aleatorizado, principal) + UTI/MIMIC (observacional, com ressalvas). **[A]**
-- **A11** — payoff final do fio condutor energia+UTI. **[ ]**
-
-*Pendente: definição do tratamento/janela temporal no MIMIC e credenciamento PhysioNet.*
+- **T-Q5** — Low Carbon London. **[A]**
+- **A11** — payoff final do fio condutor da rede elétrica. **[ ]**
 
 ---
 

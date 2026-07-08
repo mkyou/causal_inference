@@ -5,10 +5,9 @@ Esse paradigma é frequente em dados longitudinais e também em dados funcionais
 Na FDA (\emph{Functional Data Analysis}, em português: Análise de Dados Funcionais), cada unidade amostral corresponde a, pelo menos, uma função, possivelmente acompanhada de covariáveis (ou desfechos) escalares. 
 Os registros costumam ser coletados com ruído e em malha discreta; por essa razão, é habitual recorrer a expansões em bases e penalizações como estratégia de pré-processamento (suavização/filtragem).
 
-Para fixar ideias, considere dois problemas que retomaremos ao longo do texto.
-No primeiro, atribuímos (ou não) a um domicílio uma tarifa de energia que varia com a hora do dia, e acompanhamos a curva de consumo ao longo do tempo.
-No segundo, decidimos por iniciar (ou não) uma conduta clínica quando um paciente é admitido em uma unidade de terapia intensiva; e registramos, então, a trajetória de um sinal vital nas horas seguintes e algumas covariáveis disponíveis na admissão do paciente, como idade, sexo e gravidade do quadro.
-Em ambos os casos, o interesse está em estimar o \(\mathrm{FATE}\) (\emph{Functional Average Treatment Effect}, em português: Efeito Médio de Tratamento Funcional) \cite{ecker_causal_2024}: a curva que descreve, a cada instante, o impacto causal esperado do tratamento (a tarifa dinâmica/conduta clínica) sobre o desfecho (a curva de consumo/sinal vital).
+Para fixar ideias, considere o problema que conduzirá nossos exemplos ao longo do texto. 
+Atribuímos (ou não) a um domicílio uma tarifa de energia que varia com a hora do dia, e acompanhamos a curva de consumo ao longo do tempo. 
+O interesse está em estimar o \(\mathrm{FATE}\) (\emph{Functional Average Treatment Effect}, em português: Efeito Médio de Tratamento Funcional) \cite{ecker_causal_2024}: a curva que descreve, a cada instante, o impacto causal esperado do tratamento (a tarifa dinâmica) sobre o desfecho (a curva de consumo).
 
 Embora teoricamente robustas, as abordagens disponíveis na literatura para estimar o \(\mathrm{FATE}\) costumam pressupor que o efeito de tratamento seja uma função uniformemente regular no tempo (regularidade tomada no sentido de Hölder, formalizada na Definição \ref{def:regularidade}; ao longo do texto, ``regular'' implica uniformemente regular salvo indicação em contrário), o que suscita o uso de técnicas de pré-processamento globais, como \emph{B-splines}.
 Essa suposição, e o uso de bases globais que ela motiva, apresentam dois problemas práticos.
@@ -23,7 +22,8 @@ Em conjunto, esses elementos abrem as três frentes de contribuições deste tra
 \begin{enumerate}
     \item Estimativa do \(\mathrm{FATE}\) via ondaletas, dispensando a hipótese de regularidade do efeito de tratamento;
     \item Estimativa do \(\mathrm{FATE}\) em tempo real, permitindo atualização sequencial conforme novos dados são disponibilizados (no exemplo da rede elétrica, o operador pode acompanhar o efeito da tarifa dinâmica sobre o consumo a cada nova leitura);
-    \item Proposta do \(\mathrm{CFATE}\) (\emph{Cumulative Functional Average Treatment Effect}, em português: Efeito Médio de Tratamento Funcional Acumulado), que quantifica o efeito causal acumulado do tratamento até um dado instante, funcionando como monitor em tempo real (possibilitando, no nosso segundo exemplo, que o médico interrompa a conduta clínica assim que seu efeito acumulado sobre o sinal vital se mostrar adverso). A definição formal é apresentada no Capítulo \ref{sec-metodologia}.
+    \item Proposta do \(\mathrm{CFATE}\) (\emph{Cumulative Functional Average Treatment Effect}, em português: Efeito Médio de Tratamento Funcional Acumulado), que quantifica o efeito causal acumulado do tratamento até um dado instante, funcionando como monitor em tempo real (possibilitando, no nosso exemplo, que o operador avalie se o efeito acumulado da tarifa dinâmica sobre o consumo justifica sua manutenção). 
+    A definição formal é apresentada no Capítulo \ref{sec-metodologia}.
 \end{enumerate}
 Além disso, o presente trabalho também contribui com um pacote em \texttt{R} \cite{r_core_team_2024} disponível no CRAN (\emph{The Comprehensive R Archive Network}), o \texttt{rLifting} \cite{dasilvaRLiftingHighPerformanceWavelet2026}, pensado para operacionalizar nossa proposta.
 
@@ -34,5 +34,5 @@ Os dois usos são conceitualmente distintos, mas tornam-se intimamente relaciona
 O restante do texto está estruturado da seguinte forma: no Capítulo \ref{sec-revisao}, introduzimos o estimando de interesse (o \(\mathrm{FATE}\)), as condições de identificação causal e discutimos tanto as transformadas de ondaletas em sua forma tradicional quanto sua implementação via \emph{lifting scheme}, com ênfase nas implicações para processamento incremental. 
 O Capítulo \ref{sec-metodologia} detalha as adaptações necessárias em relação a trabalhos anteriores e descreve o pacote \texttt{rLifting}. 
 No Capítulo \ref{sec-estudos-simulacao}, especificamos o desenho dos experimentos e apresentamos os resultados da comparação com a literatura. 
-O Capítulo \ref{sec-aplicacoes} é dedicado às aplicações reais dos métodos propostos, compreendendo tanto o exemplo da rede elétrica, quanto o da conduta clínica. 
+O Capítulo \ref{sec-aplicacoes} é dedicado à aplicação real dos métodos propostos ao exemplo que conduz este trabalho, o da atribuição de tarifa dinâmica de energia elétrica e seu efeito sobre a curva de consumo de domicílios.
 Finalmente, encerramos com uma discussão dos achados, suas limitações e possíveis direções para trabalhos futuros no Capítulo \ref{sec-conclusao}.

@@ -65,10 +65,8 @@ Por essa razão, a literatura aplicada em inferência causal funcional, até ent
 \subsection{FATE e Inferência causal funcional}\label{sec-inferencia-causal-funcional}
 
 No trabalho de \citeonline{ecker_causal_2024}, para cada indivíduo \(i = 1, \dots, N\) e período \(t \in \mathcal{T}\), denotamos por \(Y_i^{(1)}(t)\) e \(Y_i^{(0)}(t)\) as curvas dos desfechos potenciais sob tratamento e controle, respectivamente; \(\mathcal{T}\) corresponde ao período de acompanhamento após a intervenção.
-Considerando os exemplos que trouxemos no Capítulo \ref{sec-introducao}, no caso da rede elétrica, \(Y_i^{(1)}(t)\) representaria a curva de consumo do domicílio \(i\) caso este recebesse a tarifa dinâmica, e \(Y_i^{(0)}(t)\), a curva que este mesmo domicílio apresentaria caso recebesse a tarifa padrão. 
-\(A_i\) indicaria qual das duas tarifas foi efetivamente atribuída, enquanto \(\mathbf{X}_i\) representaria as características socioeconômicas do domicílio. 
-No problema da conduta clínica, por sua vez, \(Y_i^{(1)}(t)\) seria a trajetória do sinal vital do paciente \(i\) caso essa conduta fosse aplicada na admissão, enquanto \(Y_i^{(0)}(t)\) seria a trajetória em uma situação de não-aplicação da conduta.
-\(A_i\), neste cenário, indicaria se a conduta foi de fato aplicada e \(\mathbf{X}_i\) denotaria as características do paciente disponíveis na admissão.
+Considerando o exemplo que trouxemos no Capítulo \ref{sec-introducao}, \(Y_i^{(1)}(t)\) representaria a curva de consumo do domicílio \(i\) caso este recebesse a tarifa dinâmica, e \(Y_i^{(0)}(t)\), a curva que este mesmo domicílio apresentaria caso recebesse a tarifa padrão.
+\(A_i\) indicaria qual das duas tarifas foi efetivamente atribuída, enquanto \(\mathbf{X}_i\) representaria as características socioeconômicas do domicílio.
 
 As suposições necessárias à identificabilidade do \(\mathrm{FATE}\) são análogas às do caso escalar. A ignorabilidade condicional, todavia, é relaxada pelos autores em favor da ignorabilidade média.\footnote{Enquanto a ignorabilidade condicional (Seção \ref{sec-inferencia-causal}) exige \({Y^{(a)}} \perp A \mid \mathbf{X}\) em nível distribucional, a ignorabilidade média requer apenas a igualdade das esperanças condicionais. 
 A condição plena identifica qualquer funcional da distribuição dos desfechos potenciais (média, variância, quantis), ao passo que a ignorabilidade média identifica apenas a média de \(Y\). 
@@ -119,7 +117,8 @@ Julgamos importante reforçar que o modelo definido na Equação \ref{eq:ecker_m
 Na prática, entretanto, é comum observarmos apenas dados discretos e ruidosos. Essa discrepância, como já adiantado no Capítulo \ref{sec-introducao}, impõe uma etapa de representação funcional geralmente anterior ao ajuste do modelo (embora menos comum, também é possível aplicar a suavização aos resultados do modelo ajustado \cite{testa_doubly-robust_2025}). 
 Operacionalmente, \citeonline{ecker_causal_2024} primeiro suavizam as curvas observadas e depois ajustam os modelos via mínimos quadrados ordinários (ponto a ponto) sobre os objetos funcionais resultantes.
 
-Em nossa proposta, essa suavização será realizada por ondaletas, sendo cada curva \(Y_i[k]\) suavizada individualmente pela DWT com limiarização antes de alimentar o modelo de regressão funcional. No exemplo da rede elétrica, isso equivale a suavizar a série de consumo de cada domicílio separadamente; no da conduta clínica, a trajetória do sinal vital de cada paciente.
+Em nossa proposta, essa suavização será realizada por ondaletas, sendo cada curva \(Y_i[k]\) suavizada individualmente pela DWT com limiarização antes de alimentar o modelo de regressão funcional. 
+No exemplo da rede elétrica, isso equivale a suavizar a série de consumo de cada domicílio separadamente.
 
 Cabe ressaltar que os autores também propuseram bandas simultâneas de confiança de nível \((1 - \alpha)\%\) para \(\hat{\theta}(t)\), dadas por
 \begin{equation}
