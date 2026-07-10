@@ -34,3 +34,8 @@
 *.rds
 *.RData
 *.RDataTmp
+
+# Personal/administrative documents (not meant for the repo)
+dissertacao/texto/auxiliares/Formulário - CAPES.pdf
+dissertacao/texto/auxiliares/Parecer Mestrado - Taddeo.pdf
+dissertacao/texto/auxiliares/Ficha Catalográfica - Anexo.pdf

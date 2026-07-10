@@ -82,12 +82,12 @@ Por fim, sob distribuição \(t\text{-Student}(5)\), as larguras e coberturas s�
 \begin{longtable}{@{}llccrrrcrcr@{}}
 \caption{Resultados completos da Simulação~1, distribuição gaussiana (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_gauss} \\
 \toprule
- & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
 \midrule
 \endfirsthead
 \multicolumn{11}{l}{\itshape (continuação --- gaussiana)} \\
 \toprule
- & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
 \midrule
 \endhead
 \midrule \multicolumn{11}{r}{\itshape (continua)} \\
@@ -462,12 +462,12 @@ Por fim, sob distribuição \(t\text{-Student}(5)\), as larguras e coberturas s�
 \begin{longtable}{@{}llccrrrcrcr@{}}
 \caption{Resultados completos da Simulação~1, distribuição \(t\text{-Student}(5)\) (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_t} \\
 \toprule
- & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
 \midrule
 \endfirsthead
 \multicolumn{11}{l}{\itshape (continuação --- \(t\text{-Student}(5)\))} \\
 \toprule
- & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\text{CFATE}_\text{NRMSE}$ & $\text{CFATE}_\text{CobSim}$ & $\text{CFATE}_\text{Lar.}$ \\
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
 \midrule
 \endhead
 \midrule \multicolumn{11}{r}{\itshape (continua)} \\
@@ -1459,3 +1459,71 @@ Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\De
  &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}45~(+0{,}35) & 99{,}46~(+0{,}36) & 99{,}68~(+0{,}58) \\*
 \end{longtable}
 }
+
+\chapter{Material suplementar da aplicação}\label{ap-aplicacoes}
+
+Este apêndice reúne o material suplementar do Capítulo \ref{sec-aplicacoes}.
+As figuras iniciais complementam a análise exploratória da Seção \ref{sec-aplicacoes-exploratoria} com o padrão geral de consumo.
+As demais apresentam a diferença bruta de consumo por grupo ACORN ao longo do ano e as verificações de robustez descritas na Seção \ref{sec-aplicacoes-resultados}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../fate-fda-application/low_carbon_energy/output/lcl_final/plots/texto_principal/heatmap_consumption}
+    \caption{Mapa de calor do consumo médio registrado por semana do ano e intervalo de 30 minutos do dia, calculado sobre todos os domicílios da amostra sem distinção de grupo tarifário.}
+    \label{fig:lcl-heatmap}
+\end{figure}
+
+O mapa de calor da Figura \ref{fig:lcl-heatmap} organiza o consumo médio por semana do ano (eixo horizontal) e intervalo de 30 minutos do dia (eixo vertical).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{../fate-fda-application/low_carbon_energy/output/lcl_final/plots/apendice/functional_envelope}
+    \caption{Envelope funcional das curvas de consumo observadas: mediana (linha central) e bandas de 50\%, 90\% e 100\% das curvas individuais, calculado sobre todos os domicílios da amostra.}
+    \label{fig:lcl-envelope}
+\end{figure}
+
+O pico noturno, entre 19h e 21h, é o traço mais saliente e se intensifica nos meses de inverno (semanas iniciais e finais do ano), com magnitude próxima a 0,40 kWh/hh.
+No verão, o pico atenua-se para cerca de 0,23 kWh/hh, mas a estrutura intradiária se mantém estável.
+
+O envelope funcional da Figura \ref{fig:lcl-envelope} resume a distribuição das curvas individuais de consumo, evidenciando a variabilidade entre domicílios.
+
+A banda de 100\% é ampla, refletindo heterogeneidade considerável entre domicílios, mas a mediana segue o padrão sazonal descrito no texto principal.
+A assimetria das bandas indica que domicílios de alto consumo puxam o envelope para cima de forma mais pronunciada do que domicílios de baixo consumo puxam para baixo.
+
+A Figura \ref{fig:lcl-diff-acorn-anual} apresenta a diferença bruta de consumo por grupo ACORN ao longo do ano, sem ajuste causal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../fate-fda-application/low_carbon_energy/output/lcl_final/plots/texto_principal/fate_raw_by_acorn_annual}
+    \caption{Diferença bruta de consumo \(\bar{Y}_{\mathrm{ToU}}(t) - \bar{Y}_{\mathrm{Std}}(t)\) por grupo ACORN ao longo de 2013, sem ajuste causal. A linha suavizada é um ajuste LOESS.}
+    \label{fig:lcl-diff-acorn-anual}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../fate-fda-application/low_carbon_energy/output/lcl_final/plots/apendice/sensitivity_seasonal}
+    \caption{Perfil intradiário do \(\hat{\theta}(t)\) desagregado por trimestre, modo \emph{offline} (Haar).}
+    \label{fig:lcl-sensitivity-sazonal}
+\end{figure}
+
+\emph{Affluent} e \emph{Comfortable} mantêm diferença negativa ao longo de todo o ano, com redução mais intensa no inverno.
+\emph{Adversity} oscila próximo de zero durante a maior parte do período.
+\emph{ACORN-U} inverte o sinal já na primavera e permanece predominantemente positivo até o final do ano.
+
+A Figura \ref{fig:lcl-sensitivity-sazonal} desagrega o perfil intradiário do \(\hat{\theta}(t)\) por trimestre.
+
+A forma qualitativa é preservada em todos os trimestres, com dois vales correspondentes à madrugada e ao horário de pico.
+Não há horário ou estação em que o efeito seja positivo.
+A magnitude varia sazonalmente: maior no inverno (Q1 e Q4) e menor no verão (Q3).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{../fate-fda-application/low_carbon_energy/output/lcl_final/plots/apendice/sensitivity_placebo}
+    \caption{Distribuição do \(\mathrm{FATE}\) obtido em 200 permutações aleatórias dos rótulos de tratamento (curvas cinza) e \(\hat{\theta}(t)\) estimado nos dados reais (curva colorida), modo \emph{offline} (Haar).}
+    \label{fig:lcl-sensitivity-placebo}
+\end{figure}
+
+A Figura \ref{fig:lcl-sensitivity-placebo} compara o \(\hat{\theta}(t)\) estimado nos dados reais com as estimativas obtidas por permutação dos rótulos de tratamento.
+
+As curvas permutadas oscilam em torno de zero ao longo de todo o ano, enquanto o \(\hat{\theta}(t)\) real permanece consistentemente abaixo de zero.
+O efeito observado não se confunde em nenhum momento com a distribuição sob ausência de efeito.

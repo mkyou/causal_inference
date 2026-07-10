@@ -84,8 +84,39 @@
 % '\includepdf{folhadeaprovacao.pdf}' dentro do ambiente abaixo
 % ---
 \begin{folhadeaprovacao}
-  \centering{\ABNTEXchapterfont\large A folha de aprovação será fornecida pela Secretaria de Pós-Graduação}
-  %     \includepdf{folhadeaprovacao.pdf}
+  \begin{center}
+    {\ABNTEXchapterfont\large\bfseries FOLHA DE APROVAÇÃO}
+  \end{center}
+
+  \vspace{2cm}
+
+  \begin{center}
+    MOISÉS AUGUSTO FARIAS DA SILVA
+  \end{center}
+
+  \vspace{1.5cm}
+
+  Dissertação apresentada ao Programa de Pós-Graduação em Estatística,
+  defendida na data de 14/05/2026.
+
+  \vspace{2cm}
+
+  Composição da Comissão Examinadora:
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Alex Rodrigo dos Santos Sousa\\
+  IMECC/ UNICAMP
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Carlos Cesar Trucios Maza\\
+  IMECC/ UNICAMP
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Marcelo Magalhães Taddeo\\
+  Universidade Federal da Bahia
 \end{folhadeaprovacao}
 % ----------------------------------------------------------
 % AGRADECIMENTOS
@@ -100,6 +131,20 @@
 
 	Por fim, estendo minha gratidão, de forma geral, a todos que contribuíram em maior ou menor grau nesta trajetória de mestrado e que, em prol da brevidade, não foram citados nominalmente.
 \end{agradecimentos}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% DECLARAÇÃO DE USO DE INTELIGÊNCIA ARTIFICIAL
+\chapter*{DECLARAÇÃO DE USO DE INTELIGÊNCIA ARTIFICIAL}
+
+Este trabalho utilizou ferramentas de inteligência artificial generativa nos seguintes
+contextos: elaboração da documentação do pacote \texttt{rLifting}; auxílio na escrita
+de código para a aplicação ao experimento \emph{Low Carbon London}; e correções e
+melhorias pontuais de estilo em trechos do texto, com maior incidência no capítulo de
+aplicações e na seção dedicada ao \texttt{rLifting}. Todo o conteúdo científico ---
+hipóteses, análises, interpretações e conclusões --- é de responsabilidade exclusiva do
+autor e do orientador.
+
+\cleardoublepage
 % ----------------------------------------------------------
 % ----------------------------------------------------------
 % EPÍGRAFE (OPCIONAL)
@@ -132,10 +177,13 @@
 % ----------------------------------------------------------
 % LISTA DE ABREVIATURAS E SIGLAS (OPCIONAL)
 \begin{siglas}
+  \item[ACORN] Classificação de Bairros Residenciais (\emph{A Classification of Residential Neighbourhoods})
   \item[API] Interface de Programação de Aplicação (\emph{Application Programming Interface})
   \item[ATE] Efeito Médio de Tratamento (\emph{Average Treatment Effect})
   \item[ATT] Efeito Médio de Tratamento nos Tratados (\emph{Average Treatment Effect on the Treated})
   \item[CATE] Efeito Médio Condicional de Tratamento (\emph{Conditional Average Treatment Effect})
+  \item[CDF] Filtro de Ondaletas Cohen-Daubechies-Feauveau (\emph{Cohen-Daubechies-Feauveau Wavelet Filter})
+  \item[CFATE] Efeito Médio de Tratamento Funcional Acumulado (\emph{Cumulative Functional Average Treatment Effect})
   \item[CobSim] Cobertura Simultânea (\emph{Simultaneous Coverage})
   \item[CWT] Transformada de Ondaletas Contínua (\emph{Continuous Wavelet Transform})
   \item[DAG] Grafo Acíclico Direcionado (\emph{Directed Acyclic Graph})
@@ -143,10 +191,15 @@
   \item[EWMA] Suavização Exponencial Móvel (\emph{Exponentially Weighted Moving Average})
   \item[FATE] Efeito Médio de Tratamento Funcional (\emph{Functional Average Treatment Effect})
   \item[FDA] Análise de Dados Funcionais (\emph{Functional Data Analysis})
+  \item[GCV] Validação Cruzada Generalizada (\emph{Generalized Cross-Validation})
+  \item[IC] Intervalo de Confiança (\emph{Confidence Interval})
   \item[IDWT] Transformada de Ondaletas Discreta Inversa (\emph{Inverse Discrete Wavelet Transform})
   \item[ILWT] Transformada de Ondaletas Inversa via \emph{Lifting} (\emph{Inverse Lifting Wavelet Transform})
+  \item[LCL] Experimento de Tarifação Dinâmica de Londres (\emph{Low Carbon London})
+  \item[LOESS] Regressão Local Ponderada (\emph{Locally Estimated Scatterplot Smoothing})
   \item[LWT] Transformada de Ondaletas via \emph{Lifting} (\emph{Lifting Wavelet Transform})
   \item[MAD] Desvio Absoluto Mediano (\emph{Median Absolute Deviation})
+  \item[MCAR] Mecanismo de Ausência Completamente Aleatório (\emph{Missing Completely At Random})
   \item[MGP] Processo Gaussiano Multivariado (\emph{Multivariate Gaussian Process})
   \item[MRA] Análise Multirresolução (\emph{Multiresolution Analysis})
   \item[MSE] Erro Quadrático Médio (\emph{Mean Squared Error})
@@ -157,6 +210,7 @@
   \item[STFT] Transformada de Fourier de Tempo Curto (\emph{Short-Time Fourier Transform})
   \item[SURE] Estimativa de Risco Não Viesado de Stein (\emph{Stein's Unbiased Risk Estimate})
   \item[SUTVA] Suposição de Valor de Tratamento de Unidade Estável (\emph{Stable Unit Treatment Value Assumption})
+  \item[ToU] Tarifa Dinâmica (\emph{Time-of-Use})
   \item[TV] Variação total (\emph{Total Variation}) 
 \end{siglas}
 % ----------------------------------------------------------
@@ -208,6 +262,7 @@
 \include{texto/revisao}
 \include{texto/metodologia}
 \include{texto/estudos_simulacao}
+\include{texto/aplicacoes}
 \include{texto/conclusao}
 % ----------------------------------------------------------
 % ---------------------------------------------------------------------------------

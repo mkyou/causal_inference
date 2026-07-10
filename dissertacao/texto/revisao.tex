@@ -77,7 +77,7 @@ Em suma, em vez de assumirmos uma independência em termos distribucionais, requ
     \quad a \in \mathcal{A} \equiv \{0, 1\}.
 \]
 
-Sob essas condições, a identificabilidade do parâmetro causal funcional, \(\text{FATE} \equiv \theta(t)\), segue a lógica pontual:
+Sob essas condições, a identificabilidade do parâmetro causal funcional, \(\mathrm{FATE} \equiv \theta(t)\), segue a lógica pontual:
 \begin{equation}
 \begin{aligned}
     \theta(t)
@@ -751,7 +751,7 @@ Estratégias de limiarização à parte, é importante pontuar que a eficácia d
 \begin{equation}
     \lambda_j = 
     \begin{cases} 
-        \beta \cdot \frac{\text{MAD}(|d_{J-1}|)}{0.6745}\sqrt{2 \log T_{J-1}}, & \text{se } j = J - 1, \\
+        \beta \cdot \frac{\mathrm{MAD}(|d_{J-1}|)}{0.6745}\sqrt{2 \log T_{J-1}}, & \text{se } j = J - 1, \\
         (j + 1)/(j + 1 + \alpha)\lambda_{j+1}, & \text{se } j < J - 1.
     \end{cases}
     \label{eq:recursive_threshold}

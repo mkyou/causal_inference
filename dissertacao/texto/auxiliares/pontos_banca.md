@@ -5,15 +5,6 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 
 ---
 
-## Geral
-- Verificar uso do termo "tempo real" vs. "tempo quase real". Preferimos "tempo real". Necessário checar se está padronizado. **[]**
-- **Notação \(\mathcal{T}\) vs. \(\mathcal{S}\). Verificar padronização em texto. \(\mathcal{S}\) contém \(\mathcal{T}\) unindo ao período pré-tratamento. Checar se isso segue limpo no texto. **[]**. 
-- Verificar se uso de t-Student(5) está padronizado. Ocorrências de t(5) devem ser substituídas de acordo com a primeira.
-- Verificar uso de ~x, em que "x" representa um número (ex: Figura ~\ref{fig}). Padronizamos o não uso do "~". 
-- Verificar se termos como FATE, NRMSE, CFATE e afins estão envoltos do \mathrm ao longo de todo o texto.
-- Verificar lista de siglas. Checar se cobre todas as siglas empregadas. Checar se está correto. Averiguar mudanças e decidir.
-- Verificar conceitos plausíveis para "lista de conceitos" sugeridos pela banca.
-
 ## Cap. 1 — Introdução
 **Status:** Concluído.
 - **T-1a / T-14b'** — forward-ref a "regular" = regularidade de Hölder (Def. 2.1 no Cap. 2). **[X]**
@@ -78,18 +69,18 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 ---
 
 ## Cap. 5 — Aplicações
-**Status:** Decidido; redação pendente.
-- **T-Q5** — Low Carbon London. **[A]**
-- **A11** — payoff final do fio condutor da rede elétrica. **[ ]**
+**Status:** Concluído.
+- **T-Q5** — Low Carbon London. **[X]**
+- **A11** — payoff final do fio condutor da rede elétrica. **[X]**
 
 ---
 
 ## Cap. 6 — Conclusão
-**Status:** Redação pendente.
-- **O-9** — substituir "correlação espúria" por confundimento não controlado / identificabilidade não garantida (UTI: confundimento por indicação). **[A]**
-- **T-Q5** — reescrever de "sem aplicação" para "com aplicações e ressalvas" (ver Cap. 5). **[A]**
-- **P-1d** — ressalva MAD: grade irregular comum a todos OK; por indivíduo = trabalho futuro. **[A]** não é uma questão do MAD, é do FATE. A ressalva do MAD tem a ver com a variância homoscedástica.
-- **T-Q1** — CFATE online como monitor de efeito acumulado em tempo real. **[A]**
+**Status:** Concluído.
+- **O-9** — substituir "correlação espúria" por confundimento não controlado / identificabilidade não garantida (UTI: confundimento por indicação). **[X]**
+- **T-Q5** — reescrever de "sem aplicação" para "com aplicações e ressalvas" (ver Cap. 5). **[X]**
+- **P-1d** — ressalva MAD: grade irregular comum a todos OK; por indivíduo = trabalho futuro. **[X]** não é uma questão do MAD, é do FATE. A ressalva foi movida para trabalho futuro (estimador FATE com grade por indivíduo).
+- **T-Q1** — CFATE online como monitor de efeito acumulado em tempo real. **[X]**
 ---
 
 ## Apêndice
@@ -98,11 +89,16 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 ---
 
 ## Transversal
-- **O-1** — lista de conceitos pré-textual (aguardar estabilização da terminologia). **[A]**
-- **O-6** — declaração de uso de IA (norma CCPG/UNICAMP). **[A]**
-- **O-8** — tabela completa do apêndice (tendência: permanece). **[A]** ela vai crescer.
+- Notação \(\mathcal{T}\) vs. \(\mathcal{S}\). Verificar padronização em texto. \(\mathcal{S}\) contém \(\mathcal{T}\) unindo ao período pré-tratamento. Checar se isso segue limpo no texto. **[X]** — `\mathcal{S}` aparece uma vez (metodologia.tex:103) com definição explícita `\mathcal{S} \supset \mathcal{T}`; sem inconsistências.
+- Verificar uso do termo "tempo real" vs. "tempo quase real". Preferimos "tempo real". Necessário checar se está padronizado. **[X]** — sem ocorrências de "tempo quase real" ou variantes.
+- Verificar se uso de t-Student(5) está padronizado. Ocorrências de t(5) devem ser substituídas de acordo com a primeira. **[X]** — todas as 18 ocorrências usam `t\text{-Student}(5)` sem variantes.
+- Verificar uso de ~x, em que "x" representa um número (ex: Figura ~\ref{fig}). Padronizamos o não uso do "~". **[X]** — 22 ocorrências de `~\ref{` substituídas por ` \ref{` (espaço comum) em conclusao.tex, aplicacoes.tex e apendices.tex.
+- Verificar se termos como FATE, NRMSE, CFATE e afins estão envoltos do \mathrm ao longo de todo o texto. **[X]** — 3 correções: `\text{FATE}` e `\text{MAD}` em revisao.tex; `\text{CFATE}_\text{NRMSE/CobSim/Lar.}` em 6 cabeçalhos de tabela.
+- Verificar lista de siglas. Checar se cobre todas as siglas empregadas. Checar se está correto. Averiguar mudanças e decidir. **[X]** — adicionadas ACORN, CDF, CFATE, GCV, IC, LCL, LOESS, MCAR, ToU.
+- **O-1** — lista de conceitos pré-textual (aguardar estabilização da terminologia). **[R]** — Muito trabalho e tem no texto.
+- **O-6** — declaração de uso de IA (norma CCPG/UNICAMP). **[X]**
+- **O-8** — tabela completa do apêndice no texto principal. **[R]** Cresceu muito.
 - **A11** — mover derivações pesadas ao apêndice. **[R]** não temos derivações muito pesadas.
-
 ---
 
 ## Visão geral
@@ -113,6 +109,6 @@ Marcadores: `[ ]` a discutir · `[A]` acatar · `[P]` parcial · `[R]` rebater �
 | Cap. 2 Revisão | ✅ Concluído (T-16/O-7 parciais por decisão) |
 | Cap. 3 Metodologia | ✅ Concluído |
 | Cap. 4 Simulação | ✅ Concluído |
-| Cap. 5 Aplicações | 📝 Redação pendente |
-| Cap. 6 Conclusão | 📝 Redação pendente |
-| Transversal | ⏳ A discutir |
+| Cap. 5 Aplicações | ✅ Concluído |
+| Cap. 6 Conclusão | ✅ Concluído |
+| Transversal | ✅ Concluído |
