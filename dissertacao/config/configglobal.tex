@@ -183,6 +183,24 @@
 }{%
   \end{tcolorbox}%
 }
+% ----------------------------------------------------------
+% Numeração no canto superior direito, na horizontal, nas páginas
+% em formato paisagem (pdflscape rotaciona cabeçalho/rodapé padrão
+% junto com o conteúdo; aqui sobrepomos apenas o folio, corrigido).
+% ----------------------------------------------------------
+\newcommand{\iniciapaisagemcomnumeracao}{%
+  \pagestyle{empty}%
+  \AddToShipoutPictureFG{%
+    \AtPageUpperLeft{%
+      \put(\LenToUnit{2cm},-\LenToUnit{2cm}){\rotatebox{90}{\makebox[0pt][l]{\ABNTEXfontereduzida\thepage}}}%
+    }%
+  }%
+}
+\newcommand{\finalizapaisagemcomnumeracao}{%
+  \ClearShipoutPictureFG
+  \pagestyle{abntheadings}%
+}
+% ----------------------------------------------------------
 \newsavebox{\estimatorboxcontent}
 \newlength{\estimatorboxpad}
 \setlength{\estimatorboxpad}{10pt}
