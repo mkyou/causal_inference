@@ -1,0 +1,62 @@
+%% beamercolorthemerbras.sty — paleta da 70ª RBras para apresentações orais.
+%%
+%% As cores foram lidas do pacote OOXML de Template_Poster_70RBras.pptx e do
+%% arquivo rbras-poster.cls, de modo que o modelo de slides e o modelo de
+%% pôster usam os mesmos valores.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamercolorthemerbras}[2026/11/14 v1.0 Cores da 70a RBras]
+
+\RequirePackage{xcolor}
+% colortbl dá \arrayrulecolor e \rowcolor sem exigir a opção table do xcolor,
+% que o beamer já carregou antes do tema.
+\RequirePackage{colortbl}
+
+% ---------- Paleta ----------
+\definecolor{rbAzul}{HTML}{073A70}        % azul institucional
+\definecolor{rbAmarelo}{HTML}{F9BD38}     % faixas e marcadores
+\definecolor{rbFundo}{HTML}{EAF0F7}       % fundo das caixas
+\definecolor{rbTexto}{HTML}{1F2933}       % corpo de texto
+\definecolor{rbCinza}{HTML}{52606D}       % rótulos e legendas
+\definecolor{rbCinzaClaro}{HTML}{9AA5B1}  % série de comparação
+\definecolor{rbGrade}{HTML}{E9EAEB}       % linhas de grade do gráfico
+\definecolor{rbEixo}{HTML}{C7CACC}        % linha do eixo
+\definecolor{rbClaro}{HTML}{F4F4F4}       % texto sobre o azul
+\definecolor{rbLinhaTab}{HTML}{D5DCE4}    % divisória entre linhas de tabela
+
+% ---------- Elementos do Beamer ----------
+\setbeamercolor{normal text}{fg=rbTexto, bg=white}
+\setbeamercolor{structure}{fg=rbAzul}
+\setbeamercolor{alerted text}{fg=rbAzul}
+\setbeamercolor{example text}{fg=rbCinza}
+
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=rbClaro}
+\setbeamercolor{author}{fg=rbClaro}
+\setbeamercolor{institute}{fg=rbClaro}
+\setbeamercolor{date}{fg=rbClaro}
+
+\setbeamercolor{frametitle}{fg=rbAzul, bg=}
+\setbeamercolor{framesubtitle}{fg=rbCinza, bg=}
+
+\setbeamercolor{itemize item}{fg=rbAzul}
+\setbeamercolor{itemize subitem}{fg=rbCinza}
+\setbeamercolor{itemize subsubitem}{fg=rbCinza}
+\setbeamercolor{enumerate item}{fg=rbAzul}
+\setbeamercolor{enumerate subitem}{fg=rbCinza}
+\setbeamercolor{description item}{fg=rbAzul}
+
+\setbeamercolor{block title}{fg=rbAzul, bg=rbFundo}
+\setbeamercolor{block body}{fg=rbTexto, bg=rbFundo}
+\setbeamercolor{block title alerted}{fg=white, bg=rbAzul}
+\setbeamercolor{block body alerted}{fg=rbTexto, bg=rbFundo}
+\setbeamercolor{block title example}{fg=rbCinza, bg=rbFundo}
+\setbeamercolor{block body example}{fg=rbTexto, bg=rbFundo}
+
+\setbeamercolor{caption}{fg=rbCinza}
+\setbeamercolor{caption name}{fg=rbAzul}
+\setbeamercolor{footline}{fg=white, bg=rbAzul}
+\setbeamercolor{background canvas}{bg=white}
+\setbeamercolor{math text}{fg=rbTexto}
+
+\mode<all>
+\endinput

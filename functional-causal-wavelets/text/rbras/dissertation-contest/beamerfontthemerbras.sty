@@ -1,0 +1,107 @@
+%% beamerfontthemerbras.sty — tipografia da 70ª RBras para apresentações orais.
+%%
+%% O texto usa Montserrat, a mesma fonte do pôster. Se o pacote montserrat não
+%% estiver instalado, o tema recorre a Helvetica, emite aviso no log e compila
+%% assim mesmo. A matemática fica na fonte matemática padrão do LaTeX, com
+%% serifa, porque o modelo do PowerPoint usa Cambria Math sobre texto em
+%% Montserrat. A monoespaçada é Courier New, que tem substituto de métrica
+%% compatível no LibreOffice e equivalente direto na TeX Live.
+%%
+%% Os corpos estão em bp, a unidade do ponto do PowerPoint, de modo que o
+%% número lido do XML do PPTX entra direto aqui.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerfontthemerbras}[2026/11/14 v1.0 Tipografia da 70a RBras]
+
+\RequirePackage{fix-cm}   % fontes de matemática em qualquer corpo
+\RequirePackage{iftex}
+
+\newcommand\rb@ls[1]{#1}  % espacejamento entre letras; redefinido abaixo
+
+\ifPDFTeX
+  \RequirePackage[utf8]{inputenc}
+  \RequirePackage[T1]{fontenc}
+  \IfFileExists{montserrat.sty}
+    {\RequirePackage[defaultfam,tabular,lining]{montserrat}}
+    {\RequirePackage{helvet}
+     \PackageWarningNoLine{beamerfontthemerbras}{Pacote montserrat ausente;
+       usando Helvetica. Instale com: tlmgr install montserrat}}
+  \RequirePackage{letterspace}
+  \renewcommand\rb@ls[1]{\textls[107]{#1}}
+\else
+  \RequirePackage{fontspec}
+  \IfFontExistsTF{Montserrat}
+    {\setsansfont{Montserrat}}
+    {\PackageWarningNoLine{beamerfontthemerbras}{Fonte Montserrat ausente;
+       usando a fonte sem serifa padrao}}
+  \renewcommand\rb@ls[1]{{\addfontfeature{LetterSpace=10}#1}}
+\fi
+
+% Courier New: o pacote courier aponta o \ttdefault para a Courier da PSNFSS,
+% que é a mesma métrica. Sem o pacote, a monoespaçada padrão continua válida.
+\IfFileExists{courier.sty}
+  {\RequirePackage{courier}}
+  {\PackageWarningNoLine{beamerfontthemerbras}{Pacote courier ausente; usando
+     a monoespacada padrao}}
+
+% O montserrat troca a série padrão para "regular", forma que a Courier da
+% PSNFSS não declara. \rbtt volta à série média antes de selecionar a
+% monoespaçada, o que evita a substituição silenciosa de forma.
+\newcommand\rbtt{\fontfamily{\ttdefault}\fontseries{m}\fontshape{n}\selectfont}
+\DeclareTextFontCommand{\texttt}{\rbtt}
+
+\renewcommand\familydefault{\sfdefault}
+\RequirePackage{amsmath}
+\RequirePackage{exscale}  % delimitadores grandes em qualquer corpo
+% cmex só existe nos corpos 7, 8, 9 e 10. A declaração abaixo torna a
+% família escalável, o que evita o aviso de substituição de corpo nos
+% delimitadores grandes das equações.
+\DeclareFontShape{OMX}{cmex}{m}{n}{<->cmex10}{}
+
+% ---------- Corpos: pt do PowerPoint = bp ----------
+\newcommand\rb@fs[2]{\fontsize{#1bp}{#2bp}\selectfont}
+\newcommand\tamTituloAbertura{\rb@fs{40}{46}}
+\newcommand\tamAutores{\rb@fs{20}{26}}
+\newcommand\tamAfil{\rb@fs{16}{20}}
+\newcommand\tamTituloSlide{\rb@fs{32}{38}}
+\newcommand\tamRotulo{\rb@fs{16}{20}}
+\newcommand\tamCorpo{\rb@fs{24}{32}}
+\newcommand\tamCorpoDois{\rb@fs{20}{27}}
+\newcommand\tamMensagem{\rb@fs{40}{48}}
+\newcommand\tamNumeroDiv{\rb@fs{72}{72}}
+\newcommand\tamTituloDiv{\rb@fs{40}{46}}
+\newcommand\tamFigTitulo{\rb@fs{22}{27}}
+\newcommand\tamFigRotulo{\rb@fs{16}{20}}
+\newcommand\tamEixo{\rb@fs{14}{17}}
+\newcommand\tamLegenda{\rb@fs{14}{17}}
+\newcommand\tamTabela{\rb@fs{18}{24}}
+\newcommand\tamEquacao{\rb@fs{28}{36}}
+\newcommand\tamCodigo{\rb@fs{18}{23}}
+\newcommand\tamNumeroCartao{\rb@fs{40}{40}}
+\newcommand\tamCartao{\rb@fs{20}{26}}
+\newcommand\tamRodape{\rb@fs{12}{14}}
+
+% ---------- Atribuição aos elementos do Beamer ----------
+\setbeamerfont{normal text}{size=\tamCorpo}
+\setbeamerfont{title}{size=\tamTituloAbertura, series=\bfseries}
+\setbeamerfont{subtitle}{size=\tamAutores}
+\setbeamerfont{author}{size=\tamAutores}
+\setbeamerfont{institute}{size=\tamAfil}
+\setbeamerfont{date}{size=\tamAfil}
+\setbeamerfont{frametitle}{size=\tamTituloSlide, series=\bfseries}
+\setbeamerfont{framesubtitle}{size=\tamRotulo}
+\setbeamerfont{itemize/enumerate body}{size=\tamCorpo}
+\setbeamerfont{itemize/enumerate subbody}{size=\tamCorpoDois}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\tamCorpoDois}
+\setbeamerfont{block title}{size=\tamFigTitulo, series=\bfseries}
+\setbeamerfont{block body}{size=\tamCorpoDois}
+\setbeamerfont{caption}{size=\tamLegenda}
+\setbeamerfont{caption name}{size=\tamLegenda, series=\bfseries}
+\setbeamerfont{footline}{size=\tamRodape}
+
+% A matemática fica na fonte matemática padrão do LaTeX, com serifa, e não na
+% sem serifa que o beamer usa por padrão. É o que reproduz o modelo do
+% PowerPoint, que usa Cambria Math sobre texto em Montserrat.
+\usefonttheme[onlymath]{serif}
+
+\mode<all>
+\endinput

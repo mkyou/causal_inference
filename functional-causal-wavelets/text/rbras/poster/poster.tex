@@ -1,0 +1,106 @@
+% Compile: pdflatex poster.tex; bibtex poster; pdflatex poster.tex (duas vezes).
+\documentclass{rbras-poster}
+\usepackage{amssymb}
+\usepackage[authoryear,round]{natbib}
+\usepackage{bibentry}
+\usetikzlibrary{pgfplots.fillbetween}
+\bibliographystyle{plainnat}
+
+\titulo{Inferência causal em dados funcionais via transformadas de ondaletas: do pré-processamento à estimação em tempo real}
+\autores{\textbf{Moisés Augusto da Silva} · Alex Rodrigo dos Santos Sousa}
+\afiliacoes{Instituto de Matemática, Estatística e Computação Científica · UNICAMP}
+\email{moisesaugusto@protonmail.com}
+\mensagem{O pré-processamento por ondaletas permite estimar efeitos causais funcionais em trajetórias irregulares, com atualizações em microssegundos.}
+\qrlink{https://github.com/mkyou/rLifting}
+\qrlegenda{Código: rLifting\\Artigo em fase de escrita}
+\logoevento{logo-rbras.png}
+\logoinstituicao{logo-imecc-official.png}
+\conclusoes
+{O pré-processamento por ondaletas acomoda irregularidades locais e permite atualizar as estimativas sequencialmente, inclusive em tempo real.}
+{Com o pacote \texttt{rLifting}, o processamento sequencial apresentou latência da ordem de microssegundos por atualização.}
+{Nas simulações, os estimadores baseados em ondaletas superaram o estimador de Ecker et al., sobretudo nos cenários de maior irregularidade temporal.}
+\referencias{\bibentry{ecker_causal_2024}}
+
+\begin{document}
+\nobibliography{../../dissertation/references}
+\begin{colunaesquerda}
+\setlength\rbespacosecao{35bp}
+\begin{secao}{1}{Introdução}
+Este trabalho propõe uma metodologia para estimar efeitos causais médios de tratamento em dados funcionais temporais. Como em \citet{ecker_causal_2024}, consideramos tratamento e covariáveis escalares e desfecho funcional. Diferentemente desses autores, utilizamos ondaletas via \textit{lifting scheme} para pré-processar as trajetórias, o que nos permite dispensar a hipótese de regularidade uniforme do efeito de tratamento e atualizar as estimativas sequencialmente, inclusive em tempo real, à medida que novos dados são observados.
+\end{secao}
+\begin{secao}{2}{Dados}
+Avaliamos a metodologia em três estudos de simulação e em uma aplicação a dados reais. Nas simulações, consideramos quatro cenários para o efeito de tratamento (Sigmoide, \textit{Bumps}, \textit{Doppler} e Escada), com atribuição dependente de covariáveis. A Simulação 1 compara os estimadores em lote e sequencial com o de \citet{ecker_causal_2024}; a Simulação 2 avalia a latência da estimação em tempo real; e a Simulação 3 considera grades temporais não uniformes.
+
+Na aplicação ao \textit{Low Carbon London}, analisamos o consumo elétrico de 5.095 domicílios, registrado a cada 30 minutos em 2013, comparando as tarifas dinâmica e padrão com ajuste por perfil socioeconômico.
+\end{secao}
+\begin{secao}{3}{Método}
+O efeito médio de tratamento funcional (FATE) é definido, em cada instante $t$, por
+\[
+\theta(t)=\mathbb{E}\!\left[Y^{(1)}(t)-Y^{(0)}(t)\right],
+\]
+em que $Y^{(1)}(t)$ e $Y^{(0)}(t)$ são os desfechos potenciais sob tratamento e controle.
+\end{secao}
+\end{colunaesquerda}
+
+\begin{colunadireita}
+\sloppy
+\setlength\rbespacosecao{30bp}
+\vspace*{75bp}
+O efeito acumulado desde a intervenção é dado pelo CFATE:
+\[
+\Theta(t)=\int_{t_{\mathrm{trat}}}^{t}\theta(s)\,ds.
+\]
+Para estimar o FATE, pré-processamos as trajetórias com o pacote \texttt{rLifting} e ajustamos, em cada instante, uma regressão para o grupo tratado e outra para o controle. A estimativa é a média das diferenças entre as predições dos dois modelos:
+\[
+\hat{\theta}(t)=\bar{\mathbf X}^{\mathsf T}\left(\hat{\boldsymbol\beta}^{(1)}(t)-\hat{\boldsymbol\beta}^{(0)}(t)\right).
+\]
+No estimador sequencial, o pré-processamento utiliza uma janela móvel com observações disponíveis até o instante corrente. Para construir bandas simultâneas, reamostramos indivíduos e suas trajetórias completas por \textit{bootstrap} não paramétrico.
+\par\vspace{30bp}
+\begin{secao}{4}{Resultados}
+{\tamRotulo
+\renewcommand\arraystretch{1.16}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash\bfseries}p{205bp} >{\justifying\arraybackslash}X@{}}
+\arrayrulecolor{rbAzul}\specialrule{2bp}{0pt}{8bp}
+Simulação 1 & Os estimadores baseados em ondaletas melhoraram à medida que $N$ e $T$ aumentaram. Com $N=2.000$ e $T=512$, as ondaletas em lote apresentaram bom desempenho nos quatro cenários; o estimador sequencial, em três, com convergência mais lenta no cenário \textit{Doppler}. As bandas de confiança do estimador de \citet{ecker_causal_2024} apresentaram cobertura inferior à nominal.\\
+\arrayrulecolor{rbGrade}\specialrule{1bp}{8bp}{8bp}
+Simulação 2 & O processamento em tempo real apresentou latência da ordem de microssegundos por atualização.\\
+\specialrule{1bp}{8bp}{8bp}
+Simulação 3 & O desempenho do estimador sequencial foi semelhante em grades uniformes e não uniformes.\\
+\specialrule{1bp}{8bp}{8bp}
+\multicolumn{2}{@{}l@{}}{\textbf{Aplicação: Low Carbon London}}\\
+\multicolumn{2}{@{}p{\linewidth}@{}}{\begin{minipage}{\linewidth}
+{\tamRotulo Estimativas sequenciais e bandas simultâneas de 95\%\par}
+\vspace{10bp}
+\noindent\begin{tikzpicture}
+\begin{axis}[width=485bp,height=300bp,scale only axis=false,
+  xmin=0,xmax=365,xtick={0,90,181,273,364},xticklabels={jan,abr,jul,out,dez},
+  ytick={-0.15,-0.1,-0.05,0,0.05,0.1,0.15},ylabel={FATE (kWh/hh)},yticklabel={$\pgfmathprintnumber{\tick}$},tick label style={font=\tamRotulo},
+  label style={font=\tamRotulo},grid=major,grid style={rbGrade},
+  axis line style={rbCinza},every axis plot/.append style={line width=1.5bp}]
+\addplot[name path=lf,draw=none] table[x=dia,y=lower,col sep=comma] {figures/sequential_estimates.csv};
+\addplot[name path=uf,draw=none] table[x=dia,y=upper,col sep=comma] {figures/sequential_estimates.csv};
+\addplot[rbAzul!18] fill between[of=lf and uf];
+\addplot[rbCinza,dashed] coordinates {(0,0) (365,0)};
+\addplot[rbAzul] table[x=dia,y=fate,col sep=comma] {figures/sequential_estimates.csv};
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[width=485bp,height=300bp,scale only axis=false,
+  xmin=0,xmax=365,xtick={0,90,181,273,364},xticklabels={jan,abr,jul,out,dez},
+  ytick={-600,-400,-200,0,200},ylabel={CFATE (kWh/hh)},yticklabel={$\pgfmathprintnumber{\tick}$},tick label style={font=\tamRotulo},
+  label style={font=\tamRotulo},grid=major,grid style={rbGrade},
+  axis line style={rbCinza},every axis plot/.append style={line width=1.5bp}]
+\addplot[name path=lc,draw=none] table[x=dia,y=cfate_low,col sep=comma] {figures/sequential_estimates.csv};
+\addplot[name path=uc,draw=none] table[x=dia,y=cfate_up,col sep=comma] {figures/sequential_estimates.csv};
+\addplot[rbAzul!18] fill between[of=lc and uc];
+\addplot[rbCinza,dashed] coordinates {(0,0) (365,0)};
+\addplot[rbAzul] table[x=dia,y=cfate,col sep=comma] {figures/sequential_estimates.csv};
+\end{axis}
+\end{tikzpicture}\par
+{\tamLegenda Efeito acumulado em 2013: $-372$ kWh por domicílio [IC 95\%: $-534$; $-209$].\par}
+\end{minipage}}\\
+\arrayrulecolor{rbAzul}\specialrule{2bp}{8bp}{0pt}
+\end{tabularx}}
+\end{secao}
+\end{colunadireita}
+\end{document}

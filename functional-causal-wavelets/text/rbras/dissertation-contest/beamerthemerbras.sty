@@ -1,0 +1,431 @@
+%% beamerthemerbras.sty — tema da 70ª RBras para apresentações orais.
+%%
+%% Uso: \documentclass[aspectratio=169,t]{beamer} e \usetheme{rbras}.
+%% Compila numa passada com pdflatex, sem passo anterior e sem pacote fora da
+%% TeX Live.
+%%
+%% A tela é de 960 por 540 bp, o 16:9 padrão do PowerPoint, de 13,333 por 7,5
+%% polegadas. Todas as medidas do tema estão em bp, unidade do ponto do
+%% PowerPoint, de modo que o número lido do XML do PPTX entra direto aqui. A
+%% geometria é a mesma do Template_Apresentacao_70RBras.pptx.
+%%
+%% Grade vertical dos slides de conteúdo: rótulo em 44, título em 72, corpo de
+%% 120 a 506, filete amarelo em 509 e faixa azul do rodapé de 512 a 540.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemerbras}[2026/11/14 v1.0 Tema da 70a RBras]
+
+\mode<presentation>
+
+\usecolortheme{rbras}
+\usefonttheme{rbras}
+
+% ---------- Pacotes ----------
+\RequirePackage{tikz}
+\RequirePackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\RequirePackage{tcolorbox}
+\RequirePackage{tabularx}
+\RequirePackage{booktabs}
+\RequirePackage{ragged2e}
+\RequirePackage{qrcode}
+\RequirePackage{listings}
+\RequirePackage{graphicx}
+
+% babel é opcional: entra apenas se o idioma estiver instalado, de modo que o
+% tema compile também em instalações mínimas da TeX Live.
+\IfFileExists{brazil.ldf}
+  {\RequirePackage[brazil]{babel}}
+  {\PackageWarningNoLine{beamerthemerbras}{babel-portuguese ausente; sem
+     hifenizacao em portugues. Instale com: tlmgr install hyphen-portuguese
+     babel-portuges}}
+
+% ---------- Tela de 960 por 540 bp ----------
+\geometry{papersize={960bp,540bp}}
+\setbeamersize{text margin left=48bp, text margin right=48bp}
+
+\newcommand\rbLarg{960}      % largura da tela, em bp
+\newcommand\rbAlt{540}       % altura da tela, em bp
+\newcommand\rbMarg{48}       % margem lateral
+\newcommand\rbDir{912}       % limite direito da faixa útil
+\newcommand\rbUtil{864}      % largura da faixa útil
+\newcommand\rbCorpoTopo{120} % topo da área de conteúdo
+\newcommand\rbRodapeFilete{509}
+\newcommand\rbRodapeFaixa{512}
+\newcommand\rbAberturaFaixa{392}
+
+% Evita hifenização nos blocos curtos de destaque, em que a palavra partida
+% atrapalha a leitura a distância.
+\newcommand\rbSemHifen{\hyphenpenalty=10000\exhyphenpenalty=10000
+  \language=255\relax}
+
+% ---------- Sem símbolos de navegação, sem sombra nos blocos ----------
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{blocks}[default]
+\beamertemplatesolidbackgroundcolor{white}
+
+% ---------- Metadados ----------
+\newcommand\rb@evento{70\textsuperscript{a} RBras}
+\newcommand\rb@local{}
+\newcommand\rb@emailautor{}
+\def\rb@qrlink{}
+\newcommand\rb@qrlegenda{Artigo · código · dados}
+\newcommand\rb@logoevento{logo-rbras.png}
+\newcommand\rb@logoinst{logo-instituicao.png}
+\newcommand\rb@despedida{Obrigado}
+
+\newcommand\evento[1]{\renewcommand\rb@evento{#1}}
+\newcommand\local[1]{\renewcommand\rb@local{#1}}
+\newcommand\emailautor[1]{\renewcommand\rb@emailautor{#1}}
+\newcommand\qrlink[1]{\def\rb@qrlink{#1}}
+\newcommand\qrlegenda[1]{\renewcommand\rb@qrlegenda{#1}}
+\newcommand\logoevento[1]{\renewcommand\rb@logoevento{#1}}
+\newcommand\logoinstituicao[1]{\renewcommand\rb@logoinst{#1}}
+\newcommand\despedida[1]{\renewcommand\rb@despedida{#1}}
+
+% ---------- Logo, ou quadro reservado se o arquivo faltar ----------
+\newcommand\rb@logo[3]{%
+  \begingroup
+  \edef\rb@@arq{#1}%
+  \IfFileExists{\rb@@arq}%
+    {\includegraphics[width=#2,height=#3,keepaspectratio]{\rb@@arq}}%
+    {\fcolorbox{white}{rbAzul}{\parbox[c][\dimexpr#3-2\fboxsep\relax][c]%
+      {\dimexpr#2-2\fboxsep\relax}{\centering\color{white}\tamLegenda
+       Logo\\\expandafter\detokenize\expandafter{\rb@@arq}}}}%
+  \endgroup}
+
+% ---------- Seletor de layout ----------
+% 0 conteúdo · 1 abertura · 2 divisória · 3 mensagem · 4 conclusões
+% 5 agradecimento · 6 encerramento
+% O slide especial grava o conteúdo em macros globais e marca o seletor; o
+% desenho sai no template de fundo, que trabalha em coordenadas absolutas da
+% página. É o que permite compilar numa passada, sem remember picture.
+\newcount\rb@layout \rb@layout=0
+\gdef\rb@a{}\gdef\rb@b{}\gdef\rb@c{}
+
+% ---------- Rodapé: desenhado no fundo, em posição fixa ----------
+\setbeamertemplate{footline}{}
+\newcommand\rb@rodape{%
+  \fill[rbAmarelo] (0,\rbRodapeFilete) rectangle (\rbLarg,\rbRodapeFaixa);
+  \fill[rbAzul] (0,\rbRodapeFaixa) rectangle (\rbLarg,\rbAlt);
+  \node[anchor=west,inner sep=0,font=\tamRodape,text=white]
+    at (\rbMarg,526) {\rb@evento};
+  \node[anchor=east,inner sep=0,font=\tamRodape,text=white]
+    at (\rbDir,526) {\insertframenumber};}
+
+% ---------- Cartão de conclusão: 272 por 180 bp ----------
+\newcommand\rb@cartao[3]{%
+  \fill[rbFundo] (#1,200) rectangle ++(272,180);
+  \node[anchor=north west,inner sep=0,font=\tamNumeroCartao\bfseries,
+    text=rbAzul] at ({#1+20},216) {#2};
+  \node[anchor=north west,inner sep=0,text width=232bp,align=left,
+    font=\tamCartao,text=rbTexto] at ({#1+20},272) {\rbSemHifen #3};}
+
+% ---------- Fundo ----------
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}[overlay,x=1bp,y=-1bp]
+  \ifcase\rb@layout
+  % ----- 0: conteúdo -----
+    \rb@rodape
+  \or
+  % ----- 1: abertura -----
+    \fill[rbAzul] (0,0) rectangle (\rbLarg,\rbAberturaFaixa);
+    \fill[rbAmarelo] (0,\rbAberturaFaixa) rectangle (\rbLarg,398);
+    \node[anchor=north west,inner sep=0] at (\rbMarg,36)
+      {\rb@logo{\rb@logoevento}{150bp}{110bp}};
+    \node[anchor=north east,inner sep=0] at (\rbDir,44)
+      {\rb@logo{\rb@logoinst}{150bp}{96bp}};
+    \node[anchor=north west,inner sep=0,text width=864bp,align=left]
+      at (\rbMarg,168)
+      {\rbSemHifen\tamTituloAbertura\bfseries\color{white}\inserttitle\par};
+    \node[anchor=south west,inner sep=0,text width=864bp,align=left]
+      at (\rbMarg,372)
+      {{\tamAutores\color{rbClaro}\insertauthor\par}\vspace{8bp}%
+       {\tamAfil\color{rbClaro}\insertinstitute\par}%
+       \ifx\rb@emailautor\@empty\else\vspace{4bp}%
+       {\tamAfil\color{rbClaro}\rb@emailautor\par}\fi};
+    \node[anchor=north west,inner sep=0,font=\tamAfil,text=rbCinza]
+      at (\rbMarg,430) {\rb@evento};
+    \node[anchor=north west,inner sep=0,font=\tamAfil,text=rbCinza]
+      at (\rbMarg,458) {\rb@local};
+    \node[anchor=north east,inner sep=0,font=\tamAfil,text=rbCinza]
+      at (\rbDir,430) {\insertdate};
+  \or
+  % ----- 2: divisória de seção -----
+    \fill[rbAzul] (0,0) rectangle (\rbLarg,\rbAlt);
+    \fill[rbAmarelo] (\rbMarg,196) rectangle ++(120,6);
+    \node[anchor=north west,inner sep=0,font=\tamNumeroDiv\bfseries,
+      text=rbAmarelo] at (\rbMarg,96) {\rb@a};
+    \node[anchor=north west,inner sep=0,text width=864bp,align=left,
+      font=\tamTituloDiv\bfseries,text=white]
+      at (\rbMarg,236) {\rbSemHifen\rb@b};
+    \node[anchor=east,inner sep=0,font=\tamRodape,text=rbClaro]
+      at (\rbDir,510) {\insertframenumber};
+  \or
+  % ----- 3: uma mensagem -----
+    \rb@rodape
+    \fill[rbFundo] (\rbMarg,150) rectangle (\rbDir,430);
+    \fill[rbAmarelo] (\rbMarg,150) rectangle ++(12,280);
+    \node[anchor=north west,inner sep=0,font=\tamRotulo\bfseries,text=rbCinza]
+      at (100,176) {\rb@ls{\MakeUppercase{\rb@b}}};
+    \node[anchor=north west,inner sep=0,text width=772bp,align=left,
+      font=\tamMensagem\bfseries,text=rbAzul]
+      at (100,212) {\rbSemHifen\rb@a};
+  \or
+  % ----- 4: conclusões -----
+    \rb@rodape
+    \rb@cartao{\rbMarg}{1}{\rb@a}
+    \rb@cartao{344}{2}{\rb@b}
+    \rb@cartao{640}{3}{\rb@c}
+  \or
+  % ----- 5: agradecimento -----
+    \rb@rodape
+    \fill[rbFundo] (\rbMarg,160) rectangle (\rbDir,420);
+    \fill[rbAmarelo] (\rbMarg,160) rectangle ++(12,260);
+    \node[anchor=north west,inner sep=0,text width=772bp,align=left,
+      font=\tamCorpo,text=rbTexto] at (100,200) {\rb@a};
+  \or
+  % ----- 6: encerramento -----
+    \fill[rbAzul] (0,0) rectangle (\rbLarg,\rbAlt);
+    \fill[rbAmarelo] (\rbMarg,236) rectangle ++(120,6);
+    \node[anchor=north west,inner sep=0,font=\tamTituloAbertura\bfseries,
+      text=white] at (\rbMarg,150) {\rb@despedida};
+    \node[anchor=north west,inner sep=0,text width=600bp,align=left,
+      font=\tamAutores,text=rbClaro] at (\rbMarg,276) {\rbSemHifen\rb@a};
+    \node[anchor=north west,inner sep=0,font=\tamAfil,text=rbClaro]
+      at (\rbMarg,382) {\rb@emailautor};
+    \ifx\rb@qrlink\@empty\else
+      \fill[white] (712,161) rectangle (872,321);
+      \node[inner sep=0] at (792,241) {\qrcode[height=148bp]{\rb@qrlink}};
+      \node[anchor=north,font=\tamLegenda,text=rbClaro] at (792,335)
+        {\rb@qrlegenda};
+    \fi
+    \node[anchor=south west,inner sep=0] at (\rbMarg,500)
+      {\rb@logo{\rb@logoevento}{120bp}{88bp}};
+    \node[anchor=south east,inner sep=0] at (\rbDir,500)
+      {\rb@logo{\rb@logoinst}{120bp}{76bp}};
+  \fi
+  \end{tikzpicture}%
+  \global\rb@layout=0\relax}
+
+% ---------- Título do slide ----------
+% O bloco tem altura fixa, com \offinterlineskip para que a posição não dependa
+% do corpo da fonte: o rótulo começa em 44 bp, o título em 72 e o conteúdo do
+% slide em 120. O título cabe em uma linha de cerca de 55 caracteres; acima
+% disso ele quebra em duas e empurra o corpo para baixo.
+\newlength\rb@tituloalt \setlength\rb@tituloalt{114bp}
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \vbox to \rb@tituloalt{%
+    \offinterlineskip
+    \vskip 38bp
+    % O rótulo entra numa caixa de altura zero: assim o título fica em 72 bp
+    % qualquer que seja a altura dos acentos do rótulo.
+    \vbox to 0pt{\hbox{\hspace*{20bp}\tamRotulo\color{rbCinza}%
+      \ifx\insertframesubtitle\@empty\vphantom{A}\else
+        \rb@ls{\MakeUppercase{\insertframesubtitle}}\fi}\vss}%
+    \vskip 34bp
+    \hbox{\raisebox{-20bp}[0pt][0pt]{\color{rbAmarelo}\rule{8bp}{30bp}}%
+      \hspace{12bp}%
+      \parbox[t]{\dimexpr\textwidth-20bp\relax}{\RaggedRight\rbSemHifen
+        \tamTituloSlide\color{rbAzul}\insertframetitle}}%
+    \vss}}
+
+% ---------- Listas ----------
+\setbeamertemplate{itemize item}{\color{rbAzul}\textbullet}
+\setbeamertemplate{itemize subitem}{\color{rbCinza}\textendash}
+\setbeamertemplate{enumerate item}{\color{rbAzul}\bfseries\insertenumlabel.}
+\setlength\leftmargini{30bp}
+\setlength\leftmarginii{30bp}
+
+\newenvironment{topicos}
+  {\begin{itemize}\setlength\itemsep{14bp}\setlength\parskip{0pt}}
+  {\end{itemize}}
+\newenvironment{roteiro}
+  {\begin{enumerate}\setlength\itemsep{18bp}\setlength\parskip{0pt}}
+  {\end{enumerate}}
+
+% ---------- Slides especiais ----------
+% Cada comando abre e fecha o próprio frame; o conteúdo vai para macros
+% globais que o template de fundo desenha em posição fixa.
+\newcommand\slideabertura{%
+  \begingroup\global\rb@layout=1\relax
+  \begin{frame}[plain]\end{frame}\endgroup}
+
+\newcommand\divisoria[2]{%
+  \begingroup\gdef\rb@a{#1}\gdef\rb@b{#2}\global\rb@layout=2\relax
+  \begin{frame}[plain]\end{frame}\endgroup}
+
+\newcommand\slidemensagem[2][Mensagem principal]{%
+  \begingroup\gdef\rb@a{#2}\gdef\rb@b{#1}\global\rb@layout=3\relax
+  \begin{frame}[plain]\end{frame}\endgroup}
+
+\newcommand\slideconclusoes[4][Conclusões]{%
+  \begingroup\gdef\rb@a{#2}\gdef\rb@b{#3}\gdef\rb@c{#4}%
+  \global\rb@layout=4\relax
+  \begin{frame}\frametitle{#1}\end{frame}\endgroup}
+
+\newcommand\slideagradecimento[2][Agradecimentos]{%
+  \begingroup\gdef\rb@a{#2}\global\rb@layout=5\relax
+  \begin{frame}\frametitle{#1}\end{frame}\endgroup}
+
+\newcommand\slideencerramento[1][]{%
+  \begingroup\gdef\rb@a{#1}\global\rb@layout=6\relax
+  \begin{frame}[plain]\end{frame}\endgroup}
+
+% ---------- Caixas ----------
+% A caixa da equação tem altura fixa de 200 bp e, precedida de \introducao,
+% começa sempre em 170 bp, como no modelo do PowerPoint.
+\newcommand\introducao[1]{%
+  \parbox[t][34bp][t]{\textwidth}{\RaggedRight\tamCorpo\color{rbTexto}#1}\par
+  \nointerlineskip}
+\newtcolorbox{caixaequacao}{colback=rbFundo, colframe=rbFundo, boxrule=0pt,
+  arc=0pt, left=24bp, right=24bp, top=22bp, bottom=22bp, halign=center,
+  height=200bp, valign=center,
+  before skip=0bp, after skip=0pt, fontupper=\tamEquacao,
+  before upper={\centering
+    \setlength\abovedisplayskip{0pt}%
+    \setlength\abovedisplayshortskip{0pt}\setlength\belowdisplayskip{8bp}}}
+\def\tagform@#1{\maketag@@@{\textcolor{rbCinza}{\tamLegenda(\ignorespaces#1\unskip)}}}
+
+\lstdefinestyle{rbras}{
+  basicstyle=\tamCodigo\rbtt\color{rbTexto},
+  keywordstyle=\color{rbAzul}\bfseries,
+  commentstyle=\color{rbCinza},
+  stringstyle=\color{rbCinza},
+  backgroundcolor=\color{rbFundo},
+  frame=l, framerule=12bp, rulecolor=\color{rbAmarelo},
+  framexleftmargin=12bp, framexrightmargin=12bp,
+  xleftmargin=24bp, xrightmargin=0bp,
+  aboveskip=11bp, belowskip=0bp,
+  columns=fullflexible, keepspaces=true,
+  showstringspaces=false, breaklines=true, upquote=true}
+\lstset{style=rbras}
+\lstnewenvironment{codigo}[1][]{\lstset{style=rbras,#1}}{}
+
+% ---------- Figuras e tabelas ----------
+%
+% O bloco de figura tem geometria fixa, igual nas duas larguras e igual ao
+% PowerPoint: a afirmação em 0, com espaço para duas linhas, o rótulo em 58, a
+% moldura do gráfico em 84, com 240 bp de altura, e a legenda em 334, com
+% espaço para duas linhas. O bloco mede 368 bp, de modo que termina em 488,
+% acima do filete do rodapé.
+%
+% A área de plotagem repete as proporções do manualLayout do PowerPoint, com
+% 0,14 de margem esquerda, 0,05 superior, 0,72 de largura e 0,88 de altura.
+% Por isso as duas figuras do layout duplo ficam alinhadas mesmo com títulos
+% de números de linhas diferentes.
+\newcounter{rbfigura}\newcounter{rbtabela}
+\newlength\rb@l \newlength\rb@gl \newlength\rb@ga
+\newcommand\rbFigUnica{864}       % largura do bloco de figura única
+\newcommand\rbFigMeia{420}        % largura do bloco de meia figura
+\newcommand\rbFigAlt{368}         % altura do bloco de figura
+\newcommand\rbGrafAlt{240}        % altura da moldura do gráfico
+\newcommand\rbGrafMargInf{16.8}   % 0,07 da altura
+\setlength\rb@ga{211.2bp}         % 0,88 da altura: área de plotagem
+
+\newcommand\rbgrafico[2]{%
+  \setlength\rb@l{#1bp}\setlength\rb@gl{0.72\rb@l}%
+  \pgfmathsetmacro\rb@me{0.14*#1}%
+  \begin{tikzpicture}[x=1bp,y=1bp]
+  \useasboundingbox (0,0) rectangle (#1,\rbGrafAlt);
+  \begin{scope}[shift={(\rb@me,\rbGrafMargInf)}]#2\end{scope}
+  \end{tikzpicture}}
+
+\newcommand\rb@figura[5]{%
+  \refstepcounter{rbfigura}%
+  \begin{tikzpicture}[x=1bp,y=-1bp]
+  \useasboundingbox (0,0) rectangle (#1,\rbFigAlt);
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamFigTitulo\bfseries,text=rbTexto] at (0,0) {\rbSemHifen #2};
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamFigRotulo,text=rbCinza] at (0,58) {#3};
+  \node[anchor=north west,inner sep=0] at (0,84) {\rbgrafico{#1}{#4}};
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamLegenda,text=rbCinza] at (0,334)
+    {\textcolor{rbAzul}{\bfseries Figura~\therbfigura.}~#5};
+  \end{tikzpicture}}
+
+% \figura{afirmação}{rótulo}{ambiente axis}{legenda}: bloco de 864 bp
+% \figurameia{...}: bloco de 420 bp, para o layout de duas figuras
+\newcommand\figura[4]{\rb@figura{\rbFigUnica}{#1}{#2}{#3}{#4}}
+\newcommand\figurameia[4]{\rb@figura{\rbFigMeia}{#1}{#2}{#3}{#4}}
+
+% Duas figuras lado a lado, 24 bp de intervalo
+\newcommand\duasfiguras[2]{\par\noindent
+  \begin{minipage}[t]{\rbFigMeia bp}\RaggedRight #1\end{minipage}\hfill
+  \begin{minipage}[t]{\rbFigMeia bp}\RaggedRight #2\end{minipage}\par}
+
+% \tabela[largura]{afirmação}{tabular}{legenda}
+% Bloco fixo de 300 bp: afirmação em 0, tabela em 58, legenda em 268.
+\newcommand\tabela[4][864]{%
+  \refstepcounter{rbtabela}%
+  \begin{tikzpicture}[x=1bp,y=-1bp]
+  \useasboundingbox (0,0) rectangle (#1,300);
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamFigTitulo\bfseries,text=rbTexto] at (0,0) {\rbSemHifen #2};
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamTabela] at (0,58) {#3};
+  \node[anchor=north west,inner sep=0,text width=#1bp,align=left,
+    font=\tamLegenda,text=rbCinza] at (0,268)
+    {\textcolor{rbAzul}{\bfseries Tabela~\therbtabela.}~#4};
+  \end{tikzpicture}}
+
+% ---------- Gráficos: padrão da casa ----------
+% "assume math mode" mantém os rótulos dos eixos na fonte do texto, não na
+% fonte de matemática, como no template do PowerPoint.
+\pgfkeys{/pgf/number format/.cd, use comma, 1000 sep={.}, assume math mode}
+\pgfplotsset{
+  rbras/.style={scale only axis=true,
+    width=\rb@gl, height=\rb@ga,
+    axis line style={draw=none}, tick style={draw=none},
+    tick label style={font=\tamEixo, text=rbCinza},
+    label style={font=\tamEixo, text=rbCinza},
+    grid style={draw=rbGrade, line width=0.75bp}, clip=false},
+  rbras linha/.style={rbras, ymajorgrids,
+    axis x line*=bottom, x axis line style={draw=rbEixo, line width=0.75bp},
+    yticklabel style={/pgf/number format/.cd, fixed, fixed zerofill, precision=1}},
+  rbras inclinacao/.style={rbras, xmin=-0.5, xmax=1.5, xtick={0,1}, ytick=\empty,
+    axis x line*=bottom, x axis line style={draw=rbEixo, line width=0.75bp},
+    xticklabel style={font=\rb@fs{15}{18}, text=rbTexto}}}
+
+% \inclinacao[desloc]{nome}{início}{fim}: linha cinza
+% \inclinacaodestaque[desloc]{nome}{início}{fim}: linha azul
+% desloc afasta na vertical os rótulos que se sobrepõem, em unidades do eixo
+\newcommand\inclinacao[4][0]{%
+  \addplot[rbCinzaClaro, line width=1.5bp, mark=*, mark size=2bp]
+    coordinates {(0,#3) (1,#4)};
+  \node[anchor=east, font=\tamEixo, text=rbCinza] at (axis cs:0,#3)
+    {\pgfmathprintnumber[fixed,fixed zerofill,precision=1]{#3}\hspace*{6bp}};
+  \node[anchor=west, font=\tamEixo, text=rbCinza] at (axis cs:1,{#4+#1})
+    {\hspace*{6bp}\pgfmathprintnumber[fixed,fixed zerofill,precision=1]{#4}%
+     \hspace*{7bp}#2};}
+\newcommand\inclinacaodestaque[4][0]{%
+  \addplot[rbAzul, line width=2.25bp, mark=*, mark size=2.4bp]
+    coordinates {(0,#3) (1,#4)};
+  \node[anchor=east, font=\tamEixo\bfseries, text=rbAzul] at (axis cs:0,#3)
+    {\pgfmathprintnumber[fixed,fixed zerofill,precision=1]{#3}\hspace*{6bp}};
+  \node[anchor=west, font=\tamEixo\bfseries, text=rbAzul] at (axis cs:1,{#4+#1})
+    {\hspace*{6bp}\pgfmathprintnumber[fixed,fixed zerofill,precision=1]{#4}%
+     \hspace*{7bp}#2};}
+
+% ---------- Tabelas: filetes da identidade ----------
+\newcommand\rbfileteTopo{\arrayrulecolor{rbAzul}\specialrule{2bp}{0pt}{0pt}}
+\newcommand\rbfilete{\arrayrulecolor{rbLinhaTab}\specialrule{1bp}{0pt}{0pt}}
+
+% Metadados do PDF: o \textsuperscript das afiliações não tem equivalente em
+% cadeia de texto, então entra sem a marcação, o que evita o aviso do hyperref.
+\ifdefined\pdfstringdefDisableCommands
+  \pdfstringdefDisableCommands{%
+    \let\textsuperscript\@firstofone
+    \let\textbf\@firstofone
+    \def\quad{ }}%
+\fi
+
+% Texto alinhado à esquerda, sem justificar, como no modelo do PowerPoint.
+% Em texto não justificado a linha curta é a regra, então o aviso de hbox
+% subpreenchida só produziria ruído no log; o aviso de transbordo, que
+% importa, continua ligado.
+\AtBeginDocument{\RaggedRight\hbadness=10000\relax}
+
+\mode<all>
+\endinput

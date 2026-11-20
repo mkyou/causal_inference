@@ -1,0 +1,287 @@
+\documentclass[
+  oldfontcommands,
+  % -- opções de customização --
+  sumario=tradicional,
+  %sumario=abnt-6027-2012,
+  % -- opções da classe memoir --
+  12pt,      % tamanho da fonte
+  openright,    % capítulos começam em pág ímpar (insere página vazia caso preciso)
+  oneside,    % impressão em anverso (norma CCPG).
+  a4paper,    % tamanho do papel.
+  % -- opções da classe abntex2 --
+  %chapter=TITLE,    % títulos de capítulos convertidos em letras maiúsculas
+  %section=TITLE,    % títulos de seções convertidos em letras maiúsculas
+  %subsection=TITLE,  % títulos de subseções convertidos em letras maiúsculas
+  %subsubsection=TITLE,  % títulos de subsubseções convertidos em letras maiúsculas
+  % -- opções do pacote babel --
+  english,    % idioma adicional para hifenização
+  brazilian      % o último idioma é o principal do documento
+]{imecc-unicamp}
+% ----------------------------------------------------------
+% PACOTES ESSENCIAIS
+\input{config/packages}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% INFORMAÇÕES E DADOS PARA CAPA E FOLHA DE ROSTO
+\input{config/metadata}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% CONFIGURAÇÕES GERAIS
+\input{config/global_config}
+% ----------------------------------------------------------
+% -----------------------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INÍCIO DO DOCUMENTO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% -----------------------------------------------------------------------------------------------
+\begin{document}
+% Seleciona o idioma do documento (conforme pacotes do babel)
+\selectlanguage{brazilian}
+%\selectlanguage{english}
+% Retira espaço extra obsoleto entre as frases.
+\frenchspacing
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%% INÍCIO DOS ELEMENTOS PRÉ-TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%
+% ---------------------------------------------------------------------------------
+\pretextual
+% ----------------------------------------------------------
+% PRIMEIRA FOLHA (OBRIGATÓRIO)
+\imprimirprimeirafolha
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% FOLHA DE ROSTO (OBRIGATÓRIO)
+% ---
+% Após realizar as correções finais de seu trabalho acadêmico, escaneie a folha de rosto
+% devidamente assinada pelo orientador e salve no formato PDF com o nome 'folha-de-rosto.pdf'
+% no diretório do seu projeto. Daí substitua a linha do comando '\imprimirfolhaderosto'
+% pelas 3 linhas de comando abaixo:
+% ---
+% \begin{folhaderosto}
+%     \includepdf{folha-de-rosto.pdf}
+% \end{folhaderosto}
+% ---
+\imprimirfolhaderosto
+
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% FICHA CATALOGRÁFICA (OBRIGATÓRIO)
+% ---
+% A biblioteca da UNICAMP lhe fornecerá um PDF com a ficha catalográfica definitiva após a defesa
+% do trabalho {http://hamal.bc.unicamp.br/catalogonline2/}. Quando estiver com o documento, salve-o
+% como PDF no diretório do seu projeto e deixe apenas o comando '\includepdf{ficha-catalografica.pdf}'
+% dentro do ambiente abaixo
+% ---
+\begin{fichacatalografica}
+  \includepdf{chapters/auxiliary/catalog_card.pdf}
+\end{fichacatalografica}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% FOLHA DE APROVAÇÃO (OBRIGATÓRIO)
+% ---
+% A folha de aprovação será fornecida pela secretaria de pós-graduação. Após recebê-la, escaneie a folha
+% salvando em PDF no diretório do seu projeto com o nome 'folhadeaprovacao.pdf' e deixe apenas o comando
+% '\includepdf{folhadeaprovacao.pdf}' dentro do ambiente abaixo
+% ---
+\begin{folhadeaprovacao}
+  \begin{center}
+    {\ABNTEXchapterfont\large\bfseries FOLHA DE APROVAÇÃO}
+  \end{center}
+
+  \vspace{2cm}
+
+  \begin{center}
+    MOISÉS AUGUSTO FARIAS DA SILVA
+  \end{center}
+
+  \vspace{1.5cm}
+
+  Dissertação apresentada ao Programa de Pós-Graduação em Estatística,
+  defendida na data de 14/05/2026.
+
+  \vspace{2cm}
+
+  Composição da Comissão Examinadora:
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Alex Rodrigo dos Santos Sousa\\
+  IMECC/ UNICAMP
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Carlos Cesar Trucios Maza\\
+  IMECC/ UNICAMP
+
+  \vspace{1.5cm}
+
+  Prof. Dr. Marcelo Magalhães Taddeo\\
+  Universidade Federal da Bahia
+\end{folhadeaprovacao}
+% ----------------------------------------------------------
+% AGRADECIMENTOS
+\begin{agradecimentos}
+	Escrevo estes agradecimentos, felizmente, no dia 5 de março de 2026, data em que meu pai, Jucelonio Roberto da Silva, celebra seus 65 anos. Objetivamente uma das figuras mais importantes em minha vida, agradeço-o por todo o apoio constante em minhas jornadas pessoais, acadêmicas e profissionais.
+
+	Com igual importância em minha formação, embora sem a mesma coincidência de calendário, agradeço nominalmente à minha mãe, Silvia Letícia Silva Farias, por todo o suporte.
+
+	Aos meus irmãos e aos amigos que caminharam comigo até aqui, o meu muito obrigado por tornarem esta jornada consideravelmente mais leve.
+
+	Em especial, agradeço a Camille Menezes Pereira dos Santos, por me ouvir falar pacientemente sobre inferência causal e ondaletas por tanto tempo. A ela e ao meu colega de trabalho, Arthur Rios, pelas sugestões valiosas durante o processo de escrita; e ao meu orientador, Prof. Dr. Alex Sousa, pelas frequentes reuniões e orientações que refinaram este trabalho ao longo do tempo.
+
+	Por fim, estendo minha gratidão, de forma geral, a todos que contribuíram em maior ou menor grau nesta trajetória de mestrado e que, em prol da brevidade, não foram citados nominalmente.
+\end{agradecimentos}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% EPÍGRAFE (OPCIONAL)
+\begin{epigrafe}
+  \vspace*{\fill}
+  \begin{flushright}
+    \textit{``O indivíduo é imprevisível, mas as reações de uma massa\\ humana podem ser tratadas matematicamente.''\\
+    (Isaac Asimov, via Hari Seldon, em ``Fundação'')
+    }
+    
+  \end{flushright}
+\end{epigrafe}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% RESUMOS (OBRIGATÓRIO)
+\include{chapters/abstracts}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE ILUSTRAÇÕES (OPCIONAL)
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE TABELAS (OPCIONAL)
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE ABREVIATURAS E SIGLAS (OPCIONAL)
+\begin{siglas}
+  \item[ACORN] Classificação de Bairros Residenciais (\emph{A Classification of Residential Neighbourhoods})
+  \item[API] Interface de Programação de Aplicação (\emph{Application Programming Interface})
+  \item[ATE] Efeito Médio de Tratamento (\emph{Average Treatment Effect})
+  \item[ATT] Efeito Médio de Tratamento nos Tratados (\emph{Average Treatment Effect on the Treated})
+  \item[CATE] Efeito Médio Condicional de Tratamento (\emph{Conditional Average Treatment Effect})
+  \item[CDF] Filtro de Ondaletas Cohen-Daubechies-Feauveau (\emph{Cohen-Daubechies-Feauveau Wavelet Filter})
+  \item[CFATE] Efeito Médio de Tratamento Funcional Acumulado (\emph{Cumulative Functional Average Treatment Effect})
+  \item[CobSim] Cobertura Simultânea (\emph{Simultaneous Coverage})
+  \item[CWT] Transformada de Ondaletas Contínua (\emph{Continuous Wavelet Transform})
+  \item[DAG] Grafo Acíclico Direcionado (\emph{Directed Acyclic Graph})
+  \item[DWT] Transformada de Ondaletas Discreta (\emph{Discrete Wavelet Transform})
+  \item[EWMA] Suavização Exponencial Móvel (\emph{Exponentially Weighted Moving Average})
+  \item[FATE] Efeito Médio de Tratamento Funcional (\emph{Functional Average Treatment Effect})
+  \item[FDA] Análise de Dados Funcionais (\emph{Functional Data Analysis})
+  \item[GCV] Validação Cruzada Generalizada (\emph{Generalized Cross-Validation})
+  \item[IC] Intervalo de Confiança (\emph{Confidence Interval})
+  \item[IDWT] Transformada de Ondaletas Discreta Inversa (\emph{Inverse Discrete Wavelet Transform})
+  \item[ILWT] Transformada de Ondaletas Inversa via \emph{Lifting} (\emph{Inverse Lifting Wavelet Transform})
+  \item[LCL] Experimento de Tarifação Dinâmica de Londres (\emph{Low Carbon London})
+  \item[LOESS] Regressão Local Ponderada (\emph{Locally Estimated Scatterplot Smoothing})
+  \item[LWT] Transformada de Ondaletas via \emph{Lifting} (\emph{Lifting Wavelet Transform})
+  \item[MAD] Desvio Absoluto Mediano (\emph{Median Absolute Deviation})
+  \item[MCAR] Mecanismo de Ausência Completamente Aleatório (\emph{Missing Completely At Random})
+  \item[MGP] Processo Gaussiano Multivariado (\emph{Multivariate Gaussian Process})
+  \item[MRA] Análise Multirresolução (\emph{Multiresolution Analysis})
+  \item[MSE] Erro Quadrático Médio (\emph{Mean Squared Error})
+  \item[NRMSE] Raiz Quadrada do Erro Quadrático Médio Normalizado (\emph{Normalized Root Mean Squared Error})
+  \item[PGD] Processo Gerador de Dados (\emph{Data Generating Process}) 
+  \item[RMSE] Raiz Quadrada do Erro Quadrático Médio (\emph{Root Mean Squared Error})
+  \item[SCAD] Desvio Absoluto Suavemente Cortado (\emph{Smoothly Clipped Absolute Deviation})
+  \item[STFT] Transformada de Fourier de Tempo Curto (\emph{Short-Time Fourier Transform})
+  \item[SURE] Estimativa de Risco Não Viesado de Stein (\emph{Stein's Unbiased Risk Estimate})
+  \item[SUTVA] Suposição de Valor de Tratamento de Unidade Estável (\emph{Stable Unit Treatment Value Assumption})
+  \item[ToU] Tarifa Dinâmica (\emph{Time-of-Use})
+  \item[TV] Variação total (\emph{Total Variation}) 
+\end{siglas}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE SÍMBOLOS (OPCIONAL)
+%\begin{simbolos}
+%\item[$ \mathds{M}_{m\times n}(\mathds{R}) $] Conjunto das matrizes de ordem $m\times n$ com entradas reais
+%\item[$ \mathds{R}^n_+ $] Conjunto dos vetores $x$ pertencentes a $\mathds{R}^n$ que satisfazem $x\geq0$
+%\item[$ \mathds{R}^n_{++} $] Conjunto dos vetores $x$ pertencentes a $\mathds{R}^n$ que satisfazem $x>0$
+%\item[$\|\cdot\|$] Norma-p vetorial
+%\item[$\vvvert\cdot\vvvert_p$] Norma-p matricial
+%\item[$\mathbf{I}_n$] Matriz identidade de ordem $n \times n$
+%\item[$\nabla f$] Gradiente da função $f$
+%\item[$\infty$] Infinito
+%\end{simbolos}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE ALGORITMOS (OPCIONAL)
+%\pdfbookmark[0]{\listalgorithmcfname}{loa}
+%\listofalgorithms
+%\cleardoublepage
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% LISTA DE CÓDIGOS (OPCIONAL)
+%\pdfbookmark[0]{\lstlistlistingname}{lol}
+%\begin{KeepFromToc}
+%  \lstlistoflistings
+%\end{KeepFromToc}
+%\cleardoublepage
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% SUMÁRIO (OBRIGATÓRIO)
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+% ----------------------------------------------------------
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%% FIM DOS ELEMENTOS PRÉ-TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%%
+% ---------------------------------------------------------------------------------
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%%% INÍCIO DOS ELEMENTOS TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%%%
+% ---------------------------------------------------------------------------------
+\textual
+% ----------------------------------------------------------
+% INTRODUÇÃO
+\include{chapters/introduction}
+% ----------------------------------------------------------
+% DESENVOLVIMENTO
+\include{chapters/literature_review}
+\include{chapters/methodology}
+\include{chapters/simulation_studies}
+\include{chapters/applications}
+\include{chapters/conclusion}
+% ----------------------------------------------------------
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%%%% FIM DOS ELEMENTOS TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%%%%
+% ---------------------------------------------------------------------------------
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%% INÍCIO DOS ELEMENTOS PÓS-TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%
+% ---------------------------------------------------------------------------------
+% ----------------------------------------------------------
+\postextual
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% REFERÊNCIAS
+\bibliography{references.bib}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% APÊNDICES
+\begin{apendicesenv}
+  % Imprime uma página indicando o início dos apêndices
+  \partapendices
+  \include{chapters/appendices}
+\end{apendicesenv}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% ANEXOS
+% \begin{anexosenv}
+%   % Imprime uma página indicando o início dos anexos
+%   \partanexos
+%   \include{7-anexos}
+% \end{anexosenv}
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+% ---------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%%%% FIM DOS ELEMENTOS TEXTUAIS %%%%%%%%%%%%%%%%%%%%%%%%%%
+% ----------------------------------------------------------------------------------
+% -----------------------------------------------------------------------------------------------
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FIM DO DOCUMENTO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% -----------------------------------------------------------------------------------------------
+\end{document}

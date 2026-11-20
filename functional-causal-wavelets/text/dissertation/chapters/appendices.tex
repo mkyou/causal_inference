@@ -1,0 +1,1542 @@
+\chapter{Declaração de uso de inteligência artificial generativa}\label{ap-declaracao-ia}
+
+Este trabalho utilizou ferramentas de inteligência artificial generativa nos seguintes
+contextos: elaboração da documentação do pacote \texttt{rLifting}; auxílio na escrita
+de código para a aplicação ao experimento \emph{Low Carbon London}; e correções e
+melhorias pontuais de estilo em trechos do texto, com maior incidência no capítulo de
+aplicações e na seção dedicada ao \texttt{rLifting}. Todo o conteúdo científico ---
+hipóteses, análises, interpretações e conclusões --- é de responsabilidade exclusiva do
+autor e do orientador.
+
+\chapter{Estrutura de causalidade e a seta do tempo}\label{ap-dag-causalidade}
+
+Neste apêndice, apresentamos um exemplo visual para a exigência de causalidade operacional no pré-processamento de dados funcionais. 
+A Figura \ref{fig:dag-vazamento-temporal} ilustra o contraste entre as abordagens \emph{online} e \emph{offline} sob a ótica da dependência temporal.
+
+\begin{figure}[!ht]
+    \centering
+    \begin{tikzpicture}[
+        node distance=3.2cm,
+        auto,
+        >=latex,
+        thick,
+        obs/.style={circle, draw=black, fill=white, minimum size=10mm, font=\small},
+        est/.style={rectangle, draw=black, fill=gray!8, rounded corners, inner sep=8pt, align=center, font=\small},
+        bias/.style={->, color=red, dashed, line width=1.2pt}
+    ]
+
+    % Camada de dados (Processo gerador)
+    \node[obs] (Ytm1) {$Y_{t-1}$};
+    \node[obs] (Yt) [right of=Ytm1] {$Y_t$};
+    \node[obs] (Ytp1) [right of=Yt] {$Y_{t+1}$};
+    \node[obs] (A) [above of=Yt, node distance=2cm] {$A$};
+
+    % Fluxo causal real
+    \draw[->] (Ytm1) -- (Yt);
+    \draw[->] (Yt) -- (Ytp1);
+    \draw[->] (A) -- (Yt) node[midway, right, font=\tiny] {efeito};
+    \draw[->] (A) edge[bend left=35] (Ytp1);
+
+    % Camada de estimação
+    \node[est] (ThetaOn) [below of=Yt, node distance=2.8cm, xshift=-1.6cm] {
+        $\hat{\theta}_t$ \textbf{(\emph{online})}\\
+        \scriptsize causalmente íntegro
+    };
+    
+    \node[est] (ThetaOff) [below of=Yt, node distance=2.8cm, xshift=1.6cm] {
+        $\hat{\theta}_t$ \textbf{(\emph{offline})}\\
+        \scriptsize vazamento futuro
+    };
+
+    % Conexões Online (Apenas passado e presente)
+    \draw[->, gray!80] (Ytm1) to[bend right=25] (ThetaOn.west);
+    \draw[->, gray!80] (Yt) -- (ThetaOn.north);
+
+    % Conexões Offline (Vazamento do futuro)
+    \draw[->, gray!80] (Yt) -- (ThetaOff.north);
+    \draw[bias] (Ytp1) to[bend left=25] node[midway, right, xshift=3pt] {\footnotesize vazamento} (ThetaOff.east);
+
+    \end{tikzpicture}
+    \caption{Diagrama esquemático da causalidade operacional, ilustrando a restrição de dependência exclusiva de dados passados no processamento \emph{online} (janelas móveis) em oposição ao vazamento de informação do futuro inerente às abordagens globais (\emph{offline}) baseadas em \emph{splines} ou DWT clássica.}
+    \label{fig:dag-vazamento-temporal}
+\end{figure}
+
+Como discutido no Capítulo \ref{sec-metodologia}, a contaminação (representada pela seta vermelha na Figura \ref{fig:dag-vazamento-temporal}) faz com que o estimador \(\hat{\theta}(t)\) utilize informações que ainda não ocorreram cronologicamente para suavizar a trajetória no instante \(t\). 
+Em contextos de monitoramento em tempo real, essa violação da seta do tempo invalidaria a detecção de anomalias ou a correta atribuição de causalidade, justificando o uso de métodos operacionalmente causais como a nossa proposta via \emph{lifting scheme}.
+
+\chapter{Resultados detalhados das simulações}
+\label{ap-simulacoes-completas}
+
+Neste apêndice, apresentamos a totalidade dos resultados obtidos nos estudos de simulação, incluindo métricas exaustivas e visualizações de diagnóstico.
+
+\section{Resultados de diagnóstico: simulação 1}
+
+As Tabelas \ref{tab:resultados_sim1_gauss} e \ref{tab:resultados_sim1_t} detalham o desempenho de todos os métodos para todas as combinações de cenários, resoluções e tamanhos amostrais, sob distribuição gaussiana e \(t\text{-Student}(5)\), respectivamente.
+
+Para os estimadores de ondaletas, a largura das bandas decresce com \(N\) enquanto a cobertura simultânea permanece próxima do nível nominal em toda a amplitude amostral investigada.
+No cenário \emph{Sigmoide}, por exemplo, as bandas passam de cerca de 42 com \(N = 200\) para menos de 0{,}4 com \(N = 2000\), e a cobertura permanece sempre acima de 85\%.
+As bandas analíticas das \emph{splines} exibem o padrão oposto.
+Para \(N = 200\), são mais largas que as das ondaletas (52 a 58 contra 42), mas já insuficientes para atingir a cobertura nominal, ficando em torno de 40\%.
+Para \(N = 500\) e \(N = 2000\), colapsam abruptamente para menos de 6 e de 0{,}15, respectivamente, e a cobertura despenca para menos de 4\% e efetivamente zero.
+A regularização das \emph{splines} introduz um viés que as bandas analíticas, construídas sob hipótese de não-viés, não conseguem absorver.
+
+A comparação entre os estimadores \emph{online} e \emph{offline} mostra larguras praticamente indistinguíveis em todos os cenários, com diferenças inferiores a 0{,}03 com \(N = 2000\), e coberturas que raramente divergem em mais de um ponto percentual.
+A restrição causal não infla a incerteza pontual de forma detectável.
+
+Os métodos confundidos apresentam bandas ligeiramente mais largas que seus equivalentes sem confundimento, mas a queda de cobertura é dominada pelo viés do estimador.
+Para confundimento alto com \(N = 2000\) e \(T = 512\), a cobertura cai para valores próximos de zero nos cenários \emph{Bumps} e \emph{Escada}, mesmo com bandas marginalmente mais amplas.
+Por fim, sob distribuição \(t\text{-Student}(5)\), as larguras e coberturas são comparáveis às obtidas com ruído gaussiano, reafirmando que o bootstrap calibra adequadamente a incerteza mesmo com caudas mais pesadas.
+
+\clearpage
+\iniciapaisagemcomnumeracao
+\begin{landscape}
+{\footnotesize
+\begin{longtable}{@{}llccrrrcrcr@{}}
+\caption{Resultados completos da Simulação~1, distribuição gaussiana (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_gauss} \\
+\toprule
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
+\midrule
+\endfirsthead
+\multicolumn{11}{l}{\itshape (continuação --- gaussiana)} \\
+\toprule
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
+\midrule
+\endhead
+\midrule \multicolumn{11}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 128 & 1{,}225 & 0{,}531 & 42{,}715 & 85{,}7\% & 0{,}312 &  86{,}6\% & 855{,}562 \\*
+   & Ond.\ (Off) & 200 & 128 & 1{,}223 & 0{,}513 & 42{,}711 & 85{,}7\% & 0{,}311 &  86{,}6\% & 855{,}325 \\*
+   & \emph{Splines} & 200 & 128 & 1{,}243 & 0{,501} & 52{,}358 & \textit{40{,}7\%} & 0{,}311 &  \textit{40{,}7\%} & 1110{,}380 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 1{,}226 & 0{,}538 & 43{,}424 & 86{,8\%} & 0{,}312 &  87{,}0\% & 869{,}720 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 1{,}224 & 0{,}557 & 42{,}504 & 85{,}9\% & 0{,}312 &  85{,}8\% & 851{,}319 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 1{,}233 & 0{,}598 & 42{,}388 & 85{,}7\% & 0{,}315 &  84{,}8\% & 849{,}158 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 1{,}224 & 0{,}520 & 43{,}418 & 86{,}7\% & 0{,}311 &  87{,}1\% & 869{,}487 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 1{,221} & 0{,}539 & 42{,}499 & 85{,}8\% & 0{,}310 &  85{,}9\% & 851{,}084 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 1{,}228 & 0{,}580 & 42{,}381 & 85{,}9\% & 0{,}313 &  85{,}1\% & 848{,}907 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 256 & 1{,162} & 0{,}070 & 41{,}774 & 87{,}7\% & 0{,}295 &  87{,}8\% & 838{,}542 \\*
+   & Ond.\ (Off) & 200 & 256 & 1{,162} & 0{,}060 & 41{,}771 & 88{,}0\% & 0{,}294 &  87{,}8\% & 838{,}524 \\*
+   & \emph{Splines} & 200 & 256 & 1{,}174 & 0{,055} & 57{,}777 & \textit{44{,}0\%} & 0{,}294 &  \textit{44{,}0\%} & 849{,}726 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 1{,162} & 0{,}077 & 40{,}807 & 87{,}3\% & 0{,}295 &  87{,}3\% & 819{,}107 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 1{,}163 & 0{,}089 & 41{,}446 & 87{,}6\% & 0{,}295 &  87{,}7\% & 831{,}914 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 1{,}170 & 0{,}131 & 41{,}411 & 86{,}8\% & 0{,}297 &  85{,}7\% & 831{,}378 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 1{,162} & 0{,}067 & 40{,}806 & 87{,}9\% & 0{,}294 &  87{,}3\% & 819{,}078 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 1{,162} & 0{,}080 & 41{,}443 & 88{,1\%} & 0{,}295 &  87{,}8\% & 831{,}910 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 1{,}169 & 0{,}121 & 41{,}408 & 87{,}3\% & 0{,}297 &  85{,}8\% & 831{,}368 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 512 & 1{,186} & 0{,}206 & 42{,}079 & 86{,}5\% & 0{,}308 &  86{,}2\% & 845{,}676 \\*
+   & Ond.\ (Off) & 200 & 512 & 1{,186} & 0{,}200 & 42{,}079 & 86{,}5\% & 0{,}308 &  86{,}3\% & 845{,}673 \\*
+   & \emph{Splines} & 200 & 512 & 1{,}195 & 0{,196} & 58{,}155 & \textit{43{,}0\%} & 0{,}308 &  \textit{43{,}0\%} & 1054{,}709 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 1{,186} & 0{,}213 & 42{,}317 & 86{,}0\% & 0{,}308 &  86{,}4\% & 850{,}355 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 1{,}187 & 0{,}226 & 42{,}768 & 86{,}5\% & 0{,}308 &  87{,}1\% & 859{,}434 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 1{,}193 & 0{,}268 & 42{,}029 & 86{,}1\% & 0{,}310 &  86{,}1\% & 844{,}708 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 1{,186} & 0{,}207 & 42{,}316 & 86{,}5\% & 0{,}308 &  86{,}5\% & 850{,}347 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 1{,186} & 0{,}219 & 42{,}767 & 87{,1\%} & 0{,}308 &  87{,}3\% & 859{,}427 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 1{,}192 & 0{,}261 & 42{,}027 & 86{,}2\% & 0{,}310 &  86{,}5\% & 844{,}704 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 128 & 0{,086} & 0{,}023 & 15{,}981 & 97{,}1\% & 0{,}022 &  97{,}2\% & 319{,}637 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,}087 & \textbf{0{,005}} & 15{,}997 & 97{,2\%} & 0{,}021 &  96{,}3\% & 319{,}398 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}118 & \textbf{-0{,}006} & 3{,}009 & \textit{2{,}6\%} & 0{,}021 &  \textit{2{,}6\%} & 63{,}967 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,}087 & 0{,}031 & 15{,}824 & 96{,}9\% & 0{,}022 &  96{,}7\% & 316{,}500 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}090 & 0{,}043 & 15{,}931 & \textbf{95{,}1\%} & 0{,}023 &  \textbf{94{,}2\%} & 318{,}613 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}104 & 0{,}084 & 15{,}526 & 88{,}1\% & 0{,}027 &  85{,}0\% & 310{,}764 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,}087 & 0{,}013 & 15{,}840 & 97{,}0\% & 0{,}021 &  96{,}8\% & 316{,}263 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}088 & 0{,}026 & 15{,}947 & 96{,}4\% & 0{,}021 &  \textbf{95{,}7\%} & 318{,}379 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}099 & 0{,}066 & 15{,}541 & 92{,}6\% & 0{,}025 &  88{,}2\% & 310{,}539 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 256 & 0{,093} & 0{,}009 & 15{,}320 & 96{,4\%} & 0{,}024 &  96{,}2\% & 307{,}075 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,093} & \textbf{0{,000}} & 15{,}331 & 96{,}3\% & 0{,}024 &  96{,}3\% & 307{,}017 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}113 & \textbf{-0{,}006} & 3{,}365 & \textit{3{,}1\%} & 0{,}024 &  \textit{3{,}1\%} & 49{,}388 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}094 & 0{,}017 & 15{,}006 & \textbf{96{,}0\%} & 0{,}024 &  \textbf{95{,}2\%} & 300{,}814 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}096 & 0{,}029 & 15{,}270 & \textbf{94{,}7\%} & 0{,}025 &  93{,}6\% & 306{,}132 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}108 & 0{,}069 & 14{,}660 & 85{,}9\% & 0{,}029 &  83{,}8\% & 294{,}098 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}094 & \textbf{0{,}007} & 15{,}017 & \textbf{95{,}9\%} & 0{,}024 &  96{,}2\% & 300{,}742 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}095 & 0{,}019 & 15{,}281 & \textbf{95{,}8\%} & 0{,}024 &  \textbf{95{,}4\%} & 306{,}068 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}105 & 0{,}060 & 14{,}671 & 90{,}2\% & 0{,}028 &  86{,}6\% & 294{,}049 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 512 & 0{,097} & -0{,}044 & 15{,}786 & \textbf{95{,}9\%} & 0{,}025 &  96{,}3\% & 316{,}776 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,097} & -0{,}051 & 15{,}793 & \textbf{95{,}8\%} & 0{,}025 &  \textbf{96{,}0\%} & 316{,}763 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}112 & -0{,}054 & 3{,}455 & \textit{3{,}0\%} & 0{,}025 &  \textit{3{,}0\%} & 62{,}578 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,097} & -0{,}037 & 15{,}773 & \textbf{95{,}7\%} & 0{,}025 &  \textbf{95{,}9\%} & 316{,}551 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}098 & -0{,}025 & 15{,}379 & \textbf{94{,}6\%} & 0{,}026 &  \textbf{95{,}1\%} & 308{,}671 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}111 & 0{,}017 & 15{,}661 & 87{,}7\% & 0{,}030 &  85{,}7\% & 314{,}526 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,097} & -0{,}043 & 15{,}780 & 96{,4\%} & 0{,}025 &  96{,}1\% & 316{,}527 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}098 & -0{,}031 & 15{,}386 & \textbf{95{,}5\%} & 0{,}025 &  \textbf{95{,}6\%} & 308{,}647 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}109 & 0{,011} & 15{,}668 & 90{,}3\% & 0{,}029 &  87{,}6\% & 314{,}511 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 128 & \textbf{0{,014}} & 0{,}018 & 0{,}186 & 93{,}0\% & \textbf{0{,}003} &  \textbf{94{,}3\%} & 3{,}144 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,}015} & \textbf{0{,000}} & 0{,}222 & \textbf{94{,}5\%} & \textbf{0{,}003} &  93{,}9\% & 2{,}477 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}051 & -0{,}012 & 0{,}137 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 2{,}919 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & 0{,}016 & 0{,}025 & 0{,}185 & 92{,}1\% & 0{,}004 &  89{,}7\% & 3{,}137 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}020 & 0{,}037 & 0{,}184 & 87{,}5\% & 0{,}005 &  \textit{76{,}5\%} & 3{,}136 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}038 & 0{,}079 & 0{,}188 & \textit{30{,}6\%} & 0{,}011 &  \textit{14{,}8\%} & 3{,}347 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & \textbf{0{,}015} & \textbf{0{,}008} & 0{,}221 & \textbf{94{,7\%}} & \textbf{0{,}003} &  92{,}7\% & 2{,}467 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & 0{,}017 & 0{,}020 & 0{,}220 & 93{,}7\% & \textbf{0{,}003} &  84{,}4\% & 2{,}459 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}032 & 0{,}062 & 0{,}223 & \textit{59{,}7\%} & 0{,}008 &  \textit{22{,}7\%} & 2{,}721 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,011}} & 0{,}009 & 0{,}157 & \textbf{94{,}1\%} & \textbf{0{,}003} &  \textbf{94{,}4\%} & 2{,}727 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,}012} & \textbf{0{,000}} & 0{,}186 & \textbf{94{,9\%}} & \textbf{0{,}002} &  \textbf{94{,}7\%} & 2{,}485 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}036 & \textbf{-0{,}006} & 0{,}142 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 2{,}089 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,}013} & 0{,}017 & 0{,}156 & 91{,}2\% & \textbf{0{,}003} &  90{,}8\% & 2{,}720 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}016 & 0{,}029 & 0{,}156 & 83{,}3\% & 0{,}005 &  \textit{78{,}4\%} & 2{,}715 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}033 & 0{,}070 & 0{,}160 & \textit{27{,}6\%} & 0{,}010 &  \textit{16{,}9\%} & 2{,}932 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,}012} & \textbf{0{,}007} & 0{,}185 & \textbf{94{,}1\%} & \textbf{0{,}003} &  92{,}9\% & 2{,}476 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & \textbf{0{,}014} & 0{,}019 & 0{,}185 & 90{,}7\% & \textbf{0{,}003} &  85{,}2\% & 2{,}471 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & 0{,}030 & 0{,}061 & 0{,}188 & \textit{47{,}9\%} & 0{,}008 &  \textit{24{,}2\%} & 2{,}733 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,010}} & \textbf{0{,}006} & 0{,}152 & \textbf{94{,}2\%} & \textbf{0{,}003} &  \textbf{94{,}9\%} & 2{,}594 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,}011} & \textbf{0{,000}} & 0{,}174 & \textbf{95{,3\%}} & \textbf{0{,}003} &  \textbf{95{,}1\%} & 2{,}490 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}030 & \textbf{-0{,}004} & 0{,}145 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 2{,}631 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,}011} & 0{,}014 & 0{,}152 & 91{,}5\% & \textbf{0{,}003} &  91{,}2\% & 2{,}589 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & \textbf{0{,}014} & 0{,}026 & 0{,}151 & 83{,}7\% & 0{,}004 &  \textit{79{,}1\%} & 2{,}582 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}031 & 0{,}067 & 0{,}155 & \textit{26{,}8\%} & 0{,}009 &  \textit{17{,}6\%} & 2{,}829 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,}011} & \textbf{0{,}008} & 0{,}173 & \textbf{95{,}0\%} & \textbf{0{,}003} &  93{,}4\% & 2{,}482 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,}013} & 0{,}020 & 0{,}172 & 92{,}6\% & \textbf{0{,}003} &  85{,}5\% & 2{,}474 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & 0{,}029 & 0{,}061 & 0{,}177 & \textit{47{,}8\%} & 0{,}008 &  \textit{24{,}1\%} & 2{,}738 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 128 & 0{,045} & 0{,459} & 41{,}217 & 85{,}6\% & 1{,}129 &  86{,}0\% & 825{,}128 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,045} & 0{,}468 & 41{,}214 & 85{,}6\% & 1{,}127 &  86{,}0\% & 824{,}974 \\*
+   & \emph{Splines} & 200 & 128 & 0{,}120 & 0{,}469 & 55{,}860 & \textit{32{,}9\%} & 1{,}155 &  \textit{43{,}5\%} & 1185{,}913 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,045} & 0{,}460 & 40{,}717 & 85{,}8\% & 1{,}129 &  85{,}7\% & 814{,}969 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,045} & 0{,}470 & 41{,}381 & 84{,}1\% & 1{,}123 &  85{,}6\% & 828{,}082 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,045} & 0{,}493 & 41{,}023 & 85{,}4\% & 1{,}123 &  85{,}3\% & 819{,}291 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,045} & 0{,}470 & 40{,}715 & 86{,1\%} & 1{,}127 &  85{,}7\% & 814{,}825 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,045} & 0{,}480 & 41{,}371 & 84{,}5\% & 1{,}121 &  85{,}7\% & 827{,}911 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,045} & 0{,}503 & 41{,}008 & 84{,}9\% & 1{,}123 &  85{,}3\% & 819{,}124 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 256 & 0{,048} & 0{,485} & 42{,}248 & 86{,}1\% & 1{,}295 &  86{,}1\% & 847{,}619 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,048} & 0{,}487 & 42{,}247 & 86{,}5\% & 1{,}295 &  86{,}1\% & 847{,}614 \\*
+   & \emph{Splines} & 200 & 256 & 0{,}103 & 0{,}487 & 52{,}192 & \textit{38{,}4\%} & 1{,}303 &  \textit{39{,}1\%} & 764{,}301 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,048} & 0{,}487 & 42{,}681 & 86{,}7\% & 1{,}295 &  86{,}9\% & 856{,}241 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,048} & 0{,}497 & 42{,}558 & 86{,}7\% & 1{,}291 &  86{,}9\% & 853{,}620 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,048} & 0{,}519 & 42{,}770 & 87{,4\%} & 1{,}292 &  86{,}1\% & 856{,}134 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,048} & 0{,}489 & 42{,}678 & 87{,}3\% & 1{,}295 &  86{,}9\% & 856{,}229 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,048} & 0{,}499 & 42{,}555 & 86{,}8\% & 1{,}290 &  86{,}9\% & 853{,}609 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,048} & 0{,}521 & 42{,}765 & 87{,4\%} & 1{,}293 &  86{,}1\% & 856{,}119 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 512 & 0{,037} & 0{,201} & 43{,}086 & 88{,}1\% & 1{,}108 &  89{,}1\% & 865{,}540 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,037} & 0{,201} & 43{,}078 & 88{,4\%} & 1{,}107 &  89{,}1\% & 865{,}535 \\*
+   & \emph{Splines} & 200 & 512 & 0{,}074 & 0{,201} & 54{,}964 & \textit{39{,}7\%} & 1{,}110 &  \textbf{94{,}9\%} & 997{,}128 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,037} & 0{,}203 & 43{,}143 & 88{,}1\% & 1{,}107 &  88{,}9\% & 866{,}661 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,037} & 0{,}204 & 43{,}070 & 87{,}0\% & 1{,}107 &  88{,}4\% & 865{,}000 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,}038 & 0{,}226 & 43{,}083 & 87{,}7\% & 1{,}108 &  88{,}4\% & 863{,}726 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,037} & 0{,}203 & 43{,}138 & 88{,}3\% & 1{,}107 &  88{,}9\% & 866{,}657 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,037} & 0{,}204 & 43{,}072 & 87{,}1\% & 1{,}107 &  88{,}4\% & 864{,}996 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,}038 & 0{,}227 & 43{,}088 & 87{,}7\% & 1{,}109 &  88{,}4\% & 863{,}719 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 128 & 0{,004} & 0{,097} & 14{,}975 & \textbf{95{,}4\%} & 0{,}100 &  \textbf{95{,}5\%} & 297{,}768 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,004} & 0{,}107 & 15{,}177 & \textbf{95{,}4\%} & 0{,}098 &  \textbf{95{,}0\%} & 297{,}653 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}096 & 0{,}108 & 4{,}721 & \textit{3{,}4\%} & 0{,}141 &  \textit{4{,}0\%} & 100{,}017 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,004} & 0{,}098 & 15{,}305 & 90{,}9\% & 0{,}099 &  \textbf{95{,}6\%} & 304{,}003 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,004} & 0{,}099 & 15{,}474 & \textit{67{,}1\%} & 0{,}099 &  \textbf{95{,}6\%} & 306{,}745 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}005 & 0{,}122 & 15{,}886 & 80{,}2\% & 0{,}099 &  \textbf{94{,}8\%} & 310{,}506 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,004} & 0{,}108 & 15{,}497 & 96{,7\%} & 0{,}098 &  \textbf{94{,}9\%} & 303{,}880 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}005 & 0{,}109 & 15{,}657 & 87{,}3\% & 0{,}098 &  \textbf{95{,}4\%} & 306{,}627 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}005 & 0{,}132 & 16{,}051 & \textit{75{,}3\%} & 0{,}101 &  93{,}6\% & 310{,}373 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 256 & 0{,003} & 0{,029} & 16{,}492 & 96{,}3\% & 0{,}086 &  96{,}6\% & 328{,}641 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,003} & 0{,}031 & 16{,}547 & 97{,1\%} & 0{,}085 &  96{,}6\% & 328{,}634 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}071 & 0{,}031 & 3{,}890 & \textit{3{,}0\%} & 0{,}099 &  \textit{3{,}2\%} & 57{,}472 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,003} & 0{,}030 & 15{,}530 & \textbf{95{,}7\%} & 0{,}085 &  96{,}6\% & 309{,}232 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}004 & 0{,}032 & 16{,}012 & 82{,}5\% & 0{,}085 &  96{,}8\% & 318{,}704 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}004 & 0{,}053 & 16{,}741 & 84{,}6\% & 0{,}086 &  \textbf{95{,}9\%} & 329{,}348 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,003} & 0{,}032 & 15{,}592 & \textbf{95{,}9\%} & 0{,}084 &  96{,}6\% & 309{,}230 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}004 & 0{,}033 & 16{,}080 & \textit{75{,}3\%} & 0{,}084 &  96{,}7\% & 318{,}700 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}004 & 0{,}056 & 16{,}822 & \textit{72{,}4\%} & 0{,}087 &  \textbf{95{,}8\%} & 329{,}337 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 512 & 0{,002} & 0{,036} & 14{,}782 & 96{,9\%} & 0{,}064 &  96{,}6\% & 294{,}384 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,002} & 0{,036} & 14{,}742 & 96{,}8\% & 0{,}064 &  96{,}6\% & 294{,}385 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}047 & 0{,036} & 5{,}325 & \textit{3{,}6\%} & 0{,}069 &  \textit{60{,}6\%} & 96{,}690 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,002} & 0{,}038 & 15{,}240 & 96{,}5\% & 0{,}063 &  96{,}7\% & 303{,}608 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,002} & 0{,}039 & 14{,}544 & \textit{79{,}9\%} & 0{,}063 &  96{,}6\% & 289{,}409 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}003 & 0{,}062 & 15{,}319 & 81{,}1\% & 0{,}066 &  \textbf{95{,}1\%} & 300{,}579 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,002} & 0{,}038 & 15{,}223 & 93{,}7\% & 0{,}063 &  96{,}9\% & 303{,}608 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,002} & 0{,}039 & 14{,}558 & \textit{64{,}4\%} & 0{,}063 &  96{,}6\% & 289{,}408 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}003 & 0{,}062 & 15{,}374 & \textit{70{,}7\%} & 0{,}067 &  \textbf{95{,}1\%} & 300{,}578 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 128 & \textbf{0{,001}} & -0{,}009 & 0{,}348 & 93{,}9\% & 0{,}011 &  \textbf{94{,}9\%} & 2{,}805 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,001}} & \textbf{0{,001}} & 0{,}599 & 93{,}2\% & \textbf{0{,}009} &  \textbf{94{,}0\%} & 2{,}477 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}094 & 0{,}002 & 0{,}138 & \textit{0{,}0\%} & 0{,}059 &  \textit{0{,}0\%} & 2{,}921 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & \textbf{0{,001}} & -0{,}008 & 0{,}360 & \textit{44{,}9\%} & 0{,}011 &  \textbf{95{,}1\%} & 2{,}785 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & \textbf{0{,001}} & -0{,}007 & 0{,}380 & \textit{0{,}1\%} & \textbf{0{,}010} &  \textbf{95{,}5\%} & 2{,}761 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & \textbf{0{,001}} & 0{,}016 & 0{,}534 & \textit{0{,}5\%} & 0{,}011 &  91{,}4\% & 2{,}751 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & \textbf{0{,001}} & 0{,}002 & 0{,}607 & 96{,6\%} & \textbf{0{,}009} &  93{,}3\% & 2{,}453 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & \textbf{0{,001}} & 0{,}004 & 0{,}622 & \textit{17{,}3\%} & \textbf{0{,}009} &  93{,}2\% & 2{,}427 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}002 & 0{,}027 & 0{,}765 & \textit{0{,}8\%} & 0{,}015 &  \textit{74{,}1\%} & 2{,}401 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,001}} & -0{,}002 & 0{,}375 & 93{,}7\% & 0{,}012 &  93{,}2\% & 2{,}519 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}415 & \textbf{94{,0\%}} & 0{,}011 &  93{,}5\% & 2{,}488 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}069 & \textbf{0{,000}} & 0{,}142 & \textit{0{,}0\%} & 0{,}029 &  \textit{0{,}0\%} & 2{,}090 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}374 & 90{,}0\% & 0{,}011 &  93{,}9\% & 2{,}497 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}374 & \textit{15{,}2\%} & 0{,}011 &  93{,}7\% & 2{,}471 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & \textbf{0{,001}} & 0{,}022 & 0{,}449 & \textit{1{,}6\%} & 0{,}014 &  \textit{79{,}8\%} & 2{,}448 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,}001} & 0{,}419 & \textit{76{,}5\%} & \textbf{0{,}010} &  \textbf{94{,}0\%} & 2{,}465 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & \textbf{0{,001}} & 0{,}002 & 0{,}428 & \textit{1{,}9\%} & \textbf{0{,}010} &  93{,}4\% & 2{,}439 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & \textbf{0{,001}} & 0{,}024 & 0{,}555 & \textit{0{,}3\%} & 0{,}017 &  \textit{76{,}8\%} & 2{,}403 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,001}} & 0{,}384 & \textbf{94{,}6\%} & \textbf{0{,}010} &  \textbf{94{,}7\%} & 2{,}489 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,001}} & 0{,}277 & \textbf{95{,8\%}} & \textbf{0{,}010} &  \textbf{94{,}6\%} & 2{,}488 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}046 & \textbf{0{,001}} & 0{,}145 & \textit{0{,}0\%} & 0{,}018 &  \textit{0{,}0\%} & 2{,}631 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,001}} & 0{,}002 & 0{,}383 & 93{,}6\% & \textbf{0{,}010} &  \textbf{94{,}7\%} & 2{,}469 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & \textbf{0{,001}} & 0{,}003 & 0{,}383 & \textit{33{,}8\%} & \textbf{0{,}010} &  \textbf{94{,}3\%} & 2{,}441 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & \textbf{0{,001}} & 0{,}025 & 0{,}430 & \textit{0{,}3\%} & 0{,}015 &  \textit{77{,}7\%} & 2{,}409 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,001}} & 0{,}002 & 0{,}296 & \textit{40{,}0\%} & \textbf{0{,}010} &  \textbf{94{,}7\%} & 2{,}468 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,001}} & 0{,}003 & 0{,}323 & \textit{0{,}0\%} & \textbf{0{,}010} &  \textbf{94{,}4\%} & 2{,}440 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & \textbf{0{,001}} & 0{,}025 & 0{,}513 & \textit{0{,}1\%} & 0{,}017 &  \textit{77{,}7\%} & 2{,}407 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 128 & 0{,}264 & 0{,213} & 41{,}969 & 86{,}1\% & 1{,}951 &  85{,}9\% & 832{,}515 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,244} & 0{,}247 & 41{,}715 & 86{,}4\% & 1{,}921 &  86{,}0\% & 831{,}880 \\*
+   & \emph{Splines} & 200 & 128 & 0{,244} & 0{,}239 & 50{,}552 & \textit{41{,}1\%} & 1{,}923 &  \textit{42{,}1\%} & 1074{,}241 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,}264 & 0{,}214 & 41{,}849 & 86{,}8\% & 1{,}951 &  86{,}6\% & 829{,}943 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,}265 & 0{,}214 & 41{,}873 & 85{,}9\% & 1{,}950 &  86{,}0\% & 830{,}362 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,}265 & 0{,}235 & 41{,}731 & 86{,}1\% & 1{,}954 &  86{,}2\% & 827{,}185 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,244} & 0{,}248 & 41{,}590 & 87{,2\%} & 1{,}921 &  86{,}6\% & 829{,}255 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,244} & 0{,}248 & 41{,}610 & 86{,}8\% & 1{,}920 &  86{,}1\% & 829{,}667 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,244} & 0{,}270 & 41{,}461 & 86{,}4\% & 1{,}922 &  86{,}3\% & 826{,}441 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 256 & 0{,}263 & 0{,469} & 41{,}194 & 86{,}3\% & 1{,}954 &  86{,}3\% & 819{,}591 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,}242 & 0{,}528 & 40{,}942 & 86{,8\%} & 1{,}928 &  86{,}3\% & 818{,}788 \\*
+   & \emph{Splines} & 200 & 256 & 0{,237} & 0{,}524 & 50{,}634 & \textit{40{,}8\%} & 1{,}928 &  83{,}5\% & 743{,}408 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,}263 & 0{,469} & 41{,}248 & 86{,}5\% & 1{,}954 &  86{,}2\% & 820{,}623 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,}262 & 0{,}476 & 41{,}588 & 85{,}5\% & 1{,}942 &  85{,}7\% & 827{,}729 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,}262 & 0{,}496 & 41{,}412 & 86{,}2\% & 1{,}938 &  86{,}4\% & 824{,}066 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,}242 & 0{,}529 & 40{,}995 & 86{,}7\% & 1{,}927 &  86{,}2\% & 819{,}811 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,}241 & 0{,}536 & 41{,}350 & 86{,}0\% & 1{,}915 &  85{,}8\% & 826{,}938 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,}241 & 0{,}556 & 41{,}166 & 86{,}0\% & 1{,}917 &  86{,}1\% & 823{,}214 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 512 & 0{,}248 & 0{,284} & 42{,}857 & 86{,}0\% & 1{,}933 &  86{,}3\% & 857{,}484 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,}238 & 0{,}316 & 42{,}783 & 85{,}9\% & 1{,}923 &  86{,}3\% & 857{,}224 \\*
+   & \emph{Splines} & 200 & 512 & 0{,236} & 0{,}313 & 56{,}414 & \textit{42{,}2\%} & 1{,}923 &  \textit{59{,}9\%} & 1025{,}041 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,}248 & 0{,284} & 42{,}839 & 86{,}6\% & 1{,}932 &  86{,}3\% & 857{,}015 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,}247 & 0{,}296 & 42{,}677 & 86{,8\%} & 1{,}923 &  86{,}5\% & 853{,}550 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,}247 & 0{,}317 & 43{,}649 & 85{,}3\% & 1{,}920 &  86{,}0\% & 873{,}316 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,}238 & 0{,}317 & 42{,}761 & 86{,}6\% & 1{,}923 &  86{,}3\% & 856{,}736 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,}237 & 0{,}328 & 42{,}590 & 86{,}3\% & 1{,}913 &  86{,}5\% & 853{,}265 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,}238 & 0{,}349 & 43{,}578 & 85{,}3\% & 1{,}915 &  85{,}9\% & 873{,}061 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 128 & 0{,}057 & -0{,}048 & 16{,}422 & 96{,}6\% & 0{,}200 &  96{,}9\% & 305{,}276 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,}031 & -0{,}014 & 15{,}488 & 97{,1\%} & 0{,}157 &  96{,}7\% & 302{,}702 \\*
+   & \emph{Splines} & 500 & 128 & 0{,030} & -0{,}022 & 3{,}550 & \textit{2{,}5\%} & 0{,}162 &  \textit{2{,}5\%} & 75{,}721 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,}057 & -0{,}048 & 16{,}867 & \textbf{96{,}0\%} & 0{,}200 &  97{,}3\% & 314{,}364 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}058 & -0{,}047 & 17{,}450 & \textbf{94{,}4\%} & 0{,}200 &  96{,}9\% & 326{,}549 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}058 & -0{,}026 & 16{,}705 & 87{,}4\% & 0{,}205 &  93{,}7\% & 310{,}731 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,030} & -0{,}013 & 15{,}947 & 96{,}9\% & 0{,}157 &  96{,}7\% & 311{,}786 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,030} & -0{,}013 & 16{,}545 & \textbf{95{,}8\%} & 0{,}156 &  96{,}6\% & 324{,}012 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}031 & 0{,008} & 15{,}771 & 96{,}4\% & 0{,}159 &  \textbf{95{,}3\%} & 308{,}094 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 256 & 0{,}050 & -0{,}005 & 17{,}022 & 96{,}6\% & 0{,}147 &  96{,}9\% & 319{,}938 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,}021 & 0{,}054 & 16{,}178 & 97{,}0\% & 0{,}102 &  96{,}7\% & 317{,}692 \\*
+   & \emph{Splines} & 500 & 256 & \textbf{0{,013}} & 0{,}050 & 3{,}255 & \textit{2{,}4\%} & 0{,}102 &  \textit{25{,}4\%} & 47{,}703 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}050 & -0{,004} & 16{,}347 & 96{,}8\% & 0{,}147 &  96{,}9\% & 305{,}995 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}050 & -0{,004} & 16{,}479 & 96{,}9\% & 0{,}147 &  96{,}8\% & 308{,}441 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}050 & 0{,}017 & 16{,}460 & 98{,7\%} & 0{,}140 &  98{,}4\% & 307{,}911 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}021 & 0{,}055 & 15{,}486 & 96{,}1\% & 0{,}102 &  96{,}5\% & 303{,}665 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}021 & 0{,}055 & 15{,}607 & 93{,}4\% & 0{,}102 &  96{,}5\% & 306{,}080 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}021 & 0{,}077 & 15{,}593 & 82{,}7\% & 0{,}105 &  \textbf{95{,}3\%} & 305{,}506 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 512 & 0{,}034 & -0{,}003 & 16{,}170 & 96{,}7\% & 0{,}142 &  96{,}4\% & 314{,}691 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,}020 & 0{,}029 & 15{,}864 & 97{,}2\% & 0{,}122 &  96{,}9\% & 313{,}914 \\*
+   & \emph{Splines} & 500 & 512 & 0{,016} & 0{,}027 & 4{,}439 & \textit{3{,}5\%} & 0{,}123 &  \textit{3{,}7\%} & 80{,}382 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,}034 & -0{,002} & 16{,}197 & 96{,}7\% & 0{,}142 &  96{,}2\% & 315{,}274 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}034 & -0{,002} & 16{,}039 & 96{,}1\% & 0{,}142 &  96{,}8\% & 311{,}799 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}034 & 0{,}020 & 16{,}510 & 97{,7\%} & 0{,}136 &  97{,}9\% & 321{,}532 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,}020 & 0{,}030 & 15{,}893 & 96{,}4\% & 0{,}122 &  97{,}3\% & 314{,}479 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}020 & 0{,}030 & 15{,}722 & \textbf{94{,}3\%} & 0{,}122 &  97{,}0\% & 310{,}979 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}021 & 0{,}052 & 16{,}217 & 87{,}0\% & 0{,}124 &  \textbf{95{,}4\%} & 320{,}709 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 128 & 0{,}042 & -0{,}034 & 2{,}304 & \textbf{94{,}7\%} & 0{,}068 &  \textbf{94{,}3\%} & 7{,}675 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,015}} & \textbf{0{,000}} & 0{,}722 & \textbf{95{,0\%}} & \textbf{0{,}016} &  \textbf{95{,}3\%} & 2{,}541 \\*
+   & \emph{Splines} & 2000 & 128 & \textbf{0{,015}} & -0{,}008 & 0{,}138 & \textit{0{,}0\%} & 0{,}024 &  \textit{0{,}0\%} & 2{,}921 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & 0{,}042 & -0{,}033 & 2{,}308 & 91{,}5\% & 0{,}068 &  \textbf{94{,}1\%} & 7{,}681 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}043 & -0{,}033 & 2{,}315 & 84{,}1\% & 0{,}068 &  \textbf{94{,}5\%} & 7{,}691 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}043 & -0{,}011 & 2{,}332 & \textit{34{,}1\%} & 0{,}075 &  \textit{70{,}5\%} & 7{,}708 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & \textbf{0{,015}} & \textbf{0{,}001} & 0{,}722 & 93{,}6\% & \textbf{0{,}016} &  \textbf{95{,}2\%} & 2{,}524 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & \textbf{0{,015}} & \textbf{0{,}001} & 0{,}722 & 84{,}8\% & \textbf{0{,}015} &  \textbf{95{,}7\%} & 2{,}496 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & \textbf{0{,015}} & 0{,}023 & 0{,}732 & 85{,}8\% & 0{,}021 &  80{,}1\% & 2{,}453 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 256 & 0{,}041 & -0{,}060 & 2{,}254 & \textbf{94{,}0\%} & 0{,}074 &  93{,}6\% & 8{,}051 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,}012} & \textbf{-0{,}001} & 0{,}683 & \textbf{94{,}6\%} & \textbf{0{,}016} &  \textbf{94{,}4\%} & 2{,}498 \\*
+   & \emph{Splines} & 2000 & 256 & \textbf{0{,004}} & -0{,}005 & 0{,}142 & \textit{0{,}0\%} & \textbf{0{,}016} &  \textit{0{,}0\%} & 2{,}089 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & 0{,}042 & -0{,}059 & 2{,}257 & \textbf{95{,}0\%} & 0{,}073 &  \textbf{94{,}1\%} & 8{,}049 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}042 & -0{,}059 & 2{,}263 & 96{,}1\% & 0{,}074 &  93{,}4\% & 8{,}059 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}042 & -0{,}038 & 2{,}272 & 99{,8\%} & 0{,}064 &  99{,}6\% & 8{,}086 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,}012} & \textbf{0{,000}} & 0{,}684 & 89{,}4\% & \textbf{0{,}015} &  \textbf{95{,}0\%} & 2{,}472 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & \textbf{0{,}012} & \textbf{0{,000}} & 0{,}684 & \textit{74{,}0\%} & \textbf{0{,}015} &  \textbf{94{,}7\%} & 2{,}446 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & \textbf{0{,}012} & 0{,}022 & 0{,}697 & \textit{13{,}8\%} & 0{,}021 &  81{,}6\% & 2{,}407 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 512 & 0{,}022 & -0{,}032 & 1{,}140 & \textbf{94{,}4\%} & 0{,}042 &  \textbf{94{,}2\%} & 4{,}804 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,}008} & \textbf{0{,000}} & 0{,}471 & \textbf{94{,}9\%} & \textbf{0{,}016} &  \textbf{94{,}2\%} & 2{,}491 \\*
+   & \emph{Splines} & 2000 & 512 & \textbf{0{,003}} & -0{,}003 & 0{,}145 & \textit{0{,}0\%} & \textbf{0{,}016} &  \textit{0{,}0\%} & 2{,}631 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & 0{,}022 & -0{,}031 & 1{,}141 & \textbf{94{,}0\%} & 0{,}041 &  \textbf{94{,}0\%} & 4{,}800 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & 0{,}022 & -0{,}031 & 1{,}144 & 92{,}3\% & 0{,}041 &  \textbf{94{,}5\%} & 4{,}798 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}023 & -0{,}010 & 1{,}148 & 97{,7\%} & 0{,}034 &  99{,}5\% & 4{,}803 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,}008} & \textbf{0{,}001} & 0{,}471 & 89{,}3\% & \textbf{0{,}016} &  \textbf{94{,}0\%} & 2{,}468 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,}008} & \textbf{0{,}001} & 0{,}471 & \textit{71{,}4\%} & \textbf{0{,}015} &  \textbf{94{,}5\%} & 2{,}439 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & \textbf{0{,}009} & 0{,}022 & 0{,}479 & \textit{14{,}7\%} & 0{,}022 &  81{,}3\% & 2{,}399 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 128 & 0{,144} & 0{,}285 & 42{,}047 & 87{,}2\% & 0{,}070 &  87{,}3\% & 842{,}110 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,144} & 0{,}289 & 42{,}037 & 87{,}6\% & 0{,}070 &  87{,}3\% & 841{,}972 \\*
+   & \emph{Splines} & 200 & 128 & 0{,}225 & 0{,192} & 50{,}423 & \textit{38{,}8\%} & 0{,}071 &  \textit{38{,}8\%} & 1068{,}739 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,144} & 0{,}317 & 42{,}458 & 88{,}3\% & 0{,}070 &  87{,}9\% & 850{,}538 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,}145 & 0{,}377 & 42{,}828 & 87{,}6\% & 0{,}071 &  86{,}8\% & 858{,}330 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,}150 & 0{,}490 & 42{,}837 & 88{,}1\% & 0{,}074 &  87{,}2\% & 860{,}576 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,144} & 0{,}321 & 42{,}447 & 88{,5\%} & 0{,}070 &  87{,}8\% & 850{,}393 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,}145 & 0{,}381 & 42{,}821 & 87{,}6\% & 0{,}071 &  86{,}7\% & 858{,}188 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,}150 & 0{,}494 & 42{,}830 & 87{,}9\% & 0{,}074 &  87{,}2\% & 860{,}441 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 256 & 0{,133} & 0{,}127 & 42{,}716 & 88{,}2\% & 0{,}064 &  88{,}2\% & 857{,}618 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,133} & 0{,}129 & 42{,}721 & 88{,4\%} & 0{,}064 &  88{,}2\% & 857{,}613 \\*
+   & \emph{Splines} & 200 & 256 & 0{,}190 & 0{,084} & 53{,}511 & \textit{39{,}8\%} & 0{,}064 &  \textit{39{,}8\%} & 785{,}982 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,133} & 0{,}159 & 43{,}257 & 88{,}1\% & 0{,}064 &  88{,}0\% & 868{,}693 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,}135 & 0{,}214 & 42{,}295 & 87{,}0\% & 0{,}065 &  86{,}8\% & 849{,}806 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,}140 & 0{,}328 & 42{,}337 & 85{,}9\% & 0{,}068 &  85{,}6\% & 852{,}885 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,133} & 0{,}161 & 43{,}261 & 88{,}2\% & 0{,}064 &  88{,}0\% & 868{,}685 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,}135 & 0{,}216 & 42{,}301 & 87{,}5\% & 0{,}065 &  86{,}8\% & 849{,}799 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,}140 & 0{,}331 & 42{,}342 & 86{,}3\% & 0{,}068 &  85{,}6\% & 852{,}878 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 512 & 0{,134} & -0{,}086 & 42{,}186 & 87{,}2\% & 0{,}066 &  87{,}7\% & 848{,}004 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,134} & -0{,}085 & 42{,}189 & 87{,}3\% & 0{,}066 &  87{,}7\% & 848{,}001 \\*
+   & \emph{Splines} & 200 & 512 & 0{,}174 & -0{,}114 & 54{,}076 & \textit{40{,}3\%} & 0{,}067 &  \textit{40{,}3\%} & 983{,}186 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,134} & -0{,}055 & 42{,}361 & 87{,}9\% & 0{,}067 &  88{,}1\% & 851{,}730 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,}135 & 0{,004} & 41{,}917 & 86{,}7\% & 0{,}067 &  85{,}9\% & 843{,}095 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,}140 & 0{,}121 & 42{,}015 & 85{,}9\% & 0{,}070 &  85{,}9\% & 847{,}265 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,134} & -0{,}054 & 42{,}364 & 88{,2\%} & 0{,}067 &  88{,}1\% & 851{,}726 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,}135 & 0{,}005 & 41{,}922 & 87{,}0\% & 0{,}067 &  85{,}8\% & 843{,}090 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,}140 & 0{,}122 & 42{,}020 & 85{,}8\% & 0{,}070 &  85{,}9\% & 847{,}261 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 128 & 0{,}008 & 0{,024} & 16{,}318 & 97{,}9\% & 0{,}004 &  97{,}4\% & 324{,}795 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,007} & 0{,}028 & 16{,}272 & 97{,}5\% & 0{,}004 &  97{,}4\% & 324{,}767 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}112 & -0{,}069 & 3{,}944 & \textit{3{,}1\%} & 0{,}005 &  \textit{3{,}2\%} & 83{,}724 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,}008 & 0{,}056 & 16{,}580 & 98{,3\%} & 0{,}004 &  96{,}1\% & 330{,}311 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}011 & 0{,}112 & 16{,}168 & 91{,}9\% & 0{,}005 &  83{,}8\% & 322{,}332 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}017 & 0{,}228 & 16{,}081 & \textit{78{,}5\%} & 0{,}010 &  \textit{76{,}4\%} & 321{,}114 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,}008 & 0{,}061 & 16{,}544 & 96{,}3\% & 0{,}004 &  \textbf{95{,}4\%} & 330{,}288 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}011 & 0{,}117 & 16{,}140 & \textit{78{,}2\%} & 0{,}006 &  82{,}2\% & 322{,}303 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}017 & 0{,}233 & 16{,}073 & \textit{72{,}7\%} & 0{,}010 &  \textit{74{,}8\%} & 321{,}094 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 256 & 0{,012} & 0{,021} & 16{,}461 & 96{,}6\% & 0{,}006 &  96{,}4\% & 329{,}996 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,012} & 0{,}023 & 16{,}530 & 96{,9\%} & 0{,}006 &  96{,}5\% & 329{,}982 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}085 & -0{,}022 & 3{,}030 & \textit{2{,}7\%} & 0{,}006 &  \textit{2{,}7\%} & 44{,}703 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}013 & 0{,}053 & 16{,}547 & \textbf{95{,}9\%} & 0{,}006 &  \textbf{94{,}6\%} & 331{,}751 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}016 & 0{,}110 & 16{,}960 & \textit{79{,}6\%} & 0{,}008 &  83{,}9\% & 340{,}040 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}022 & 0{,}225 & 16{,}927 & \textit{75{,}9\%} & 0{,}012 &  \textit{76{,}4\%} & 339{,}164 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}013 & 0{,}055 & 16{,}616 & 96{,9\%} & 0{,}006 &  \textbf{94{,}4\%} & 331{,}742 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}016 & 0{,}112 & 17{,}025 & 93{,}4\% & 0{,}008 &  83{,}1\% & 340{,}029 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}022 & 0{,}228 & 16{,}980 & 84{,}5\% & 0{,}012 &  \textit{74{,}9\%} & 339{,}147 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 512 & 0{,015} & 0{,}070 & 16{,}048 & \textbf{95{,}7\%} & 0{,}007 &  \textbf{95{,}9\%} & 322{,}028 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,015} & 0{,}071 & 16{,}078 & \textbf{95{,8\%}} & 0{,}007 &  \textbf{95{,}9\%} & 322{,}024 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}066 & 0{,042} & 4{,}018 & \textit{3{,}7\%} & 0{,}007 &  \textit{3{,}7\%} & 72{,}983 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,015} & 0{,}102 & 15{,}937 & \textbf{94{,}9\%} & 0{,}007 &  \textbf{94{,}4\%} & 319{,}843 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}018 & 0{,}159 & 16{,}077 & \textit{79{,}2\%} & 0{,}009 &  82{,}1\% & 322{,}661 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}025 & 0{,}277 & 16{,}994 & \textit{76{,}0\%} & 0{,}013 &  \textit{75{,}9\%} & 340{,}773 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,015} & 0{,}104 & 15{,}973 & \textbf{95{,}7\%} & 0{,}007 &  \textbf{94{,}4\%} & 319{,}840 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}018 & 0{,}160 & 16{,}118 & 81{,}2\% & 0{,}009 &  81{,}7\% & 322{,}660 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}025 & 0{,}278 & 17{,}035 & \textit{79{,}0\%} & 0{,}013 &  \textit{74{,}9\%} & 340{,}768 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 128 & \textbf{0{,}002} & -0{,}005 & 0{,}324 & \textbf{94{,}7\%} & \textbf{0{,}001} &  \textbf{95{,}3\%} & 2{,}533 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}237 & \textbf{94{,}8\%} & \textbf{0{,}001} &  \textbf{94{,}9\%} & 2{,}477 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}108 & -0{,}097 & 0{,}137 & \textit{0{,}0\%} & 0{,}003 &  \textit{0{,}0\%} & 2{,}919 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & \textbf{0{,}002} & 0{,}027 & 0{,}325 & 98{,7\%} & \textbf{0{,}001} &  80{,}0\% & 2{,}736 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}005 & 0{,}083 & 0{,}327 & \textit{68{,}9\%} & 0{,}003 &  \textit{9{,}2\%} & 3{,}084 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}012 & 0{,}199 & 0{,}386 & \textit{1{,}5\%} & 0{,}007 &  \textit{0{,}5\%} & 5{,}945 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & \textbf{0{,}002} & 0{,}032 & 0{,}243 & 88{,}3\% & \textbf{0{,}001} &  \textit{72{,}4\%} & 2{,}684 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & 0{,}006 & 0{,}088 & 0{,}255 & \textit{4{,}1\%} & 0{,}003 &  \textit{5{,}3\%} & 3{,}034 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}012 & 0{,}204 & 0{,}369 & \textit{0{,}0\%} & 0{,}007 &  \textit{0{,}5\%} & 5{,}921 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,001}} & -0{,}003 & 0{,}166 & \textbf{95{,5\%}} & \textbf{0{,}001} &  \textbf{94{,}7\%} & 2{,}504 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}283 & \textbf{94{,}7\%} & \textbf{0{,}001} &  \textbf{94{,}4\%} & 2{,}489 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}076 & -0{,}045 & 0{,}142 & \textit{0{,}0\%} & \textbf{0{,}001} &  \textit{0{,}0\%} & 2{,}090 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,}002} & 0{,}030 & 0{,}175 & 84{,}7\% & \textbf{0{,}001} &  \textit{76{,}7\%} & 2{,}716 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}005 & 0{,}087 & 0{,}193 & \textit{3{,}1\%} & 0{,}003 &  \textit{5{,}7\%} & 3{,}067 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}012 & 0{,}203 & 0{,}344 & \textit{0{,}5\%} & 0{,}007 &  \textit{0{,}4\%} & 5{,}979 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,}002} & 0{,}032 & 0{,}292 & 93{,}5\% & \textbf{0{,}001} &  \textit{72{,}1\%} & 2{,}702 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & 0{,}006 & 0{,}089 & 0{,}307 & \textit{42{,}6\%} & 0{,}003 &  \textit{4{,}7\%} & 3{,}053 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & 0{,}013 & 0{,}206 & 0{,}440 & \textit{3{,}8\%} & 0{,}007 &  \textit{0{,}3\%} & 5{,}970 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}175 & \textbf{94{,}3\%} & \textbf{0{,}001} &  \textbf{94{,}2\%} & 2{,}497 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}233 & \textbf{94{,4\%}} & \textbf{0{,}001} &  93{,}8\% & 2{,}494 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}055 & -0{,}030 & 0{,}145 & \textit{0{,}0\%} & \textbf{0{,}001} &  \textit{0{,}0\%} & 2{,}633 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,}002} & 0{,}031 & 0{,}184 & 86{,}8\% & \textbf{0{,}001} &  \textit{73{,}9\%} & 2{,}709 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & 0{,}005 & 0{,}087 & 0{,}201 & \textit{4{,}7\%} & 0{,}003 &  \textit{5{,}2\%} & 3{,}057 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}012 & 0{,}204 & 0{,}351 & \textit{0{,}5\%} & 0{,}007 &  \textit{0{,}4\%} & 5{,}983 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,}002} & 0{,}032 & 0{,}246 & 80{,}5\% & \textbf{0{,}001} &  \textit{71{,}7\%} & 2{,}706 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & 0{,}005 & 0{,}088 & 0{,}267 & \textit{4{,}1\%} & 0{,}003 &  \textit{4{,}9\%} & 3{,}054 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & 0{,}013 & 0{,}205 & 0{,}422 & \textit{0{,}6\%} & 0{,}007 &  \textit{0{,}4\%} & 5{,}981 \\*
+\end{longtable}
+}
+\end{landscape}
+
+\begin{landscape}
+{\footnotesize
+\begin{longtable}{@{}llccrrrcrcr@{}}
+\caption{Resultados completos da Simulação~1, distribuição \(t\text{-Student}(5)\) (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)). Em negrito: melhor(es) valor(es) por grupo.}\label{tab:resultados_sim1_t} \\
+\toprule
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
+\midrule
+\endfirsthead
+\multicolumn{11}{l}{\itshape (continuação --- \(t\text{-Student}(5)\))} \\
+\toprule
+ & Método & $N$ & $T$ & NRMSE & Viés & Largura & CobSim & $\mathrm{CFATE}_{\mathrm{NRMSE}}$ & $\mathrm{CFATE}_{\mathrm{CobSim}}$ & $\mathrm{CFATE}_{\mathrm{Lar.}}$ \\
+\midrule
+\endhead
+\midrule \multicolumn{11}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 128 & 1{,}155 & 0{,}019 & 41{,}346 & 87{,3\%} & 0{,}289 &  86{,}9\% & 828{,}267 \\*
+   & Ond.\ (Off) & 200 & 128 & 1{,}154 & \textbf{0{,000}} & 41{,}340 & 87{,3\%} & 0{,}289 &  86{,}9\% & 828{,}106 \\*
+   & \emph{Splines} & 200 & 128 & 1{,}173 & -0{,}011 & 66{,}011 & \textit{38{,}3\%} & 0{,}289 &  \textit{38{,}7\%} & 1397{,}080 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 1{,}155 & 0{,}026 & 42{,}028 & 86{,}6\% & 0{,}289 &  86{,}6\% & 841{,}932 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 1{,}149 & 0{,}054 & 41{,}458 & 86{,}8\% & 0{,}288 &  87{,}1\% & 830{,}530 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 1{,}155 & 0{,}095 & 41{,}694 & 86{,}0\% & 0{,}290 &  86{,}1\% & 835{,}323 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 1{,}154 & \textbf{0{,}007} & 42{,}023 & 86{,}6\% & 0{,}289 &  86{,}6\% & 841{,}770 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 1{,147} & 0{,}035 & 41{,}454 & 86{,}8\% & 0{,}287 &  87{,}2\% & 830{,}380 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 1{,}151 & 0{,}076 & 41{,}690 & 86{,}1\% & 0{,}288 &  86{,}2\% & 835{,}176 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 256 & 1{,}137 & 0{,}485 & 42{,}807 & 89{,}1\% & 0{,}289 &  88{,}4\% & 859{,}402 \\*
+   & Ond.\ (Off) & 200 & 256 & 1{,}136 & 0{,}475 & 42{,}803 & 89{,3\%} & 0{,}289 &  88{,}4\% & 859{,}356 \\*
+   & \emph{Splines} & 200 & 256 & 1{,}147 & 0{,469} & 68{,}067 & \textit{41{,}7\%} & 0{,}289 &  \textit{42{,}5\%} & 1002{,}955 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 1{,}120 & 0{,}528 & 42{,}924 & 88{,}1\% & 0{,}285 &  87{,}7\% & 861{,}747 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 1{,}117 & 0{,}540 & 43{,}070 & 88{,}6\% & 0{,}284 &  88{,}6\% & 864{,}682 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 1{,}123 & 0{,}581 & 42{,}583 & 87{,}0\% & 0{,}287 &  87{,}0\% & 855{,}077 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 1{,}119 & 0{,}518 & 42{,}920 & 88{,}6\% & 0{,}285 &  88{,}0\% & 861{,}723 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 1{,116} & 0{,}530 & 43{,}066 & 89{,}1\% & 0{,}284 &  88{,}5\% & 864{,}654 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 1{,}121 & 0{,}571 & 42{,}581 & 87{,}1\% & 0{,}286 &  87{,}0\% & 855{,}023 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 200 & 512 & 1{,}315 & 0{,}342 & 40{,}028 & 84{,}8\% & 0{,}339 &  84{,}3\% & 804{,}591 \\*
+   & Ond.\ (Off) & 200 & 512 & 1{,}315 & 0{,}335 & 40{,}027 & 85{,2\%} & 0{,}339 &  84{,}3\% & 804{,}582 \\*
+   & \emph{Splines} & 200 & 512 & 1{,}322 & 0{,332} & 74{,}142 & \textit{43{,}6\%} & 0{,}339 &  \textit{43{,}7\%} & 1351{,}640 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 1{,}315 & 0{,}350 & 40{,}969 & 84{,}0\% & 0{,}339 &  84{,}0\% & 823{,}462 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 1{,313} & 0{,}358 & 40{,}228 & 83{,}6\% & 0{,}339 &  83{,}6\% & 808{,}619 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 1{,}319 & 0{,}400 & 40{,}023 & 83{,}1\% & 0{,}340 &  82{,}8\% & 804{,}519 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 1{,}315 & 0{,}343 & 40{,}966 & 84{,}4\% & 0{,}339 &  84{,}0\% & 823{,}441 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 1{,313} & 0{,}351 & 40{,}227 & 83{,}8\% & 0{,}338 &  83{,}6\% & 808{,}605 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 1{,}317 & 0{,}393 & 40{,}021 & 83{,}4\% & 0{,}340 &  83{,}0\% & 804{,}508 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 128 & 0{,093} & 0{,}041 & 15{,}058 & \textbf{95{,}7\%} & 0{,}023 &  96{,}3\% & 301{,}117 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,093} & 0{,}023 & 15{,}074 & 96{,}5\% & 0{,}023 &  96{,}1\% & 300{,}950 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}121 & 0{,011} & 4{,}867 & \textit{2{,}8\%} & 0{,}023 &  \textit{2{,}8\%} & 103{,}333 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,}094 & 0{,}049 & 15{,}231 & \textbf{95{,}7\%} & 0{,}024 &  \textbf{95{,}8\%} & 304{,}573 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}096 & 0{,}061 & 14{,}925 & \textbf{95{,}4\%} & 0{,}024 &  \textbf{94{,}4\%} & 298{,}487 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}108 & 0{,}103 & 15{,}423 & 89{,}0\% & 0{,}028 &  87{,}9\% & 308{,}604 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,093} & 0{,}031 & 15{,}247 & 96{,6\%} & 0{,}023 &  96{,}4\% & 304{,}397 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}094 & 0{,}043 & 14{,}941 & 96{,}4\% & 0{,}023 &  \textbf{95{,}6\%} & 298{,}292 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}102 & 0{,}085 & 15{,}438 & 93{,}0\% & 0{,}026 &  91{,}4\% & 308{,}439 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 256 & 0{,}099 & 0{,}078 & 15{,}802 & 96{,6\%} & 0{,}025 &  97{,}0\% & 316{,}688 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,098} & 0{,}068 & 15{,}811 & 96{,}3\% & 0{,}025 &  96{,}6\% & 316{,}627 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}116 & 0{,062} & 4{,}359 & \textit{2{,}8\%} & 0{,}025 &  \textit{2{,}8\%} & 63{,}724 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}099 & 0{,}086 & 15{,}788 & 96{,}4\% & 0{,}025 &  \textbf{96{,}0\%} & 316{,}399 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}101 & 0{,}098 & 15{,}842 & \textbf{95{,}1\%} & 0{,}026 &  \textbf{94{,}5\%} & 317{,}520 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}112 & 0{,}139 & 16{,}033 & 90{,}3\% & 0{,}030 &  89{,}0\% & 321{,}535 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}099 & 0{,}075 & 15{,}797 & 96{,}3\% & 0{,}025 &  \textbf{96{,}0\%} & 316{,}352 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}100 & 0{,}088 & 15{,}852 & 96{,}5\% & 0{,}025 &  \textbf{95{,}4\%} & 317{,}474 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}109 & 0{,}130 & 16{,}042 & 92{,}4\% & 0{,}028 &  90{,}7\% & 321{,}496 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 500 & 512 & 0{,062} & 0{,}028 & 15{,}574 & 97{,3\%} & 0{,}016 &  97{,}4\% & 312{,}513 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,062} & 0{,}021 & 15{,}579 & 97{,3\%} & 0{,}016 &  97{,}5\% & 312{,}495 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}076 & 0{,018} & 5{,}835 & \textit{3{,}4\%} & 0{,}016 &  \textit{3{,}4\%} & 105{,}925 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,062} & 0{,}036 & 15{,}703 & 97{,}2\% & 0{,}016 &  97{,}6\% & 315{,}118 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}064 & 0{,}048 & 16{,}106 & 96{,}4\% & 0{,}017 &  97{,}0\% & 323{,}235 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}074 & 0{,}089 & 16{,}133 & 91{,}8\% & 0{,}020 &  91{,}7\% & 323{,}938 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,062} & 0{,}029 & 15{,}708 & 97{,}2\% & 0{,}016 &  97{,}8\% & 315{,}106 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}063 & 0{,}042 & 16{,}111 & 97{,3\%} & 0{,}016 &  97{,}3\% & 323{,}216 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}072 & 0{,}083 & 16{,}138 & 93{,}9\% & 0{,}019 &  92{,}4\% & 323{,}922 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 128 & 0{,016} & 0{,}018 & 0{,}215 & \textbf{94{,}1\%} & 0{,}004 &  \textbf{94{,}8\%} & 3{,}804 \\*
+   & Ond.\ (Off) & 2000 & 128 & 0{,}017 & \textbf{0{,000}} & 0{,}250 & \textbf{94{,}7\%} & \textbf{0{,}003} &  \textbf{94{,}8\%} & 3{,}203 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}051 & -0{,}011 & 0{,}177 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 3{,}770 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & 0{,}018 & 0{,}026 & 0{,}214 & 92{,}7\% & 0{,}005 &  91{,}3\% & 3{,}792 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}021 & 0{,}038 & 0{,}213 & 87{,}9\% & 0{,}006 &  83{,}2\% & 3{,}767 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}039 & 0{,}080 & 0{,}215 & \textit{43{,}0\%} & 0{,}011 &  \textit{29{,}4\%} & 3{,}915 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & 0{,}017 & \textbf{0{,}008} & 0{,}249 & \textbf{95{,1\%}} & \textbf{0{,}003} &  \textbf{94{,}6\%} & 3{,}184 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & 0{,}019 & 0{,}020 & 0{,}248 & \textbf{94{,}6\%} & 0{,}004 &  88{,}4\% & 3{,}158 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}032 & 0{,}062 & 0{,}249 & \textit{72{,}0\%} & 0{,}008 &  \textit{42{,}2\%} & 3{,}342 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,014}} & 0{,}010 & 0{,}193 & \textbf{94{,}8\%} & 0{,}004 &  \textbf{95{,}7\%} & 3{,}426 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,014}} & \textbf{0{,000}} & 0{,}219 & 96{,2\%} & \textbf{0{,}003} &  \textbf{95{,}5\%} & 3{,}206 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}037 & \textbf{-0{,}006} & 0{,}183 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 2{,}695 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,}015} & 0{,}018 & 0{,}192 & 92{,}6\% & 0{,}004 &  93{,}1\% & 3{,}408 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}018 & 0{,}030 & 0{,}191 & 87{,}1\% & 0{,}005 &  84{,}6\% & 3{,}393 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}034 & 0{,}071 & 0{,}192 & \textit{43{,}8\%} & 0{,}010 &  \textit{33{,}2\%} & 3{,}541 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,014}} & \textbf{0{,}007} & 0{,}218 & \textbf{96{,}0\%} & \textbf{0{,}003} &  \textbf{94{,}9\%} & 3{,}187 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & 0{,}016 & 0{,}019 & 0{,}217 & \textbf{94{,}3\%} & 0{,}004 &  89{,}4\% & 3{,}163 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & 0{,}030 & 0{,}061 & 0{,}219 & \textit{64{,}6\%} & 0{,}008 &  \textit{42{,}4\%} & 3{,}346 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,013}} & 0{,}009 & 0{,}188 & \textbf{94{,}8\%} & \textbf{0{,}003} &  \textbf{94{,}7\%} & 3{,}313 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,013}} & \textbf{0{,}002} & 0{,}206 & \textbf{95{,9\%}} & \textbf{0{,}003} &  \textbf{95{,}9\%} & 3{,}216 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}031 & \textbf{-0{,001}} & 0{,}187 & \textit{0{,}0\%} & \textbf{0{,}003} &  \textit{0{,}0\%} & 3{,}398 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,}014} & 0{,}017 & 0{,}187 & 93{,}4\% & 0{,}004 &  92{,}9\% & 3{,}291 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & 0{,}017 & 0{,}029 & 0{,}185 & 88{,}0\% & 0{,}005 &  84{,}2\% & 3{,}276 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}033 & 0{,}071 & 0{,}188 & \textit{40{,}3\%} & 0{,}010 &  \textit{29{,}7\%} & 3{,}444 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,013}} & 0{,}010 & 0{,}205 & \textbf{95{,}5\%} & \textbf{0{,}003} &  \textbf{94{,}2\%} & 3{,}193 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,}015} & 0{,}022 & 0{,}203 & 93{,}2\% & 0{,}004 &  88{,}9\% & 3{,}173 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & 0{,}030 & 0{,}064 & 0{,}206 & \textit{59{,}2\%} & 0{,}009 &  \textit{36{,}8\%} & 3{,}353 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 128 & 0{,049} & 0{,}275 & 40{,}386 & 83{,}7\% & 1{,}203 &  83{,}6\% & 808{,}547 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,049} & 0{,}287 & 40{,}390 & 83{,}7\% & 1{,}201 &  83{,}6\% & 808{,}390 \\*
+   & \emph{Splines} & 200 & 128 & 0{,}123 & 0{,}288 & 73{,}628 & \textit{39{,}0\%} & 1{,}226 &  \textit{44{,}1\%} & 1558{,}830 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,049} & 0{,}276 & 40{,}238 & 83{,}4\% & 1{,}203 &  83{,}9\% & 805{,}481 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,049} & 0{,273} & 40{,}716 & 83{,}1\% & 1{,}200 &  84{,}2\% & 814{,}858 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,049} & 0{,}295 & 40{,}621 & 83{,}5\% & 1{,}200 &  83{,}9\% & 811{,}295 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,049} & 0{,}288 & 40{,}241 & 83{,}8\% & 1{,}201 &  84{,}1\% & 805{,}330 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,049} & 0{,}285 & 40{,}712 & 83{,9\%} & 1{,}199 &  84{,}4\% & 814{,}725 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,049} & 0{,}307 & 40{,}610 & 83{,}1\% & 1{,}200 &  84{,}0\% & 811{,}138 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 256 & 0{,048} & 0{,057} & 43{,}331 & 87{,}1\% & 1{,}317 &  85{,}7\% & 869{,}648 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,048} & 0{,}059 & 43{,}332 & 87{,2\%} & 1{,}317 &  85{,}7\% & 869{,}644 \\*
+   & \emph{Splines} & 200 & 256 & 0{,}103 & 0{,}059 & 75{,}059 & \textit{42{,}8\%} & 1{,}324 &  \textit{47{,}6\%} & 1103{,}776 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,048} & 0{,}058 & 42{,}493 & 86{,}6\% & 1{,}317 &  85{,}8\% & 852{,}726 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,048} & 0{,}064 & 42{,}773 & 86{,}6\% & 1{,}310 &  87{,}0\% & 858{,}204 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,}049 & 0{,}086 & 43{,}470 & 86{,}1\% & 1{,}309 &  85{,}8\% & 870{,}732 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,048} & 0{,}060 & 42{,}492 & 86{,}8\% & 1{,}316 &  85{,}8\% & 852{,}714 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,048} & 0{,}066 & 42{,}772 & 86{,}6\% & 1{,}309 &  87{,}0\% & 858{,}197 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,}049 & 0{,}089 & 43{,}470 & 86{,}3\% & 1{,}310 &  85{,}8\% & 870{,}713 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 200 & 512 & 0{,041} & 0{,215} & 42{,}457 & 87{,}6\% & 1{,}214 &  87{,}5\% & 853{,}199 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,041} & 0{,215} & 42{,}453 & 87{,}9\% & 1{,}214 &  87{,}5\% & 853{,}197 \\*
+   & \emph{Splines} & 200 & 512 & 0{,}076 & 0{,215} & 74{,}058 & \textit{42{,}4\%} & 1{,}216 &  96{,}9\% & 1350{,}059 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,041} & 0{,}217 & 41{,}628 & 87{,}7\% & 1{,}214 &  87{,}4\% & 836{,}511 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,041} & 0{,}218 & 42{,}328 & 87{,}8\% & 1{,}214 &  87{,}8\% & 850{,}402 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,041} & 0{,}240 & 41{,}787 & 87{,}9\% & 1{,}214 &  87{,}1\% & 837{,}995 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,041} & 0{,}217 & 41{,}627 & 88{,5\%} & 1{,}214 &  87{,}4\% & 836{,}508 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,041} & 0{,}219 & 42{,}330 & 88{,}2\% & 1{,}214 &  87{,}8\% & 850{,}400 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,041} & 0{,}241 & 41{,}796 & 87{,}7\% & 1{,}215 &  87{,}1\% & 837{,}992 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 128 & 0{,003} & 0{,003} & 15{,}255 & 96{,}1\% & 0{,}079 &  \textbf{96{,}0\%} & 303{,}278 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,}004 & 0{,}015 & 15{,}438 & \textbf{95{,}7\%} & 0{,}076 &  \textbf{96{,}0\%} & 303{,}118 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}095 & 0{,}016 & 4{,}006 & \textit{2{,}5\%} & 0{,}117 &  \textit{2{,}9\%} & 84{,}991 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,003} & 0{,}004 & 15{,}258 & 90{,}8\% & 0{,}078 &  \textbf{95{,}9\%} & 303{,}018 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}004 & 0{,}005 & 15{,}144 & \textit{70{,}8\%} & 0{,}077 &  \textbf{96{,}0\%} & 300{,}248 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}004 & 0{,}029 & 15{,}408 & \textit{76{,}1\%} & 0{,}076 &  \textbf{95{,}6\%} & 301{,}196 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,}004 & 0{,}016 & 15{,}436 & 97{,1\%} & 0{,}076 &  \textbf{95{,}6\%} & 302{,}873 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}004 & 0{,}018 & 15{,}318 & 88{,}5\% & 0{,}076 &  \textbf{95{,}5\%} & 300{,}076 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}004 & 0{,}041 & 15{,}569 & \textit{73{,}1\%} & 0{,}078 &  93{,}8\% & 301{,}021 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 256 & 0{,004} & 0{,023} & 15{,}990 & 97{,2\%} & 0{,}090 &  97{,}0\% & 318{,}667 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,004} & 0{,}026 & 16{,}041 & 96{,}6\% & 0{,}089 &  97{,}0\% & 318{,}660 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}071 & 0{,}026 & 4{,}805 & \textit{3{,}1\%} & 0{,}101 &  \textit{3{,}2\%} & 70{,}556 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,004} & 0{,}025 & 16{,}131 & \textbf{94{,}5\%} & 0{,}089 &  96{,}9\% & 321{,}370 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,004} & 0{,}026 & 16{,}069 & 84{,}8\% & 0{,}089 &  96{,}4\% & 319{,}806 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,004} & 0{,}047 & 16{,}511 & 83{,}4\% & 0{,}090 &  96{,}2\% & 325{,}189 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,004} & 0{,}027 & 16{,}183 & \textbf{95{,}1\%} & 0{,}089 &  96{,}9\% & 321{,}355 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,004} & 0{,}028 & 16{,}122 & 81{,}1\% & 0{,}088 &  96{,}4\% & 319{,}796 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,004} & 0{,}049 & 16{,}586 & \textit{72{,}5\%} & 0{,}091 &  \textbf{95{,}7\%} & 325{,}177 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 500 & 512 & 0{,004} & 0{,054} & 14{,}843 & \textbf{95{,}5\%} & 0{,}108 &  96{,}2\% & 295{,}778 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,004} & 0{,054} & 14{,}809 & 96{,6\%} & 0{,}107 &  96{,}2\% & 295{,}779 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}048 & 0{,054} & 4{,}403 & \textit{3{,}1\%} & 0{,}112 &  85{,}9\% & 79{,}975 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,004} & 0{,}056 & 14{,}571 & \textbf{95{,}9\%} & 0{,}107 &  96{,}6\% & 290{,}296 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,004} & 0{,}056 & 14{,}749 & 87{,}7\% & 0{,}106 &  96{,}6\% & 293{,}729 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,004} & 0{,}079 & 15{,}528 & 80{,}7\% & 0{,}108 &  96{,}5\% & 305{,}508 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,004} & 0{,}056 & 14{,}554 & \textbf{94{,}6\%} & 0{,}107 &  96{,}6\% & 290{,}296 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,004} & 0{,}057 & 14{,}758 & \textit{75{,}7\%} & 0{,}106 &  96{,}6\% & 293{,}730 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,004} & 0{,}080 & 15{,}588 & \textit{73{,}3\%} & 0{,}109 &  96{,}4\% & 305{,}507 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 128 & \textbf{0{,001}} & -0{,}011 & 0{,}418 & \textbf{95{,}7\%} & 0{,}014 &  \textbf{95{,}7\%} & 3{,}542 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,001}} & \textbf{0{,001}} & 0{,}631 & 96{,}3\% & 0{,}011 &  \textbf{95{,}7\%} & 3{,}197 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}094 & 0{,}002 & 0{,}178 & \textit{0{,}0\%} & 0{,}059 &  \textit{0{,}0\%} & 3{,}772 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & \textbf{0{,001}} & -0{,}010 & 0{,}428 & \textit{58{,}5\%} & 0{,}013 &  96{,}1\% & 3{,}517 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & \textbf{0{,001}} & -0{,}009 & 0{,}445 & \textit{1{,}6\%} & 0{,}013 &  96{,}4\% & 3{,}484 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}002 & 0{,}014 & 0{,}579 & \textit{0{,}5\%} & 0{,}012 &  \textbf{95{,}3\%} & 3{,}453 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & \textbf{0{,001}} & 0{,}002 & 0{,}638 & 98{,3\%} & 0{,}011 &  \textbf{95{,}3\%} & 3{,}172 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & \textbf{0{,001}} & 0{,}003 & 0{,}652 & \textit{34{,}6\%} & 0{,}011 &  \textbf{95{,}3\%} & 3{,}132 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}002 & 0{,}026 & 0{,}785 & \textit{1{,}4\%} & 0{,}016 &  83{,}4\% & 3{,}083 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}408 & \textbf{95{,}5\%} & 0{,}014 &  \textbf{95{,}2\%} & 3{,}227 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,}001} & 0{,}445 & \textbf{95{,6\%}} & 0{,}013 &  \textbf{95{,}4\%} & 3{,}208 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}069 & \textbf{0{,}001} & 0{,}183 & \textit{0{,}0\%} & 0{,}030 &  \textit{0{,}0\%} & 2{,}696 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}413 & \textit{77{,}2\%} & 0{,}013 &  \textbf{95{,}4\%} & 3{,}201 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & \textbf{0{,001}} & \textbf{0{,}001} & 0{,}421 & \textit{14{,}9\%} & 0{,}013 &  \textbf{94{,}6\%} & 3{,}163 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}002 & 0{,}023 & 0{,}503 & \textit{2{,}2\%} & 0{,}016 &  86{,}5\% & 3{,}113 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,001}} & 0{,}003 & 0{,}448 & 83{,}7\% & 0{,}013 &  \textbf{94{,}9\%} & 3{,}181 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & \textbf{0{,001}} & 0{,}003 & 0{,}455 & \textit{8{,}4\%} & 0{,}013 &  \textbf{94{,}6\%} & 3{,}145 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & 0{,}002 & 0{,}026 & 0{,}569 & \textit{0{,}1\%} & 0{,}019 &  82{,}2\% & 3{,}084 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Bumps}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}419 & \textbf{95{,}0\%} & 0{,}013 &  \textbf{95{,}3\%} & 3{,}220 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,001}} & \textbf{-0{,}001} & 0{,}319 & 96{,2\%} & 0{,}013 &  \textbf{95{,}4\%} & 3{,}219 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}046 & \textbf{-0{,}001} & 0{,}187 & \textit{0{,}0\%} & 0{,}019 &  \textit{0{,}0\%} & 3{,}398 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}418 & \textbf{94{,}2\%} & 0{,}013 &  \textbf{94{,}9\%} & 3{,}190 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,}001} & 0{,}417 & \textit{55{,}3\%} & 0{,}013 &  \textbf{95{,}5\%} & 3{,}151 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & \textbf{0{,001}} & 0{,}024 & 0{,}453 & \textit{0{,}5\%} & 0{,}016 &  85{,}7\% & 3{,}097 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,000}} & 0{,}334 & \textit{63{,}3\%} & 0{,}013 &  \textbf{94{,}9\%} & 3{,}190 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,001}} & \textbf{0{,}001} & 0{,}356 & \textit{0{,}6\%} & 0{,}012 &  \textbf{95{,}4\%} & 3{,}151 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & \textbf{0{,001}} & 0{,}024 & 0{,}535 & \textit{0{,}0\%} & 0{,}018 &  85{,}3\% & 3{,}095 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 128 & 0{,}280 & 0{,}155 & 41{,}504 & 85{,}7\% & 2{,}090 &  85{,}7\% & 822{,}522 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,}262 & 0{,}197 & 41{,}265 & 85{,}9\% & 2{,}065 &  85{,}8\% & 821{,}715 \\*
+   & \emph{Splines} & 200 & 128 & 0{,261} & 0{,}189 & 67{,}561 & \textit{42{,}6\%} & 2{,}067 &  \textit{63{,}0\%} & 1430{,}782 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,}281 & 0{,}156 & 42{,}581 & 85{,}6\% & 2{,}090 &  85{,}9\% & 844{,}741 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,}280 & 0{,154} & 41{,}614 & 85{,}2\% & 2{,}081 &  86{,}3\% & 824{,}611 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,}280 & 0{,}176 & 42{,}362 & 84{,}8\% & 2{,}082 &  85{,}5\% & 839{,}843 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,}262 & 0{,}198 & 42{,}363 & 86{,0\%} & 2{,}064 &  86{,}0\% & 843{,}997 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,261} & 0{,}197 & 41{,}371 & 85{,}8\% & 2{,}055 &  86{,}3\% & 823{,}792 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,261} & 0{,}218 & 42{,}127 & 85{,}5\% & 2{,}055 &  85{,}5\% & 839{,}015 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 256 & 0{,}303 & 0{,149} & 40{,}973 & 84{,8\%} & 2{,}285 &  83{,}8\% & 816{,}138 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,}284 & 0{,}209 & 40{,}813 & 84{,}4\% & 2{,}265 &  83{,}8\% & 815{,}534 \\*
+   & \emph{Splines} & 200 & 256 & 0{,279} & 0{,}205 & 77{,}201 & \textit{43{,}9\%} & 2{,}264 &  \textbf{94{,}2\%} & 1139{,}088 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,}303 & 0{,}150 & 40{,}574 & 84{,}4\% & 2{,}284 &  82{,}7\% & 807{,}888 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,}302 & 0{,}162 & 40{,}533 & 84{,}4\% & 2{,}275 &  83{,}3\% & 806{,}852 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,}302 & 0{,}184 & 41{,}052 & 83{,}8\% & 2{,}271 &  83{,}3\% & 817{,}426 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,}284 & 0{,}209 & 40{,}401 & 84{,}2\% & 2{,}264 &  82{,}6\% & 807{,}218 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,}283 & 0{,}222 & 40{,}351 & 84{,}4\% & 2{,}253 &  83{,}3\% & 806{,}156 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,}283 & 0{,}244 & 40{,}879 & 83{,}5\% & 2{,}255 &  83{,}1\% & 816{,}738 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 200 & 512 & 0{,}235 & 0{,225} & 42{,}894 & 87{,8\%} & 1{,}846 &  87{,}9\% & 858{,}561 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,}226 & 0{,}257 & 42{,}856 & 87{,}6\% & 1{,}837 &  87{,}9\% & 858{,}307 \\*
+   & \emph{Splines} & 200 & 512 & 0{,223} & 0{,}254 & 69{,}514 & \textit{38{,}8\%} & 1{,}837 &  \textit{74{,}1\%} & 1266{,}008 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,}235 & 0{,}226 & 43{,}432 & 87{,}4\% & 1{,}845 &  87{,}2\% & 869{,}287 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,}235 & 0{,}226 & 43{,}397 & 87{,}4\% & 1{,}844 &  88{,}1\% & 868{,}554 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,}235 & 0{,}247 & 43{,}337 & 87{,}4\% & 1{,}841 &  87{,}0\% & 867{,}134 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,}226 & 0{,}258 & 43{,}395 & 87{,}2\% & 1{,}836 &  87{,}3\% & 869{,}040 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,}225 & 0{,}257 & 43{,}355 & 87{,}5\% & 1{,}835 &  88{,}1\% & 868{,}300 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,}226 & 0{,}279 & 43{,}288 & 87{,}4\% & 1{,}836 &  87{,}0\% & 866{,}894 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 128 & 0{,}053 & \textbf{0{,000}} & 16{,}030 & 96{,}6\% & 0{,}168 &  96{,}7\% & 297{,}126 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,}028 & 0{,}042 & 15{,}154 & 96{,8\%} & 0{,}130 &  96{,}9\% & 294{,}840 \\*
+   & \emph{Splines} & 500 & 128 & 0{,026} & 0{,}034 & 5{,}914 & \textit{3{,}7\%} & 0{,}133 &  \textit{3{,}7\%} & 125{,}023 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,}053 & \textbf{0{,}001} & 17{,}175 & 96{,}6\% & 0{,}168 &  96{,}6\% & 320{,}977 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}054 & 0{,}002 & 16{,}467 & \textbf{95{,}9\%} & 0{,}168 &  96{,}7\% & 306{,}055 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}054 & 0{,}022 & 16{,}479 & 90{,}4\% & 0{,}172 &  \textbf{94{,}0\%} & 306{,}020 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,}028 & 0{,}043 & 16{,}336 & 96{,}6\% & 0{,}130 &  96{,}7\% & 318{,}754 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}028 & 0{,}043 & 15{,}601 & \textbf{95{,}0\%} & 0{,}129 &  97{,}0\% & 303{,}740 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}028 & 0{,}064 & 15{,}606 & \textbf{95{,}7\%} & 0{,}131 &  \textbf{96{,}0\%} & 303{,}648 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 256 & 0{,}058 & -0{,}063 & 17{,}060 & \textbf{96{,}0\%} & 0{,}220 &  96{,}1\% & 320{,}841 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,}030 & -0{,}005 & 16{,}259 & 96{,}4\% & 0{,}180 &  \textbf{95{,}9\%} & 319{,}040 \\*
+   & \emph{Splines} & 500 & 256 & 0{,023} & -0{,}009 & 5{,}642 & \textit{3{,}4\%} & 0{,}180 &  \textit{53{,}8\%} & 82{,}159 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}058 & -0{,}063 & 16{,}815 & 96{,}5\% & 0{,}220 &  96{,}3\% & 315{,}755 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}058 & -0{,}062 & 16{,}804 & 96{,}3\% & 0{,}220 &  \textbf{96{,}0\%} & 315{,}546 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}059 & -0{,}042 & 16{,}689 & 97{,5\%} & 0{,}212 &  97{,}2\% & 312{,}920 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}030 & -0{,004} & 16{,}006 & \textbf{95{,}9\%} & 0{,}180 &  96{,}1\% & 313{,}923 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}030 & -0{,004} & 15{,}995 & \textbf{94{,}0\%} & 0{,}179 &  96{,}3\% & 313{,}708 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}030 & 0{,}018 & 15{,}872 & 87{,}6\% & 0{,}180 &  \textbf{95{,}1\%} & 310{,}961 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 500 & 512 & 0{,}036 & -0{,}042 & 16{,}972 & 96{,}3\% & 0{,}164 &  96{,}6\% & 331{,}592 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,}023 & -0{,}011 & 16{,}726 & 96{,}9\% & 0{,}149 &  96{,}2\% & 330{,}974 \\*
+   & \emph{Splines} & 500 & 512 & 0{,019} & -0{,}013 & 4{,}476 & \textit{3{,}0\%} & 0{,}149 &  \textit{9{,}3\%} & 81{,}302 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,}036 & -0{,}042 & 16{,}926 & 96{,}6\% & 0{,}164 &  96{,}7\% & 330{,}704 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}036 & -0{,}042 & 16{,}912 & 96{,}1\% & 0{,}163 &  96{,}9\% & 330{,}283 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}036 & -0{,}021 & 16{,}194 & 97{,1\%} & 0{,}160 &  97{,}8\% & 315{,}512 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,}023 & -0{,010} & 16{,}680 & 97{,1\%} & 0{,}149 &  96{,}5\% & 330{,}057 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}023 & -0{,010} & 16{,}659 & \textbf{95{,}7\%} & 0{,}148 &  96{,}5\% & 329{,}612 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}024 & 0{,}011 & 15{,}936 & 89{,}1\% & 0{,}151 &  \textbf{95{,}5\%} & 314{,}778 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 128 & 0{,}042 & -0{,}042 & 2{,}283 & \textbf{94{,8\%}} & 0{,}068 &  \textbf{94{,}8\%} & 7{,}737 \\*
+   & Ond.\ (Off) & 2000 & 128 & 0{,}017 & \textbf{0{,000}} & 0{,}815 & \textbf{94{,}6\%} & 0{,}021 &  \textbf{94{,}4\%} & 3{,}267 \\*
+   & \emph{Splines} & 2000 & 128 & \textbf{0{,015}} & -0{,}008 & 0{,}178 & \textit{0{,}0\%} & 0{,}027 &  \textit{0{,}0\%} & 3{,}772 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & 0{,}043 & -0{,}041 & 2{,}287 & 92{,}5\% & 0{,}068 &  \textbf{94{,}8\%} & 7{,}728 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}043 & -0{,}041 & 2{,}294 & 88{,}4\% & 0{,}068 &  \textbf{94{,}0\%} & 7{,}733 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}043 & -0{,}020 & 2{,}309 & \textit{51{,}0\%} & 0{,}073 &  \textit{78{,}7\%} & 7{,}739 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & 0{,}017 & \textbf{0{,}001} & 0{,}814 & 91{,}7\% & 0{,}021 &  \textbf{94{,}9\%} & 3{,}238 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & 0{,}017 & \textbf{0{,}001} & 0{,}813 & 81{,}7\% & \textbf{0{,}020} &  \textbf{94{,}9\%} & 3{,}204 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}017 & 0{,}022 & 0{,}816 & \textit{79{,}8\%} & 0{,}025 &  86{,}5\% & 3{,}145 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 256 & 0{,}041 & -0{,}059 & 2{,}255 & \textbf{94{,}8\%} & 0{,}073 &  \textbf{94{,}6\%} & 8{,}314 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,}013} & \textbf{0{,000}} & 0{,}711 & \textbf{94{,}4\%} & \textbf{0{,}020} &  93{,}9\% & 3{,}220 \\*
+   & \emph{Splines} & 2000 & 256 & \textbf{0{,004}} & -0{,}004 & 0{,}183 & \textit{0{,}0\%} & \textbf{0{,}020} &  \textit{0{,}3\%} & 2{,}698 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & 0{,}042 & -0{,}059 & 2{,}258 & \textbf{95{,}8\%} & 0{,}073 &  \textbf{94{,}6\%} & 8{,}316 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}042 & -0{,}059 & 2{,}264 & 96{,}6\% & 0{,}074 &  \textbf{95{,}0\%} & 8{,}320 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}042 & -0{,}038 & 2{,}273 & 99{,5\%} & 0{,}065 &  99{,}1\% & 8{,}336 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & \textbf{0{,}013} & \textbf{0{,000}} & 0{,}711 & 89{,}1\% & \textbf{0{,}019} &  \textbf{94{,}4\%} & 3{,}192 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & \textbf{0{,}013} & \textbf{0{,}001} & 0{,}712 & \textit{78{,}4\%} & \textbf{0{,}019} &  \textbf{94{,}8\%} & 3{,}154 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & \textbf{0{,}013} & 0{,}022 & 0{,}720 & \textit{29{,}0\%} & 0{,}024 &  87{,}2\% & 3{,}091 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Doppler}} & Ond.\ (On) & 2000 & 512 & 0{,}022 & -0{,}030 & 1{,}155 & 96{,}1\% & 0{,}042 &  \textbf{95{,}9\%} & 5{,}108 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,}009} & \textbf{0{,001}} & 0{,}517 & \textbf{95{,}5\%} & \textbf{0{,}019} &  \textbf{95{,}0\%} & 3{,}216 \\*
+   & \emph{Splines} & 2000 & 512 & \textbf{0{,004}} & \textbf{-0{,001}} & 0{,}187 & \textit{0{,}0\%} & \textbf{0{,}019} &  \textit{0{,}0\%} & 3{,}397 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & 0{,}022 & -0{,}029 & 1{,}156 & \textbf{95{,}5\%} & 0{,}042 &  \textbf{96{,}0\%} & 5{,}099 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & 0{,}023 & -0{,}029 & 1{,}158 & \textbf{95{,}1\%} & 0{,}042 &  96{,}3\% & 5{,}090 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}023 & -0{,}008 & 1{,}162 & 97{,8\%} & 0{,}036 &  99{,}1\% & 5{,}080 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & \textbf{0{,}009} & 0{,}002 & 0{,}516 & 92{,}2\% & \textbf{0{,}019} &  \textbf{94{,}9\%} & 3{,}189 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & \textbf{0{,}009} & 0{,}003 & 0{,}516 & 81{,}2\% & \textbf{0{,}019} &  \textbf{94{,}7\%} & 3{,}149 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & \textbf{0{,}009} & 0{,}024 & 0{,}521 & \textit{31{,}7\%} & 0{,}025 &  85{,}8\% & 3{,}088 \\
+\midrule
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 128 & 0{,}151 & -0{,}075 & 41{,}304 & 85{,}9\% & 0{,}073 &  85{,}7\% & 827{,}517 \\*
+   & Ond.\ (Off) & 200 & 128 & 0{,}151 & -0{,}069 & 41{,}291 & 86{,}0\% & 0{,}073 &  85{,}6\% & 827{,}389 \\*
+   & \emph{Splines} & 200 & 128 & 0{,}230 & -0{,}166 & 69{,}680 & \textit{41{,}5\%} & 0{,}074 &  \textit{41{,}5\%} & 1475{,}307 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 128 & 0{,149} & -0{,}007 & 41{,}036 & 86{,}0\% & 0{,}072 &  85{,}3\% & 822{,}323 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 128 & 0{,}150 & 0{,}050 & 41{,}201 & 86{,}6\% & 0{,}073 &  85{,}3\% & 825{,}904 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 128 & 0{,}155 & 0{,}170 & 41{,}134 & 84{,}7\% & 0{,}076 &  84{,}6\% & 826{,}730 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 128 & 0{,149} & \textbf{-0{,001}} & 41{,}027 & 86{,}4\% & 0{,}072 &  85{,}3\% & 822{,}198 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 128 & 0{,}150 & 0{,}056 & 41{,}193 & 86{,7\%} & 0{,}073 &  85{,}3\% & 825{,}781 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 128 & 0{,}155 & 0{,}176 & 41{,}125 & 84{,}9\% & 0{,}076 &  84{,}5\% & 826{,}603 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 256 & 0{,140} & 0{,}346 & 40{,}034 & 87{,}3\% & 0{,}069 &  86{,}7\% & 804{,}052 \\*
+   & Ond.\ (Off) & 200 & 256 & 0{,140} & 0{,}349 & 40{,}038 & 87{,7\%} & 0{,}069 &  86{,}6\% & 804{,}054 \\*
+   & \emph{Splines} & 200 & 256 & 0{,}195 & 0{,304} & 66{,}735 & \textit{40{,}5\%} & 0{,}069 &  \textit{40{,}5\%} & 985{,}550 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 256 & 0{,}141 & 0{,}381 & 40{,}467 & 87{,}1\% & 0{,}069 &  86{,}5\% & 812{,}925 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 256 & 0{,}142 & 0{,}439 & 40{,}519 & 85{,}5\% & 0{,}070 &  85{,}2\% & 814{,}324 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 256 & 0{,}147 & 0{,}555 & 40{,}136 & 84{,}5\% & 0{,}073 &  83{,}7\% & 808{,}583 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 256 & 0{,}141 & 0{,}383 & 40{,}471 & 87{,}3\% & 0{,}069 &  86{,}4\% & 812{,}924 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 256 & 0{,}142 & 0{,}442 & 40{,}524 & 85{,}8\% & 0{,}070 &  85{,}2\% & 814{,}319 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 256 & 0{,}147 & 0{,}559 & 40{,}138 & 84{,}8\% & 0{,}073 &  83{,}7\% & 808{,}575 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 200 & 512 & 0{,143} & 0{,}113 & 43{,}105 & 87{,}2\% & 0{,}069 &  87{,}3\% & 866{,}637 \\*
+   & Ond.\ (Off) & 200 & 512 & 0{,143} & 0{,}114 & 43{,}103 & 87{,}2\% & 0{,}069 &  87{,}3\% & 866{,}632 \\*
+   & \emph{Splines} & 200 & 512 & 0{,}182 & 0{,085} & 76{,}778 & \textit{44{,}2\%} & 0{,}070 &  \textit{44{,}2\%} & 1397{,}642 \\*
+   & Ond.\ (On) C.\ Baixo & 200 & 512 & 0{,143} & 0{,}146 & 42{,}141 & 87{,}8\% & 0{,}070 &  87{,}7\% & 847{,}446 \\*
+   & Ond.\ (On) C.\ Médio & 200 & 512 & 0{,}145 & 0{,}204 & 42{,}245 & 87{,}2\% & 0{,}071 &  85{,}8\% & 849{,}844 \\*
+   & Ond.\ (On) C.\ Alto & 200 & 512 & 0{,}150 & 0{,}318 & 41{,}582 & 86{,}0\% & 0{,}073 &  85{,}4\% & 838{,}630 \\*
+   & Ond.\ (Off) C.\ Baixo & 200 & 512 & 0{,143} & 0{,}147 & 42{,}141 & 87{,9\%} & 0{,}070 &  87{,}7\% & 847{,}441 \\*
+   & Ond.\ (Off) C.\ Médio & 200 & 512 & 0{,}145 & 0{,}205 & 42{,}245 & 87{,}7\% & 0{,}071 &  85{,}8\% & 849{,}837 \\*
+   & Ond.\ (Off) C.\ Alto & 200 & 512 & 0{,}150 & 0{,}319 & 41{,}583 & 86{,}2\% & 0{,}073 &  85{,}4\% & 838{,}624 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 128 & 0{,012} & 0{,013} & 15{,}008 & 97{,1\%} & 0{,}006 &  \textbf{96{,}0\%} & 298{,}696 \\*
+   & Ond.\ (Off) & 500 & 128 & 0{,012} & 0{,}019 & 14{,}962 & 96{,}6\% & 0{,}006 &  \textbf{96{,}0\%} & 298{,}651 \\*
+   & \emph{Splines} & 500 & 128 & 0{,}115 & -0{,}079 & 5{,}125 & \textit{3{,}7\%} & 0{,}007 &  \textit{3{,}7\%} & 108{,}352 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 128 & 0{,012} & 0{,}045 & 14{,}904 & 97{,}0\% & 0{,}006 &  \textbf{95{,}2\%} & 296{,}798 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 128 & 0{,}015 & 0{,}100 & 15{,}226 & 93{,}5\% & 0{,}007 &  87{,}0\% & 303{,}492 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 128 & 0{,}021 & 0{,}215 & 15{,}551 & \textit{78{,}3\%} & 0{,}011 &  \textit{78{,}0\%} & 310{,}632 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 128 & 0{,012} & 0{,}051 & 14{,}863 & \textbf{95{,}8\%} & 0{,}006 &  \textbf{94{,}5\%} & 296{,}756 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 128 & 0{,}015 & 0{,}105 & 15{,}195 & 83{,}8\% & 0{,}008 &  86{,}0\% & 303{,}439 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 128 & 0{,}021 & 0{,}221 & 15{,}545 & \textit{74{,}2\%} & 0{,}012 &  \textit{76{,}4\%} & 310{,}601 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 256 & 0{,011} & 0{,}055 & 16{,}443 & 96{,}6\% & 0{,}005 &  96{,}3\% & 329{,}614 \\*
+   & Ond.\ (Off) & 500 & 256 & 0{,011} & 0{,}057 & 16{,}501 & 96{,}4\% & 0{,}005 &  96{,}3\% & 329{,}603 \\*
+   & \emph{Splines} & 500 & 256 & 0{,}083 & 0{,012} & 5{,}522 & \textit{3{,}4\%} & 0{,}006 &  \textit{3{,}4\%} & 81{,}355 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 256 & 0{,}012 & 0{,}087 & 15{,}786 & \textbf{96{,}0\%} & 0{,}006 &  \textbf{95{,}8\%} & 316{,}528 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 256 & 0{,}014 & 0{,}144 & 15{,}701 & 83{,}2\% & 0{,}007 &  87{,}0\% & 314{,}914 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 256 & 0{,}020 & 0{,}259 & 16{,}627 & \textit{77{,}3\%} & 0{,}011 &  \textit{78{,}5\%} & 333{,}234 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 256 & 0{,}012 & 0{,}090 & 15{,}849 & 96{,9\%} & 0{,}006 &  \textbf{95{,}5\%} & 316{,}518 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 256 & 0{,}014 & 0{,}146 & 15{,}763 & 93{,}5\% & 0{,}007 &  86{,}5\% & 314{,}902 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 256 & 0{,}021 & 0{,}262 & 16{,}678 & 85{,}4\% & 0{,}011 &  \textit{77{,}3\%} & 333{,}218 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 500 & 512 & 0{,009} & 0{,}028 & 15{,}554 & 96{,9\%} & 0{,}005 &  96{,}4\% & 312{,}097 \\*
+   & Ond.\ (Off) & 500 & 512 & 0{,009} & 0{,}029 & 15{,}576 & 96{,}7\% & 0{,}005 &  96{,}3\% & 312{,}098 \\*
+   & \emph{Splines} & 500 & 512 & 0{,}061 & \textbf{0{,000}} & 4{,}287 & \textit{3{,}0\%} & 0{,}005 &  \textit{3{,}0\%} & 77{,}726 \\*
+   & Ond.\ (On) C.\ Baixo & 500 & 512 & 0{,}010 & 0{,}060 & 15{,}642 & 96{,}5\% & 0{,}005 &  \textbf{96{,}0\%} & 313{,}965 \\*
+   & Ond.\ (On) C.\ Médio & 500 & 512 & 0{,}012 & 0{,}117 & 15{,}398 & 84{,}6\% & 0{,}006 &  87{,}3\% & 309{,}114 \\*
+   & Ond.\ (On) C.\ Alto & 500 & 512 & 0{,}019 & 0{,}233 & 15{,}844 & \textit{76{,}4\%} & 0{,}011 &  \textit{77{,}5\%} & 317{,}867 \\*
+   & Ond.\ (Off) C.\ Baixo & 500 & 512 & 0{,}010 & 0{,}061 & 15{,}671 & 96{,}8\% & 0{,}005 &  \textbf{95{,}9\%} & 313{,}966 \\*
+   & Ond.\ (Off) C.\ Médio & 500 & 512 & 0{,}012 & 0{,}118 & 15{,}432 & 86{,}6\% & 0{,}006 &  86{,}8\% & 309{,}114 \\*
+   & Ond.\ (Off) C.\ Alto & 500 & 512 & 0{,}019 & 0{,}234 & 15{,}883 & \textit{78{,}8\%} & 0{,}011 &  \textit{77{,}3\%} & 317{,}866 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 128 & \textbf{0{,002}} & -0{,}005 & 0{,}358 & \textbf{94{,}8\%} & \textbf{0{,}001} &  \textbf{94{,}3\%} & 3{,}280 \\*
+   & Ond.\ (Off) & 2000 & 128 & \textbf{0{,002}} & \textbf{0{,000}} & 0{,}261 & \textbf{94{,}7\%} & \textbf{0{,}001} &  \textbf{94{,}4\%} & 3{,}211 \\*
+   & \emph{Splines} & 2000 & 128 & 0{,}108 & -0{,}097 & 0{,}178 & \textit{0{,}0\%} & 0{,}003 &  \textit{0{,}0\%} & 3{,}775 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 128 & 0{,}003 & 0{,}027 & 0{,}358 & 98{,6\%} & \textbf{0{,}001} &  87{,}5\% & 3{,}424 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 128 & 0{,}005 & 0{,}083 & 0{,}360 & \textit{76{,}8\%} & 0{,}003 &  \textit{23{,}4\%} & 3{,}691 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 128 & 0{,}012 & 0{,}198 & 0{,}409 & \textit{2{,}5\%} & 0{,}007 &  \textit{1{,}1\%} & 6{,}285 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 128 & 0{,}003 & 0{,}032 & 0{,}266 & 90{,}0\% & \textbf{0{,}001} &  81{,}0\% & 3{,}360 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 128 & 0{,}006 & 0{,}088 & 0{,}275 & \textit{12{,}7\%} & 0{,}003 &  \textit{16{,}3\%} & 3{,}632 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 128 & 0{,}012 & 0{,}203 & 0{,}380 & \textit{0{,}2\%} & 0{,}007 &  \textit{0{,}7\%} & 6{,}246 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 256 & \textbf{0{,002}} & -0{,}004 & 0{,}199 & \textbf{94{,}1\%} & \textbf{0{,}001} &  93{,}7\% & 3{,}221 \\*
+   & Ond.\ (Off) & 2000 & 256 & \textbf{0{,002}} & \textbf{-0{,001}} & 0{,}309 & 93{,}1\% & \textbf{0{,}001} &  \textbf{94{,}4\%} & 3{,}206 \\*
+   & \emph{Splines} & 2000 & 256 & 0{,}076 & -0{,}046 & 0{,}183 & \textit{0{,}0\%} & \textbf{0{,}001} &  \textit{0{,}0\%} & 2{,}694 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 256 & \textbf{0{,002}} & 0{,}029 & 0{,}205 & 88{,}1\% & \textbf{0{,}001} &  82{,}9\% & 3{,}374 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 256 & 0{,}005 & 0{,}085 & 0{,}217 & \textit{10{,}8\%} & 0{,}003 &  \textit{20{,}4\%} & 3{,}650 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 256 & 0{,}012 & 0{,}200 & 0{,}356 & \textit{0{,}8\%} & 0{,}007 &  \textit{1{,}6\%} & 6{,}292 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 256 & 0{,}003 & 0{,}031 & 0{,}315 & \textbf{94{,8\%}} & \textbf{0{,}001} &  80{,}2\% & 3{,}360 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 256 & 0{,}005 & 0{,}088 & 0{,}326 & \textit{55{,}3\%} & 0{,}003 &  \textit{18{,}1\%} & 3{,}639 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 256 & 0{,}012 & 0{,}203 & 0{,}446 & \textit{5{,}3\%} & 0{,}007 &  \textit{0{,}7\%} & 6{,}281 \\
+  \cmidrule{2-11}
+  \multirow{9}{*}{\rotatebox[origin=c]{90}{Escada}} & Ond.\ (On) & 2000 & 512 & \textbf{0{,002}} & \textbf{0{,000}} & 0{,}205 & \textbf{94{,}7\%} & \textbf{0{,}001} &  \textbf{95{,}1\%} & 3{,}214 \\*
+   & Ond.\ (Off) & 2000 & 512 & \textbf{0{,002}} & \textbf{0{,}001} & 0{,}258 & \textbf{94{,8\%}} & \textbf{0{,}001} &  \textbf{94{,}9\%} & 3{,}211 \\*
+   & \emph{Splines} & 2000 & 512 & 0{,}055 & -0{,}028 & 0{,}187 & \textit{0{,}0\%} & \textbf{0{,}001} &  \textit{0{,}0\%} & 3{,}392 \\*
+   & Ond.\ (On) C.\ Baixo & 2000 & 512 & \textbf{0{,002}} & 0{,}032 & 0{,}211 & 89{,}7\% & \textbf{0{,}001} &  81{,}7\% & 3{,}367 \\*
+   & Ond.\ (On) C.\ Médio & 2000 & 512 & 0{,}006 & 0{,}088 & 0{,}224 & \textit{11{,}6\%} & 0{,}003 &  \textit{16{,}5\%} & 3{,}644 \\*
+   & Ond.\ (On) C.\ Alto & 2000 & 512 & 0{,}013 & 0{,}206 & 0{,}362 & \textit{0{,}5\%} & 0{,}008 &  \textit{1{,}0\%} & 6{,}285 \\*
+   & Ond.\ (Off) C.\ Baixo & 2000 & 512 & 0{,}003 & 0{,}033 & 0{,}268 & 85{,}2\% & \textbf{0{,}001} &  80{,}4\% & 3{,}363 \\*
+   & Ond.\ (Off) C.\ Médio & 2000 & 512 & 0{,}006 & 0{,}089 & 0{,}286 & \textit{10{,}0\%} & 0{,}003 &  \textit{15{,}7\%} & 3{,}640 \\*
+   & Ond.\ (Off) C.\ Alto & 2000 & 512 & 0{,}013 & 0{,}207 & 0{,}430 & \textit{0{,}6\%} & 0{,}008 &  \textit{0{,}7\%} & 6{,}284 \\*
+\end{longtable}
+}
+\end{landscape}
+\finalizapaisagemcomnumeracao
+
+\clearpage
+
+\subsection{Cobertura simultânea empírica}
+As Figuras \ref{fig:coverage_bd_sim1} e \ref{fig:coverage_hs_sim1} apresentam a cobertura simultânea empírica para os quatro cenários de efeito, em função de \(T\) para cada valor de \(N\) e distribuição do ruído. A linha tracejada indica o nível nominal de \(95\%\).
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Bumps}
+        \caption{Cenário \emph{Bumps}.}
+        \label{fig:coverage_bumps_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Doppler}
+        \caption{Cenário \emph{Doppler}.}
+        \label{fig:coverage_doppler_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica --- cenários \emph{Bumps} e \emph{Doppler}.}
+    \label{fig:coverage_bd_sim1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Heavisine}
+        \caption{Cenário \emph{Escada}.}
+        \label{fig:coverage_heavisine_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/coverage_Sigmoid}
+        \caption{Cenário \emph{Sigmoide}.}
+        \label{fig:coverage_sigmoid_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica --- cenários \emph{Escada} e \emph{Sigmoide}.}
+    \label{fig:coverage_hs_sim1}
+\end{figure}
+
+\clearpage
+
+\subsection{Cobertura simultânea empírica do \(\mathrm{CFATE}\)}
+As Figuras \ref{fig:cfate_coverage_bd_sim1} e \ref{fig:cfate_coverage_hs_sim1} apresentam a cobertura empírica da banda de confiança simultânea do \(\mathrm{CFATE}\) nos quatro cenários. Para os cenários \emph{Bumps} e \emph{Doppler}, observa-se um comportamento não-monotônico das \emph{splines} em relação a \(T\) para \(N = 500\), com pico intermediário na cobertura antes de colapsar a zero em \(N = 2000\).
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Bumps}
+        \caption{Cenário \emph{Bumps}.}
+        \label{fig:cfate_coverage_bumps_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Doppler}
+        \caption{Cenário \emph{Doppler}.}
+        \label{fig:cfate_coverage_doppler_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenários \emph{Bumps} e \emph{Doppler}.}
+    \label{fig:cfate_coverage_bd_sim1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Heavisine}
+        \caption{Cenário \emph{Escada}.}
+        \label{fig:cfate_coverage_heavisine_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/cfate_coverage_Sigmoid}
+        \caption{Cenário \emph{Sigmoide}.}
+        \label{fig:cfate_coverage_sigmoid_sim1}
+    \end{subfigure}
+    \caption{Cobertura simultânea empírica do \(\mathrm{CFATE}\) --- cenários \emph{Escada} e \emph{Sigmoide}.}
+    \label{fig:cfate_coverage_hs_sim1}
+\end{figure}
+
+\clearpage
+
+\subsection{\(\mathrm{NRMSE}\) pontual}
+As Figuras \ref{fig:ptwise_nrmse_best_sim1} e \ref{fig:ptwise_nrmse_mw_sim1} mostram o \(\mathrm{NRMSE}\) médio em cada instante do grid temporal para os casos melhor (\(N = 2000\), \(T = 512\)), intermediário (\(N = 500\), \(T = 256\)) e pior (\(N = 200\), \(T = 128\)). Conforme \(N\) e \(T\) crescem, os métodos baseados em ondaletas estabilizam rapidamente em erro próximo a zero; as \emph{splines} concentram o erro nos instantes próximos às descontinuidades dos cenários \emph{Bumps} e \emph{Escada}. No cenário \emph{Doppler}, o estimador \emph{online} apresenta erro pontual persistentemente superior ao \emph{offline}, refletindo a convergência mais lenta observada nesse cenário.
+
+A convergência mais lenta em \emph{Doppler} não é exclusiva do estimador \emph{online}. O \(\mathrm{NRMSE}\) pontual do estimador \emph{offline} nesse cenário também excede o dos demais, o que aponta para uma dificuldade de natureza espectral, não da restrição causal. O \emph{Doppler} é uma função com oscilações de frequência crescente ao longo do tempo. A janela de tamanho \(W\) precisa acompanhar frequências progressivamente mais altas, e a convergência fica mais lenta mesmo sem a restrição de causalidade operacional. As \emph{splines}, nesse cenário, chegam a apresentar \(\mathrm{NRMSE}\) pontual inferior ao das ondaletas em algumas regiões do tempo, pois o suavizamento global reduz o erro quadrático nas zonas de alta frequência, ainda que ao custo de cobertura nula. O erro das ondaletas em \emph{Doppler} não é desprezível nos tamanhos de amostra investigados, mas tende a diminuir assintoticamente. Aumentar \(T\), densificando o \emph{grid} temporal, tende a ser mais eficaz do que aumentar apenas \(N\), pois o obstáculo é de resolução temporal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_best}
+    \caption{\(\mathrm{NRMSE}\) pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_nrmse_best_sim1}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_nrmse_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_nrmse_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_nrmse_worst_sim1}
+    \end{subfigure}
+    \caption{\(\mathrm{NRMSE}\) pontual --- casos intermediário e pior.}
+    \label{fig:ptwise_nrmse_mw_sim1}
+\end{figure}
+
+\clearpage
+
+\subsection{Viés pontual}
+As Figuras \ref{fig:ptwise_bias_best_sim1} e \ref{fig:ptwise_bias_mw_sim1} mostram o viés médio pontual em cada instante do grid temporal. 
+No melhor caso, as ondaletas apresentam viés próximo a zero em todos os cenários, enquanto as \emph{splines} exibem viés sistemático nos instantes de maior irregularidade. 
+O estimador \emph{online} no cenário \emph{Doppler} ainda acumula viés relevante no caso intermediário, confirmando que a sua convergência nesse cenário é mais lenta. 
+As mesmas considerações feitas para o \(\mathrm{NRMSE}\) pontual se aplicam: nos casos intermediário e pior, as ondaletas \emph{online} e \emph{offline} apresentam viés pontual praticamente idêntico em todos os cenários, exceto \emph{Doppler}, onde a convergência mais lenta se manifesta também no viés.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_best}
+    \caption{Viés pontual --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_bias_best_sim1}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_bias_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_bias_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_bias_worst_sim1}
+    \end{subfigure}
+    \caption{Viés pontual --- casos intermediário e pior.}
+    \label{fig:ptwise_bias_mw_sim1}
+\end{figure}
+
+\clearpage
+
+\subsection{Largura pontual das bandas}
+As Figuras \ref{fig:ptwise_width_best_sim1} e \ref{fig:ptwise_width_mw_sim1} apresentam a largura pontual das bandas de confiança simultâneas nos três casos. 
+No melhor caso, o padrão entre \emph{online} e \emph{offline} varia por cenário: as ondaletas \emph{online} produzem bandas menores que as \emph{offline} nos cenários \emph{Escada} e \emph{Sigmoide}, e maiores nos cenários \emph{Doppler} e \emph{Bumps}. 
+Nos casos intermediário e pior, as larguras são praticamente indistinguíveis entre os dois estimadores. 
+Em todos os casos, as \emph{splines} produzem bandas mais estreitas que as ondaletas, o que explica sua cobertura insuficiente quando o efeito é irregular.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_best}
+    \caption{Largura pontual das bandas de confiança simultâneas --- melhor caso (\(N = 2000\), \(T = 512\)).}
+    \label{fig:ptwise_width_best_sim1}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_med}
+        \caption{Caso intermediário (\(N = 500\), \(T = 256\)).}
+        \label{fig:ptwise_width_med_sim1}
+    \end{subfigure}
+    \medskip
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{../../fate-fda-simulation/output/sim1_final/plots/pt/ptwise_width_worst}
+        \caption{Pior caso (\(N = 200\), \(T = 128\)).}
+        \label{fig:ptwise_width_worst_sim1}
+    \end{subfigure}
+    \caption{Largura pontual das bandas de confiança simultâneas --- casos intermediário e pior.}
+    \label{fig:ptwise_width_mw_sim1}
+\end{figure}
+
+\clearpage
+
+\section{Resultados de diagnóstico: simulação 2}
+
+Para a simulação 2 (\emph{online}), apresentamos os \emph{boxplots} de dispersão do erro (Figura \ref{fig:box_nrmse_sim2}).
+Os \emph{boxplots} confirmam que o \(\mathrm{NRMSE}\) cai rapidamente com \(N\) em todos os cenários.
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Bumps}
+        \caption{\emph{Bumps}}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Doppler}
+        \caption{\emph{Doppler}}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Heavisine}
+        \caption{\emph{Escada}}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[width=\textwidth]{../../fate-fda-simulation/output/sim2_final/plots/pt/boxplot_nrmse_Sigmoid}
+        \caption{\emph{Sigmoide}}
+    \end{subfigure}
+    \caption{Distribuição do erro quadrático médio normalizado (\(\mathrm{NRMSE}\)) para o estimador \emph{online} na Simulação 2, demonstrando a robustez da precisão do rastreamento incremental mesmo na presença de ruído intenso e em diferentes níveis de resolução temporal $T$.}
+    \label{fig:box_nrmse_sim2}
+\end{figure}
+
+A Tabela \ref{tab:resultados_sim2} consolida o desempenho estatístico e a latência de processamento do estimador \emph{online} para todas as combinações de cenário, \(N\) e \(T\), sob distribuição gaussiana e \(t\text{-Student}(5)\). 
+Os resultados são consistentes com o que foi discutido no texto principal: a latência por instante é compatível com o processamento em tempo real em todos os cenários investigados, e o \(\mathrm{NRMSE}\) sob distribuição \(t\text{-Student}(5)\) é comparável ao obtido com ruído gaussiano.
+
+{\scriptsize
+\begin{longtable}{@{}lccrrrr@{}}
+\caption{Resultados completos da Simulação~2 (\(N \in \{200, 500, 2000\}\), \(T \in \{128, 256, 512\}\)).}\label{tab:resultados_sim2} \\
+\toprule
+ & & & \multicolumn{2}{c}{Gaussiana} & \multicolumn{2}{c}{\(t\text{-Student}(5)\)} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Cenário & \(T\) & \(N\) & \(\mathrm{NRMSE}\) & Lat.\ (ms) & \(\mathrm{NRMSE}\) & Lat.\ (ms) \\
+\midrule
+\endfirsthead
+\multicolumn{7}{l}{\itshape (continuação)} \\
+\toprule
+ & & & \multicolumn{2}{c}{Gaussiana} & \multicolumn{2}{c}{\(t\text{-Student}(5)\)} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Cenário & \(T\) & \(N\) & \(\mathrm{NRMSE}\) & Lat.\ (ms) & \(\mathrm{NRMSE}\) & Lat.\ (ms) \\
+\midrule
+\endhead
+\midrule \multicolumn{7}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\emph{Bumps} & 128 & 200 & 0{,}039 & 0{,}41 & 0{,}046 & 0{,}15 \\
+\emph{Bumps} & 128 & 500 & 0{,}003 & 0{,}37 & 0{,}003 & 0{,}72 \\
+\emph{Bumps} & 128 & 2000 & 0{,}001 & 1{,}76 & 0{,}001 & 1{,}81 \\
+\emph{Bumps} & 256 & 200 & 0{,}043 & 0{,}67 & 0{,}035 & 0{,}38 \\
+\emph{Bumps} & 256 & 500 & 0{,}003 & 0{,}71 & 0{,}005 & 0{,}72 \\
+\emph{Bumps} & 256 & 2000 & 0{,}001 & 3{,}64 & 0{,}001 & 3{,}70 \\
+\emph{Bumps} & 512 & 200 & 0{,}035 & 0{,}85 & 0{,}026 & 0{,}70 \\
+\emph{Bumps} & 512 & 500 & 0{,}012 & 1{,}70 & 0{,}003 & 1{,}64 \\
+\emph{Bumps} & 512 & 2000 & 0{,}001 & 7{,}47 & 0{,}001 & 7{,}13 \\
+\emph{Doppler} & 128 & 200 & 0{,}349 & 0{,}44 & 0{,}231 & 0{,}15 \\
+\emph{Doppler} & 128 & 500 & 0{,}028 & 0{,}41 & 0{,}021 & 0{,}63 \\
+\emph{Doppler} & 128 & 2000 & 0{,}012 & 1{,}88 & 0{,}012 & 1{,}80 \\
+\emph{Doppler} & 256 & 200 & 0{,}202 & 0{,}62 & 0{,}222 & 0{,}33 \\
+\emph{Doppler} & 256 & 500 & 0{,}037 & 0{,}87 & 0{,}012 & 0{,}82 \\
+\emph{Doppler} & 256 & 2000 & 0{,}007 & 3{,}68 & 0{,}007 & 3{,}54 \\
+\emph{Doppler} & 512 & 200 & 0{,}240 & 0{,}88 & 0{,}207 & 0{,}76 \\
+\emph{Doppler} & 512 & 500 & 0{,}029 & 1{,}83 & 0{,}033 & 1{,}63 \\
+\emph{Doppler} & 512 & 2000 & 0{,}003 & 7{,}35 & 0{,}003 & 7{,}13 \\
+\emph{Escada} & 128 & 200 & 0{,}144 & 0{,}50 & 0{,}155 & 0{,}24 \\
+\emph{Escada} & 128 & 500 & 0{,}006 & 0{,}44 & 0{,}036 & 0{,}57 \\
+\emph{Escada} & 128 & 2000 & 0{,}002 & 1{,}77 & 0{,}002 & 1{,}87 \\
+\emph{Escada} & 256 & 200 & 0{,}151 & 0{,}58 & 0{,}113 & 0{,}34 \\
+\emph{Escada} & 256 & 500 & 0{,}006 & 0{,}85 & 0{,}008 & 0{,}80 \\
+\emph{Escada} & 256 & 2000 & 0{,}001 & 3{,}75 & 0{,}002 & 3{,}57 \\
+\emph{Escada} & 512 & 200 & 0{,}179 & 0{,}89 & 0{,}159 & 0{,}67 \\
+\emph{Escada} & 512 & 500 & 0{,}008 & 1{,}72 & 0{,}022 & 1{,}55 \\
+\emph{Escada} & 512 & 2000 & 0{,}001 & 7{,}50 & 0{,}002 & 7{,}18 \\
+\emph{Sigmoide} & 128 & 200 & 1{,}355 & 0{,}44 & 1{,}381 & 0{,}18 \\
+\emph{Sigmoide} & 128 & 500 & 0{,}038 & 0{,}50 & 0{,}028 & 0{,}61 \\
+\emph{Sigmoide} & 128 & 2000 & 0{,}014 & 1{,}82 & 0{,}017 & 1{,}84 \\
+\emph{Sigmoide} & 256 & 200 & 0{,}910 & 0{,}69 & 0{,}854 & 0{,}36 \\
+\emph{Sigmoide} & 256 & 500 & 0{,}118 & 0{,}89 & 0{,}080 & 0{,}81 \\
+\emph{Sigmoide} & 256 & 2000 & 0{,}011 & 3{,}76 & 0{,}014 & 3{,}70 \\
+\emph{Sigmoide} & 512 & 200 & 0{,}762 & 0{,}92 & 1{,}226 & 0{,}63 \\
+\emph{Sigmoide} & 512 & 500 & 0{,}177 & 1{,}75 & 0{,}097 & 1{,}70 \\
+\emph{Sigmoide} & 512 & 2000 & 0{,}010 & 7{,}33 & 0{,}014 & 7{,}08 \\
+\end{longtable}
+}
+
+\section{Resultados de diagnóstico: simulação 3}\label{ap-sim3-completa}
+
+As Tabelas \ref{tab:resultados_sim3_gauss_ap} e \ref{tab:resultados_sim3_t_ap} apresentam o conjunto completo de métricas da Simulação 3 para as distribuições gaussiana e \(t\text{-Student}(5)\), respectivamente. As tabelas completas confirmam o padrão descrito no texto principal. Os deltas absolutos em relação à grade uniforme permanecem pequenos na grande maioria das combinações de cenário, \(N\) e \(T\), tanto para o \(\mathrm{NRMSE}\) quanto para as coberturas simultâneas do \(\mathrm{FATE}\) e do \(\mathrm{CFATE}\). Em vários casos, o \(\mathrm{NRMSE}\) sob amostragem irregular é nominalmente inferior ao da grade uniforme, efeito já atribuído no texto principal à capacidade do \emph{lifting scheme} de explorar localmente a densidade de amostragem. As coberturas simultâneas permanecem próximas do nível nominal em todos os cenários e graus de irregularidade, e os resultados sob distribuição \(t\text{-Student}(5)\) reproduzem os padrões gaussianos, confirmando que a robustez a caudas pesadas não é comprometida pela amostragem irregular.
+
+{\scriptsize
+\begin{longtable}{@{}lccl rrrr@{}}
+\caption{Simulação~3 (gaussiana, resultados exaustivos): todas as métricas por nível de irregularidade. Entre parênteses: variação absoluta em relação à grade uniformemente espaçada.}\label{tab:resultados_sim3_gauss_ap} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\itshape (continuação)} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endhead
+\midrule \multicolumn{8}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}045 & 0{,}049~(+0{,}004) & 0{,}043~(-0{,}002) & 0{,}096~(+0{,}051) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}6 & 86{,}9~(+1{,}3) & 86{,}2~(+0{,}6) & 85{,}3~(-0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 92{,}84~(-0{,}66) & 92{,}76~(-0{,}74) & 92{,}54~(-0{,}96) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}459 & 0{,}290~(-0{,}169) & 0{,}125~(-0{,}334) & 0{,}160~(-0{,}299) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}22 & 40{,}98~(-0{,}24) & 41{,}00~(-0{,}22) & 41{,}01~(-0{,}21) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}129 & 1{,}580~(+0{,}451) & 0{,}867~(-0{,}262) & 0{,}753~(-0{,}376) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}4~(+0{,}4) & 86{,}5~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}47~(+2{,}77) & 96{,}08~(+2{,}38) & 97{,}68~(+3{,}98) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}037 & 0{,}039~(+0{,}002) & 0{,}050~(+0{,}013) & 0{,}050~(+0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 88{,}1 & 87{,}3~(-0{,}8) & 83{,}7~(-4{,}4) & 84{,}8~(-3{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 94{,}00 & 94{,}30~(+0{,}30) & 91{,}58~(-2{,}42) & 91{,}37~(-2{,}63) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}201 & 0{,}068~(-0{,}133) & 0{,}310~(+0{,}109) & 0{,}545~(+0{,}344) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 43{,}09 & 42{,}00~(-1{,}09) & 41{,}01~(-2{,}08) & 41{,}74~(-1{,}35) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}108 & 1{,}152~(+0{,}044) & 1{,}385~(+0{,}277) & 1{,}518~(+0{,}410) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 89{,}1 & 87{,}5~(-1{,}6) & 83{,}5~(-5{,}6) & 83{,}5~(-5{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 94{,}10 & 97{,}23~(+3{,}13) & 96{,}14~(+2{,}04) & 97{,}21~(+3{,}11) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}002~(+0{,}001) & 0{,}002~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}9 & 95{,}0~(+1{,}1) & 96{,}2~(+2{,}3) & 95{,}8~(+1{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}95~(+0{,}05) & 99{,}97~(+0{,}07) & 99{,}97~(+0{,}07) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}009 & -0{,}008~(+0{,}001) & -0{,}024~(-0{,}015) & -0{,}013~(-0{,}004) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}35 & 0{,}37~(+0{,}02) & 0{,}94~(+0{,}59) & 0{,}47~(+0{,}12) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}011 & 0{,}018~(+0{,}007) & 0{,}014~(+0{,}003) & 0{,}008~(-0{,}003) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 94{,}6~(-0{,}3) & 95{,}2~(+0{,}3) & 95{,}4~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}40 & 99{,}20~(+0{,}80) & 99{,}38~(+0{,}98) & 99{,}60~(+1{,}20) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}6 & 93{,}9~(-0{,}7) & 94{,}2~(-0{,}4) & 95{,}0~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}002~(+0{,}001) & 0{,}001~(+0{,}000) & -0{,}005~(-0{,}006) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}38 & 0{,}32~(-0{,}06) & 0{,}43~(+0{,}05) & 0{,}34~(-0{,}04) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}010 & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) & 0{,}012~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}7 & 94{,}2~(-0{,}5) & 93{,}0~(-1{,}7) & 94{,}9~(+0{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}44~(+0{,}24) & 99{,}39~(+0{,}19) & 99{,}56~(+0{,}36) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}264 & 0{,}245~(-0{,}019) & 0{,}275~(+0{,}011) & 0{,}244~(-0{,}020) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}1 & 88{,}8~(+2{,}7) & 86{,}9~(+0{,}8) & 87{,}6~(+1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 92{,}56~(-0{,}94) & 93{,}03~(-0{,}47) & 93{,}71~(+0{,}21) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}213 & 0{,}419~(+0{,}206) & 0{,}156~(-0{,}057) & 0{,}239~(+0{,}026) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}97 & 42{,}33~(+0{,}36) & 42{,}34~(+0{,}37) & 43{,}59~(+1{,}62) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}951 & 2{,}659~(+0{,}708) & 2{,}518~(+0{,}567) & 2{,}083~(+0{,}132) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}9 & 88{,}3~(+2{,}4) & 86{,}0~(+0{,}1) & 87{,}1~(+1{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}50 & 96{,}37~(+2{,}87) & 96{,}11~(+2{,}61) & 98{,}04~(+4{,}54) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}248 & 0{,}238~(-0{,}010) & 0{,}256~(+0{,}008) & 0{,}235~(-0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}0 & 87{,}3~(+1{,}3) & 86{,}3~(+0{,}3) & 86{,}5~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 93{,}21~(-0{,}29) & 92{,}99~(-0{,}51) & 93{,}52~(+0{,}02) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}284 & 0{,}143~(-0{,}141) & 0{,}502~(+0{,}218) & 0{,}150~(-0{,}134) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}86 & 42{,}26~(-0{,}60) & 41{,}41~(-1{,}45) & 42{,}57~(-0{,}29) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}933 & 2{,}616~(+0{,}683) & 3{,}011~(+1{,}078) & 2{,}673~(+0{,}740) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}3 & 86{,}9~(+0{,}6) & 86{,}2~(-0{,}1) & 87{,}0~(+0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}66~(+2{,}96) & 96{,}76~(+3{,}06) & 97{,}89~(+4{,}19) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}042 & 0{,}039~(-0{,}003) & 0{,}035~(-0{,}007) & 0{,}019~(-0{,}023) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 94{,}7~(+0{,}0) & 94{,}8~(+0{,}1) & 94{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}034 & -0{,}039~(-0{,}005) & -0{,}064~(-0{,}030) & -0{,}085~(-0{,}051) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 2{,}30 & 1{,}90~(-0{,}40) & 2{,}70~(+0{,}40) & 1{,}43~(-0{,}87) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}068 & 0{,}088~(+0{,}020) & 0{,}094~(+0{,}026) & 0{,}070~(+0{,}002) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 95{,}8~(+1{,}5) & 95{,}6~(+1{,}3) & 93{,}6~(-0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}70 & 99{,}88~(+0{,}18) & 99{,}86~(+0{,}16) & 99{,}89~(+0{,}19) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}022 & 0{,}022~(+0{,}000) & 0{,}012~(-0{,}010) & 0{,}012~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}4 & 95{,}9~(+1{,}5) & 95{,}0~(+0{,}6) & 95{,}7~(+1{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}99~(+0{,}09) & 99{,}99~(+0{,}09) & 99{,}99~(+0{,}09) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}032 & -0{,}026~(+0{,}006) & -0{,}007~(+0{,}025) & -0{,}025~(+0{,}007) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 1{,}14 & 1{,}17~(+0{,}03) & 0{,}99~(-0{,}15) & 1{,}29~(+0{,}15) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}042 & 0{,}053~(+0{,}011) & 0{,}031~(-0{,}011) & 0{,}032~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 95{,}8~(+1{,}6) & 94{,}4~(+0{,}2) & 95{,}3~(+1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}90~(+0{,}30) & 99{,}77~(+0{,}17) & 99{,}88~(+0{,}28) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}144 & 0{,}126~(-0{,}018) & 0{,}138~(-0{,}006) & 0{,}136~(-0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 89{,}0~(+1{,}8) & 87{,}1~(-0{,}1) & 87{,}3~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}20 & 94{,}84~(+1{,}64) & 92{,}65~(-0{,}55) & 93{,}66~(+0{,}46) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}285 & 0{,}125~(-0{,}160) & 0{,}045~(-0{,}240) & 0{,}233~(-0{,}052) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}05 & 42{,}59~(+0{,}54) & 42{,}92~(+0{,}87) & 42{,}94~(+0{,}89) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}070 & 0{,}063~(-0{,}007) & 0{,}067~(-0{,}003) & 0{,}069~(-0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}3 & 89{,}5~(+2{,}2) & 86{,}8~(-0{,}5) & 87{,}4~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}40 & 97{,}49~(+4{,}09) & 96{,}03~(+2{,}63) & 98{,}02~(+4{,}62) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}134 & 0{,}141~(+0{,}007) & 0{,}129~(-0{,}005) & 0{,}141~(+0{,}007) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 88{,}0~(+0{,}8) & 87{,}7~(+0{,}5) & 86{,}1~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}30 & 93{,}28~(-0{,}02) & 93{,}36~(+0{,}06) & 92{,}61~(-0{,}69) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}086 & 0{,}178~(+0{,}264) & -0{,}022~(+0{,}064) & 0{,}161~(+0{,}247) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}19 & 42{,}25~(+0{,}06) & 42{,}81~(+0{,}62) & 42{,}77~(+0{,}58) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}066 & 0{,}070~(+0{,}004) & 0{,}066~(+0{,}000) & 0{,}071~(+0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}7 & 87{,}9~(+0{,}2) & 88{,}4~(+0{,}7) & 86{,}2~(-1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}40 & 96{,}72~(+3{,}32) & 96{,}95~(+3{,}55) & 97{,}62~(+4{,}22) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 95{,}5~(+0{,}8) & 95{,}3~(+0{,}6) & 93{,}7~(-1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}005 & -0{,}002~(+0{,}003) & 0{,}002~(+0{,}007) & -0{,}004~(+0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}32 & 0{,}45~(+0{,}13) & 0{,}56~(+0{,}24) & 0{,}39~(+0{,}07) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}3 & 94{,}8~(-0{,}5) & 95{,}6~(+0{,}3) & 95{,}0~(-0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}44~(+0{,}34) & 99{,}50~(+0{,}40) & 99{,}58~(+0{,}48) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}3 & 94{,}7~(+0{,}4) & 94{,}9~(+0{,}6) & 93{,}5~(-0{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}001 & -0{,}001~(+0{,}000) & -0{,}003~(-0{,}002) & -0{,}002~(-0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}17 & 0{,}20~(+0{,}03) & 0{,}40~(+0{,}23) & 0{,}25~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}2 & 94{,}6~(+0{,}4) & 94{,}3~(+0{,}1) & 94{,}1~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}00 & 99{,}49~(+0{,}49) & 99{,}46~(+0{,}46) & 99{,}64~(+0{,}64) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}225 & 1{,}187~(-0{,}038) & 1{,}157~(-0{,}068) & 1{,}200~(-0{,}025) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}7 & 86{,}2~(+0{,}5) & 88{,}0~(+2{,}3) & 87{,}9~(+2{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}60 & 92{,}69~(+0{,}09) & 93{,}27~(+0{,}67) & 93{,}68~(+1{,}08) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}531 & 0{,}465~(-0{,}066) & 0{,}185~(-0{,}346) & 0{,}328~(-0{,}203) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}72 & 42{,}42~(-0{,}30) & 42{,}27~(-0{,}45) & 41{,}99~(-0{,}73) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}312 & 0{,}304~(-0{,}008) & 0{,}304~(-0{,}008) & 0{,}307~(-0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}6 & 86{,}6~(+0{,}0) & 87{,}5~(+0{,}9) & 88{,}2~(+1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}80 & 96{,}45~(+3{,}65) & 96{,}36~(+3{,}56) & 98{,}04~(+5{,}24) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}186 & 1{,}223~(+0{,}037) & 1{,}250~(+0{,}064) & 1{,}036~(-0{,}150) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 86{,}5 & 86{,}6~(+0{,}1) & 86{,}5~(+0{,}0) & 88{,}3~(+1{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}80 & 92{,}30~(-0{,}50) & 92{,}10~(-0{,}70) & 93{,}08~(+0{,}28) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}206 & 0{,}357~(+0{,}151) & 0{,}311~(+0{,}105) & 0{,}372~(+0{,}166) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}08 & 42{,}69~(+0{,}61) & 42{,}05~(-0{,}03) & 41{,}71~(-0{,}37) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}308 & 0{,}323~(+0{,}015) & 0{,}333~(+0{,}025) & 0{,}275~(-0{,}033) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}2 & 85{,}9~(-0{,}3) & 86{,}8~(+0{,}6) & 88{,}1~(+1{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}00 & 96{,}24~(+3{,}24) & 96{,}37~(+3{,}37) & 97{,}78~(+4{,}78) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}014 & 0{,}014~(+0{,}000) & 0{,}015~(+0{,}001) & 0{,}015~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 93{,}0 & 93{,}1~(+0{,}1) & 93{,}6~(+0{,}6) & 93{,}8~(+0{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}80 & 99{,}74~(-0{,}06) & 99{,}95~(+0{,}15) & 99{,}95~(+0{,}15) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}018 & 0{,}016~(-0{,}002) & 0{,}017~(-0{,}001) & 0{,}004~(-0{,}014) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}19 & 0{,}18~(-0{,}01) & 0{,}31~(+0{,}12) & 0{,}30~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}004~(+0{,}001) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 93{,}5~(-0{,}8) & 93{,}5~(-0{,}8) & 95{,}4~(+1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}90 & 99{,}38~(+0{,}48) & 99{,}48~(+0{,}58) & 99{,}73~(+0{,}83) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}010 & 0{,}011~(+0{,}001) & 0{,}010~(+0{,}000) & 0{,}010~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}2 & 93{,}6~(-0{,}6) & 96{,}1~(+1{,}9) & 94{,}9~(+0{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}80 & 99{,}63~(-0{,}17) & 99{,}86~(+0{,}06) & 99{,}76~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}006 & 0{,}007~(+0{,}001) & 0{,}005~(-0{,}001) & 0{,}006~(+0{,}000) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}15 & 0{,}15~(+0{,}00) & 0{,}16~(+0{,}01) & 0{,}15~(+0{,}00) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}9 & 93{,}9~(-1{,}0) & 96{,}7~(+1{,}8) & 95{,}9~(+1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}45~(+0{,}25) & 99{,}66~(+0{,}46) & 99{,}80~(+0{,}60) \\*
+\end{longtable}
+}
+
+{\scriptsize
+\begin{longtable}{@{}lccl rrrr@{}}
+\caption{Simulação~3 (\(t\text{-Student}(5)\), resultados exaustivos): todas as métricas por nível de irregularidade. Entre parênteses: variação absoluta em relação à grade uniformemente espaçada.}\label{tab:resultados_sim3_t_ap} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\itshape (continuação)} \\
+\toprule
+ &  &  &  & \multicolumn{4}{c}{Irregularidade da malha discreta} \\
+\cmidrule(lr){5-8}
+Cenário & \(N\) & \(T\) & Métrica & Uniforme & Leve~(\(\Delta\)) & Mod.~(\(\Delta\)) & Sev.~(\(\Delta\)) \\
+\midrule
+\endhead
+\midrule \multicolumn{8}{r}{\itshape (continua)} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}049 & 0{,}052~(+0{,}003) & 0{,}045~(-0{,}004) & 0{,}080~(+0{,}031) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 83{,}7 & 86{,}0~(+2{,}3) & 85{,}2~(+1{,}5) & 87{,}3~(+3{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 91{,}90 & 92{,}97~(+1{,}07) & 91{,}85~(-0{,}05) & 93{,}35~(+1{,}45) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}275 & 0{,}338~(+0{,}063) & 0{,}294~(+0{,}019) & 0{,}254~(-0{,}021) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 40{,}39 & 42{,}18~(+1{,}79) & 41{,}45~(+1{,}06) & 43{,}00~(+2{,}61) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}203 & 1{,}670~(+0{,}467) & 0{,}897~(-0{,}306) & 0{,}627~(-0{,}576) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 83{,}6 & 86{,}5~(+2{,}9) & 85{,}8~(+2{,}2) & 86{,}8~(+3{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}58~(+4{,}48) & 95{,}60~(+3{,}50) & 97{,}96~(+5{,}86) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}041 & 0{,}040~(-0{,}001) & 0{,}041~(+0{,}000) & 0{,}044~(+0{,}003) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}6 & 86{,}3~(-1{,}3) & 86{,}4~(-1{,}2) & 86{,}5~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}40 & 92{,}38~(-1{,}02) & 92{,}71~(-0{,}69) & 92{,}87~(-0{,}53) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}215 & 0{,}260~(+0{,}045) & 0{,}329~(+0{,}114) & 0{,}410~(+0{,}195) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}46 & 42{,}04~(-0{,}42) & 41{,}64~(-0{,}82) & 42{,}44~(-0{,}02) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}214 & 1{,}192~(-0{,}022) & 1{,}114~(-0{,}100) & 1{,}322~(+0{,}108) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}5 & 86{,}9~(-0{,}6) & 86{,}6~(-0{,}9) & 86{,}2~(-1{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}60 & 96{,}29~(+2{,}69) & 96{,}69~(+3{,}09) & 97{,}71~(+4{,}11) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}002~(+0{,}001) & 0{,}002~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 95{,}7 & 93{,}8~(-1{,}9) & 94{,}0~(-1{,}7) & 94{,}1~(-1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}93~(-0{,}07) & 99{,}95~(-0{,}05) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}011 & -0{,}010~(+0{,}001) & -0{,}026~(-0{,}015) & -0{,}015~(-0{,}004) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}42 & 0{,}40~(-0{,}02) & 0{,}96~(+0{,}54) & 0{,}50~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}014 & 0{,}021~(+0{,}007) & 0{,}015~(+0{,}001) & 0{,}009~(-0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}7 & 94{,}0~(-1{,}7) & 93{,}7~(-2{,}0) & 93{,}9~(-1{,}8) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 98{,}90 & 99{,}21~(+0{,}31) & 99{,}02~(+0{,}12) & 99{,}50~(+0{,}60) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Bumps}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 95{,}0 & 95{,}2~(+0{,}2) & 93{,}7~(-1{,}3) & 94{,}5~(-0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}001 & 0{,}004~(+0{,}005) & 0{,}001~(+0{,}002) & -0{,}004~(-0{,}003) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}42 & 0{,}35~(-0{,}07) & 0{,}45~(+0{,}03) & 0{,}36~(-0{,}06) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}013 & 0{,}013~(+0{,}000) & 0{,}012~(-0{,}001) & 0{,}014~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}3 & 94{,}8~(-0{,}5) & 93{,}2~(-2{,}1) & 94{,}2~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}20 & 99{,}56~(+0{,}36) & 99{,}42~(+0{,}22) & 99{,}58~(+0{,}38) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}280 & 0{,}250~(-0{,}030) & 0{,}304~(+0{,}024) & 0{,}286~(+0{,}006) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}7 & 87{,}6~(+1{,}9) & 84{,}3~(-1{,}4) & 85{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 92{,}00 & 93{,}53~(+1{,}53) & 91{,}27~(-0{,}73) & 92{,}36~(+0{,}36) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}155 & 0{,}132~(-0{,}023) & 0{,}343~(+0{,}188) & 0{,}259~(+0{,}104) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}50 & 41{,}41~(-0{,}09) & 40{,}76~(-0{,}74) & 42{,}29~(+0{,}79) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 2{,}090 & 2{,}726~(+0{,}636) & 2{,}813~(+0{,}723) & 2{,}459~(+0{,}369) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}7 & 87{,}6~(+1{,}9) & 83{,}7~(-2{,}0) & 85{,}6~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}85~(+4{,}75) & 95{,}12~(+3{,}02) & 97{,}64~(+5{,}54) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}235 & 0{,}249~(+0{,}014) & 0{,}241~(+0{,}006) & 0{,}256~(+0{,}021) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}8 & 85{,}3~(-2{,}5) & 86{,}7~(-1{,}1) & 86{,}7~(-1{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}00 & 93{,}15~(+0{,}15) & 93{,}55~(+0{,}55) & 93{,}40~(+0{,}40) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}225 & 0{,}280~(+0{,}055) & 0{,}094~(-0{,}131) & 0{,}046~(-0{,}179) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 42{,}89 & 41{,}98~(-0{,}91) & 42{,}13~(-0{,}76) & 41{,}05~(-1{,}84) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 1{,}846 & 2{,}761~(+0{,}915) & 2{,}827~(+0{,}981) & 2{,}932~(+1{,}086) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}9 & 85{,}4~(-2{,}5) & 87{,}5~(-0{,}4) & 86{,}2~(-1{,}7) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}10 & 96{,}65~(+3{,}55) & 97{,}05~(+3{,}95) & 97{,}88~(+4{,}78) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}042 & 0{,}040~(-0{,}002) & 0{,}035~(-0{,}007) & 0{,}019~(-0{,}023) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 93{,}6~(-1{,}2) & 95{,}0~(+0{,}2) & 94{,}7~(-0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}94~(-0{,}06) & 99{,}96~(-0{,}04) & 99{,}96~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}042 & -0{,}047~(-0{,}005) & -0{,}065~(-0{,}023) & -0{,}086~(-0{,}044) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 2{,}28 & 1{,}91~(-0{,}37) & 2{,}70~(+0{,}42) & 1{,}47~(-0{,}81) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}068 & 0{,}089~(+0{,}021) & 0{,}097~(+0{,}029) & 0{,}073~(+0{,}005) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}8 & 94{,}9~(+0{,}1) & 94{,}9~(+0{,}1) & 94{,}6~(-0{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}83~(+0{,}23) & 99{,}84~(+0{,}24) & 99{,}89~(+0{,}29) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Doppler}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}022 & 0{,}022~(+0{,}000) & 0{,}013~(-0{,}009) & 0{,}012~(-0{,}010) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 96{,}1 & 93{,}3~(-2{,}8) & 94{,}6~(-1{,}5) & 94{,}7~(-1{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}98~(-0{,}02) & 99{,}99~(-0{,}01) & 99{,}99~(-0{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}030 & -0{,}028~(+0{,}002) & -0{,}008~(+0{,}022) & -0{,}025~(+0{,}005) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 1{,}16 & 1{,}18~(+0{,}02) & 1{,}01~(-0{,}15) & 1{,}29~(+0{,}13) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}042 & 0{,}057~(+0{,}015) & 0{,}037~(-0{,}005) & 0{,}038~(-0{,}004) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}9 & 94{,}3~(-1{,}6) & 94{,}4~(-1{,}5) & 96{,}0~(+0{,}1) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}60 & 99{,}71~(+0{,}11) & 99{,}65~(+0{,}05) & 99{,}86~(+0{,}26) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}151 & 0{,}140~(-0{,}011) & 0{,}141~(-0{,}010) & 0{,}159~(+0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 85{,}9 & 86{,}8~(+0{,}9) & 87{,}7~(+1{,}8) & 85{,}5~(-0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}00 & 92{,}75~(-0{,}25) & 92{,}60~(-0{,}40) & 91{,}47~(-1{,}53) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}075 & 0{,}240~(+0{,}315) & 0{,}370~(+0{,}445) & 0{,}210~(+0{,}285) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}30 & 43{,}73~(+2{,}43) & 41{,}49~(+0{,}19) & 41{,}41~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}073 & 0{,}070~(-0{,}003) & 0{,}068~(-0{,}005) & 0{,}081~(+0{,}008) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 85{,}7 & 87{,}8~(+2{,}1) & 87{,}8~(+2{,}1) & 85{,}3~(-0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}10 & 96{,}50~(+3{,}40) & 96{,}02~(+2{,}92) & 97{,}41~(+4{,}31) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}143 & 0{,}149~(+0{,}006) & 0{,}146~(+0{,}003) & 0{,}129~(-0{,}014) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}2 & 85{,}9~(-1{,}3) & 87{,}3~(+0{,}1) & 87{,}8~(+0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 94{,}30 & 92{,}73~(-1{,}57) & 92{,}97~(-1{,}33) & 93{,}53~(-0{,}77) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}113 & 0{,}043~(-0{,}070) & 0{,}353~(+0{,}240) & 0{,}205~(+0{,}092) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 43{,}10 & 40{,}88~(-2{,}22) & 42{,}78~(-0{,}32) & 41{,}62~(-1{,}48) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}069 & 0{,}074~(+0{,}005) & 0{,}074~(+0{,}005) & 0{,}065~(-0{,}004) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 87{,}3 & 85{,}6~(-1{,}7) & 88{,}2~(+0{,}9) & 87{,}6~(+0{,}3) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 94{,}40 & 96{,}46~(+2{,}06) & 96{,}80~(+2{,}40) & 97{,}93~(+3{,}53) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}003~(+0{,}001) & 0{,}003~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 94{,}5~(-0{,}3) & 93{,}1~(-1{,}7) & 93{,}9~(-0{,}9) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 100{,}00 & 99{,}96~(-0{,}04) & 99{,}95~(-0{,}05) & 99{,}95~(-0{,}05) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}005 & -0{,}005~(+0{,}000) & -0{,}000~(+0{,}005) & -0{,}005~(+0{,}000) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}36 & 0{,}48~(+0{,}12) & 0{,}59~(+0{,}23) & 0{,}42~(+0{,}06) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}3 & 94{,}4~(+0{,}1) & 93{,}9~(-0{,}4) & 94{,}7~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}52~(+0{,}42) & 99{,}49~(+0{,}39) & 99{,}61~(+0{,}51) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Escada}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}002 & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) & 0{,}002~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}7 & 94{,}1~(-0{,}6) & 95{,}9~(+1{,}2) & 93{,}2~(-1{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}90 & 99{,}97~(+0{,}07) & 99{,}99~(+0{,}09) & 99{,}98~(+0{,}08) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & -0{,}000 & -0{,}000~(+0{,}000) & -0{,}001~(-0{,}001) & -0{,}002~(-0{,}002) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}20 & 0{,}23~(+0{,}03) & 0{,}39~(+0{,}19) & 0{,}28~(+0{,}08) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}001 & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) & 0{,}001~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 95{,}1 & 94{,}5~(-0{,}6) & 95{,}9~(+0{,}8) & 94{,}5~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}57~(+0{,}47) & 99{,}54~(+0{,}44) & 99{,}63~(+0{,}53) \\*
+\midrule
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}155 & 1{,}160~(+0{,}005) & 1{,}127~(-0{,}028) & 1{,}342~(+0{,}187) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 87{,}3 & 87{,}8~(+0{,}5) & 87{,}2~(-0{,}1) & 86{,}3~(-1{,}0) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 93{,}50 & 93{,}42~(-0{,}08) & 93{,}64~(+0{,}14) & 92{,}49~(-1{,}01) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}019 & 0{,}231~(+0{,}212) & 0{,}005~(-0{,}014) & 0{,}320~(+0{,}301) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 41{,}35 & 41{,}98~(+0{,}63) & 41{,}30~(-0{,}05) & 41{,}71~(+0{,}36) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}289 & 0{,}297~(+0{,}008) & 0{,}296~(+0{,}007) & 0{,}344~(+0{,}055) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 86{,}9 & 87{,}2~(+0{,}3) & 86{,}8~(-0{,}1) & 85{,}7~(-1{,}2) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 93{,}70 & 96{,}84~(+3{,}14) & 96{,}59~(+2{,}89) & 97{,}69~(+3{,}99) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 200 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 1{,}315 & 1{,}128~(-0{,}187) & 1{,}236~(-0{,}079) & 1{,}327~(+0{,}012) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 84{,}8 & 87{,}1~(+2{,}3) & 86{,}8~(+2{,}0) & 83{,}2~(-1{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 91{,}90 & 92{,}00~(+0{,}10) & 93{,}80~(+1{,}90) & 91{,}76~(-0{,}14) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}342 & -0{,}095~(-0{,}437) & 0{,}170~(-0{,}172) & 0{,}228~(-0{,}114) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 40{,}03 & 41{,}98~(+1{,}95) & 41{,}42~(+1{,}39) & 40{,}77~(+0{,}74) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}339 & 0{,}297~(-0{,}042) & 0{,}329~(-0{,}010) & 0{,}352~(+0{,}013) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 84{,}3 & 87{,}4~(+3{,}1) & 87{,}1~(+2{,}8) & 83{,}7~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 92{,}10 & 96{,}13~(+4{,}03) & 97{,}16~(+5{,}06) & 97{,}36~(+5{,}26) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 128 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}016 & 0{,}016~(+0{,}000) & 0{,}017~(+0{,}001) & 0{,}017~(+0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}1 & 93{,}8~(-0{,}3) & 93{,}5~(-0{,}6) & 93{,}5~(-0{,}6) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}70 & 99{,}81~(+0{,}11) & 99{,}95~(+0{,}25) & 99{,}95~(+0{,}25) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}018 & 0{,}018~(+0{,}000) & 0{,}018~(+0{,}000) & 0{,}004~(-0{,}014) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}21 & 0{,}22~(+0{,}01) & 0{,}33~(+0{,}12) & 0{,}32~(+0{,}11) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}004 & 0{,}004~(+0{,}000) & 0{,}004~(+0{,}000) & 0{,}003~(-0{,}001) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}8 & 94{,}8~(+0{,}0) & 92{,}7~(-2{,}1) & 95{,}2~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}00 & 99{,}54~(+0{,}54) & 99{,}45~(+0{,}45) & 99{,}70~(+0{,}70) \\*
+\cmidrule{2-8}
+\multirow{8}{*}{\rotatebox[origin=c]{90}{Sigmoide}} & 2000 & 512 & \(\mathrm{NRMSE}_{\mathrm{FATE}}\) & 0{,}013 & 0{,}013~(+0{,}000) & 0{,}013~(+0{,}000) & 0{,}013~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{FATE}}\) & 94{,}8 & 94{,}1~(-0{,}7) & 94{,}2~(-0{,}6) & 95{,}3~(+0{,}5) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{FATE}}\) & 99{,}70 & 99{,}63~(-0{,}07) & 99{,}66~(-0{,}04) & 99{,}66~(-0{,}04) \\*
+ &  &  & \(\mathrm{Vi\acute{e}s}_{\mathrm{FATE}}\) & 0{,}009 & 0{,}008~(-0{,}001) & 0{,}005~(-0{,}004) & 0{,}008~(-0{,}001) \\*
+ &  &  & \(\mathrm{Larg.}_{\mathrm{FATE}}\) & 0{,}19 & 0{,}19~(+0{,}00) & 0{,}19~(+0{,}00) & 0{,}18~(-0{,}01) \\*
+ &  &  & \(\mathrm{NRMSE}_{\mathrm{CFATE}}\) & 0{,}003 & 0{,}004~(+0{,}001) & 0{,}003~(+0{,}000) & 0{,}003~(+0{,}000) \\*
+ &  &  & \(\mathrm{Cob.Sim.}_{\mathrm{CFATE}}\) & 94{,}7 & 94{,}3~(-0{,}4) & 94{,}5~(-0{,}2) & 95{,}1~(+0{,}4) \\*
+ &  &  & \(\mathrm{Cob.Pont.}_{\mathrm{CFATE}}\) & 99{,}10 & 99{,}45~(+0{,}35) & 99{,}46~(+0{,}36) & 99{,}68~(+0{,}58) \\*
+\end{longtable}
+}
+
+\chapter{Material suplementar da aplicação}\label{ap-aplicacoes}
+
+Este apêndice reúne o material suplementar do Capítulo \ref{sec-aplicacoes}.
+As figuras iniciais complementam a análise exploratória da Seção \ref{sec-aplicacoes-exploratoria} com o padrão geral de consumo.
+As demais apresentam a diferença bruta de consumo por grupo ACORN ao longo do ano e as verificações de robustez descritas na Seção \ref{sec-aplicacoes-resultados}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../fate-fda-application/low_carbon_energy/output/lcl_final/plots/main_text/heatmap_consumption}
+    \caption{Mapa de calor do consumo médio registrado por semana do ano e intervalo de 30 minutos do dia, calculado sobre todos os domicílios da amostra sem distinção de grupo tarifário.}
+    \label{fig:lcl-heatmap}
+\end{figure}
+
+O mapa de calor da Figura \ref{fig:lcl-heatmap} organiza o consumo médio por semana do ano (eixo horizontal) e intervalo de 30 minutos do dia (eixo vertical).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{../../fate-fda-application/low_carbon_energy/output/lcl_final/plots/appendix/functional_envelope}
+    \caption{Envelope funcional das curvas de consumo observadas: mediana (linha central) e bandas de 50\%, 90\% e 100\% das curvas individuais, calculado sobre todos os domicílios da amostra.}
+    \label{fig:lcl-envelope}
+\end{figure}
+
+O pico noturno, entre 19h e 21h, é o traço mais saliente e se intensifica nos meses de inverno (semanas iniciais e finais do ano), com magnitude próxima a 0,40 kWh/hh.
+No verão, o pico atenua-se para cerca de 0,23 kWh/hh, mas a estrutura intradiária se mantém estável.
+
+O envelope funcional da Figura \ref{fig:lcl-envelope} resume a distribuição das curvas individuais de consumo, evidenciando a variabilidade entre domicílios.
+
+A banda de 100\% é ampla, refletindo heterogeneidade considerável entre domicílios, mas a mediana segue o padrão sazonal descrito no texto principal.
+A assimetria das bandas indica que domicílios de alto consumo puxam o envelope para cima de forma mais pronunciada do que domicílios de baixo consumo puxam para baixo.
+
+A Figura \ref{fig:lcl-diff-acorn-anual} apresenta a diferença bruta de consumo por grupo ACORN ao longo do ano, sem ajuste causal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../../fate-fda-application/low_carbon_energy/output/lcl_final/plots/main_text/fate_raw_by_acorn_annual}
+    \caption{Diferença bruta de consumo \(\bar{Y}_{\mathrm{ToU}}(t) - \bar{Y}_{\mathrm{Std}}(t)\) por grupo ACORN ao longo de 2013, sem ajuste causal. A linha suavizada é um ajuste LOESS.}
+    \label{fig:lcl-diff-acorn-anual}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../../fate-fda-application/low_carbon_energy/output/lcl_final/plots/appendix/sensitivity_seasonal}
+    \caption{Perfil intradiário do \(\hat{\theta}(t)\) desagregado por trimestre, modo \emph{offline} (Haar).}
+    \label{fig:lcl-sensitivity-sazonal}
+\end{figure}
+
+\emph{Affluent} e \emph{Comfortable} mantêm diferença negativa ao longo de todo o ano, com redução mais intensa no inverno.
+\emph{Adversity} oscila próximo de zero durante a maior parte do período.
+\emph{ACORN-U} inverte o sinal já na primavera e permanece predominantemente positivo até o final do ano.
+
+A Figura \ref{fig:lcl-sensitivity-sazonal} desagrega o perfil intradiário do \(\hat{\theta}(t)\) por trimestre.
+
+A forma qualitativa é preservada em todos os trimestres, com dois vales correspondentes à madrugada e ao horário de pico.
+Não há horário ou estação em que o efeito seja positivo.
+A magnitude varia sazonalmente: maior no inverno (Q1 e Q4) e menor no verão (Q3).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{../../fate-fda-application/low_carbon_energy/output/lcl_final/plots/appendix/sensitivity_placebo}
+    \caption{Distribuição do \(\mathrm{FATE}\) obtido em 200 permutações aleatórias dos rótulos de tratamento (curvas cinza) e \(\hat{\theta}(t)\) estimado nos dados reais (curva colorida), modo \emph{offline} (Haar).}
+    \label{fig:lcl-sensitivity-placebo}
+\end{figure}
+
+A Figura \ref{fig:lcl-sensitivity-placebo} compara o \(\hat{\theta}(t)\) estimado nos dados reais com as estimativas obtidas por permutação dos rótulos de tratamento.
+
+As curvas permutadas oscilam em torno de zero ao longo de todo o ano, enquanto o \(\hat{\theta}(t)\) real permanece consistentemente abaixo de zero.
+O efeito observado não se confunde em nenhum momento com a distribuição sob ausência de efeito.

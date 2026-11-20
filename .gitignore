@@ -29,7 +29,7 @@
 /**/*.fls
 /**/*.listing
 # Keep the PDF of the dissertation if desired, or ignore it if it's meant to be generated locally
-# dissertacao/trabalho.pdf
+# functional-causal-wavelets/text/dissertation/dissertation.pdf
 
 # Data files
 *.rds
@@ -37,6 +37,10 @@
 *.RDataTmp
 
 # Personal/administrative documents and conference submissions (not meant for the repo)
-dissertacao/texto/auxiliares/
-dissertacao/texto/sinape/
-dissertacao/texto/rbras/
+functional-causal-wavelets/text/dissertation/chapters/auxiliary/
+functional-causal-wavelets/text/dissertation/chapters/sinape/
+functional-causal-wavelets/text/dissertation/chapters/rbras/
+
+# Arquivos auxiliares adicionais de apresentações Beamer
+*.nav
+*.snm
